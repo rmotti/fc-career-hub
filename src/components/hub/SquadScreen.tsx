@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import type { Player } from "@/data/mockData";
+import PlayerModal from "@/components/modals/PlayerModal";
 
 interface Props {
   players: Player[];
+  onUpdatePlayers: (players: Player[]) => void;
 }
 
 type SortKey = keyof Player;
@@ -14,9 +17,11 @@ const positionColor: Record<string, string> = {
   ATA: "bg-destructive/20 text-destructive",
 };
 
-const SquadScreen = ({ players }: Props) => {
+const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
   const [sortKey, setSortKey] = useState<SortKey>("ovr");
   const [sortAsc, setSortAsc] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   const sorted = [...players].sort((a, b) => {
     const va = a[sortKey];
@@ -28,6 +33,20 @@ const SquadScreen = ({ players }: Props) => {
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
+  };
+
+  const handleSavePlayer = (player: Player) => {
+    const exists = players.find((p) => p.id === player.id);
+    if (exists) {
+      onUpdatePlayers(players.map((p) => (p.id === player.id ? player : p)));
+    } else {
+      onUpdatePlayers([...players, player]);
+    }
+    setEditingPlayer(null);
+  };
+
+  const handleDelete = (id: number) => {
+    onUpdatePlayers(players.filter((p) => p.id !== id));
   };
 
   const columns: { key: SortKey; label: string }[] = [
@@ -43,7 +62,16 @@ const SquadScreen = ({ players }: Props) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold">Elenco</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl font-bold">Elenco</h2>
+        <button
+          onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+        >
+          <Plus size={16} /> Adicionar Jogador
+        </button>
+      </div>
+
       <div className="card-gamer overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -58,6 +86,7 @@ const SquadScreen = ({ players }: Props) => {
                     {col.label} {sortKey === col.key && (sortAsc ? "↑" : "↓")}
                   </th>
                 ))}
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -77,12 +106,40 @@ const SquadScreen = ({ players }: Props) => {
                   <td className="px-4 py-3 font-display">{p.assists}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.salary}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.marketValue}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
+                        className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Remover"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
+              {players.length === 0 && (
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador no elenco.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      <PlayerModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        player={editingPlayer}
+        onSave={handleSavePlayer}
+      />
     </div>
   );
 };

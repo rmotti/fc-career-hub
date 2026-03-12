@@ -1,19 +1,32 @@
-import { Target, ShieldAlert, Circle, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Target, ShieldAlert, Circle, AlertTriangle, Pencil } from "lucide-react";
 import type { SaveData } from "@/data/mockData";
 import StatCard from "./StatCard";
+import StatsModal from "@/components/modals/StatsModal";
 
 interface Props {
   save: SaveData;
+  onUpdateStats: (stats: SaveData["teamStats"]) => void;
 }
 
-const StatsScreen = ({ save }: Props) => {
+const StatsScreen = ({ save, onUpdateStats }: Props) => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   const topScorers = [...save.players].sort((a, b) => b.goals - a.goals).slice(0, 5);
   const topAssists = [...save.players].sort((a, b) => b.assists - a.assists).slice(0, 5);
   const topCards = [...save.players].sort((a, b) => (b.yellowCards + b.redCards * 3) - (a.yellowCards + a.redCards * 3)).slice(0, 5);
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold">Estatísticas da Temporada</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl font-bold">Estatísticas da Temporada</h2>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+        >
+          <Pencil size={16} /> Editar Stats
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard label="Gols Pró" value={save.teamStats.goalsPro} icon={Target} />
@@ -22,7 +35,6 @@ const StatsScreen = ({ save }: Props) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Scorers */}
         <div className="card-gamer p-5">
           <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
             <Target size={16} className="text-primary" /> Artilheiros
@@ -37,10 +49,10 @@ const StatsScreen = ({ save }: Props) => {
                 <span className="font-display font-bold text-primary">{p.goals}</span>
               </div>
             ))}
+            {topScorers.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
           </div>
         </div>
 
-        {/* Assists */}
         <div className="card-gamer p-5">
           <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
             <Target size={16} className="text-accent" /> Assistentes
@@ -55,10 +67,10 @@ const StatsScreen = ({ save }: Props) => {
                 <span className="font-display font-bold text-accent">{p.assists}</span>
               </div>
             ))}
+            {topAssists.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
           </div>
         </div>
 
-        {/* Cards */}
         <div className="card-gamer p-5">
           <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
             <AlertTriangle size={16} className="text-warning" /> Cartões
@@ -76,9 +88,17 @@ const StatsScreen = ({ save }: Props) => {
                 </div>
               </div>
             ))}
+            {topCards.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
           </div>
         </div>
       </div>
+
+      <StatsModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        stats={save.teamStats}
+        onSave={onUpdateStats}
+      />
     </div>
   );
 };
