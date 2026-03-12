@@ -13,8 +13,8 @@ const HistoryScreen = ({ save }: Props) => {
   const totalDraws = save.clubHistory.reduce((s, c) => s + c.draws, 0);
   const totalLosses = save.clubHistory.reduce((s, c) => s + c.losses, 0);
 
-  const topScorer = [...allPlayers].sort((a, b) => b.goals - a.goals)[0];
-  const topAssist = [...allPlayers].sort((a, b) => b.assists - a.assists)[0];
+  const topScorer = allPlayers.length > 0 ? [...allPlayers].sort((a, b) => b.goals - a.goals)[0] : null;
+  const topAssist = allPlayers.length > 0 ? [...allPlayers].sort((a, b) => b.assists - a.assists)[0] : null;
 
   const purchases = save.transfers.filter(t => t.type === "compra");
   const sales = save.transfers.filter(t => t.type === "venda");
@@ -89,13 +89,21 @@ const HistoryScreen = ({ save }: Props) => {
         </div>
         <div className="card-gamer p-5">
           <p className="text-xs text-muted-foreground uppercase mb-1">Top Artilheiro Histórico</p>
-          <p className="font-display text-lg font-bold">{topScorer.name}</p>
-          <p className="text-sm text-primary font-bold">{topScorer.goals} gols</p>
+          {topScorer ? (
+            <>
+              <p className="font-display text-lg font-bold">{topScorer.name}</p>
+              <p className="text-sm text-primary font-bold">{topScorer.goals} gols</p>
+            </>
+          ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
         <div className="card-gamer p-5">
           <p className="text-xs text-muted-foreground uppercase mb-1">Top Assistente Histórico</p>
-          <p className="font-display text-lg font-bold">{topAssist.name}</p>
-          <p className="text-sm text-accent font-bold">{topAssist.assists} assistências</p>
+          {topAssist ? (
+            <>
+              <p className="font-display text-lg font-bold">{topAssist.name}</p>
+              <p className="text-sm text-accent font-bold">{topAssist.assists} assistências</p>
+            </>
+          ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
       </div>
     </div>

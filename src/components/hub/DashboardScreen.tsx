@@ -7,15 +7,17 @@ interface Props {
 }
 
 const DashboardScreen = ({ save }: Props) => {
-  const topScorer = [...save.players].sort((a, b) => b.goals - a.goals)[0];
+  const topScorer = save.players.length > 0
+    ? [...save.players].sort((a, b) => b.goals - a.goals)[0]
+    : null;
 
   return (
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold">Visão Geral</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Posição na Liga" value={`${save.leaguePosition}º`} icon={TrendingUp} />
-        <StatCard label="Artilheiro" value={`${topScorer.name} (${topScorer.goals})`} icon={Target} />
+        <StatCard label="Posição na Liga" value={save.leaguePosition ? `${save.leaguePosition}º` : "—"} icon={TrendingUp} />
+        <StatCard label="Artilheiro" value={topScorer ? `${topScorer.name} (${topScorer.goals})` : "—"} icon={Target} />
         <StatCard label="Saldo" value={save.balance} icon={DollarSign} accent />
         <StatCard label="Troféus" value={save.trophies.length} icon={Trophy} />
       </div>
@@ -58,20 +60,24 @@ const DashboardScreen = ({ save }: Props) => {
       {/* Top 5 scorers */}
       <div className="card-gamer p-6">
         <h3 className="font-display text-lg font-semibold mb-4">Top Artilheiros</h3>
-        <div className="space-y-3">
-          {[...save.players].sort((a, b) => b.goals - a.goals).slice(0, 5).map((p, i) => (
-            <div key={p.id} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                }`}>{i + 1}</span>
-                <span className="text-sm font-medium">{p.name}</span>
-                <span className="text-xs text-muted-foreground">{p.position}</span>
+        {save.players.length > 0 ? (
+          <div className="space-y-3">
+            {[...save.players].sort((a, b) => b.goals - a.goals).slice(0, 5).map((p, i) => (
+              <div key={p.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                  }`}>{i + 1}</span>
+                  <span className="text-sm font-medium">{p.name}</span>
+                  <span className="text-xs text-muted-foreground">{p.position}</span>
+                </div>
+                <span className="font-display font-bold text-primary">{p.goals}</span>
               </div>
-              <span className="font-display font-bold text-primary">{p.goals}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Nenhum jogador no elenco.</p>
+        )}
       </div>
     </div>
   );
