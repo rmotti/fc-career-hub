@@ -7,15 +7,17 @@ interface Props {
 }
 
 const DashboardScreen = ({ save }: Props) => {
-  const topScorer = [...save.players].sort((a, b) => b.goals - a.goals)[0];
+  const topScorer = save.players.length > 0
+    ? [...save.players].sort((a, b) => b.goals - a.goals)[0]
+    : null;
 
   return (
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold">Visão Geral</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Posição na Liga" value={`${save.leaguePosition}º`} icon={TrendingUp} />
-        <StatCard label="Artilheiro" value={`${topScorer.name} (${topScorer.goals})`} icon={Target} />
+        <StatCard label="Posição na Liga" value={save.leaguePosition ? `${save.leaguePosition}º` : "—"} icon={TrendingUp} />
+        <StatCard label="Artilheiro" value={topScorer ? `${topScorer.name} (${topScorer.goals})` : "—"} icon={Target} />
         <StatCard label="Saldo" value={save.balance} icon={DollarSign} accent />
         <StatCard label="Troféus" value={save.trophies.length} icon={Trophy} />
       </div>
