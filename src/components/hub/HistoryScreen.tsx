@@ -13,8 +13,8 @@ const HistoryScreen = ({ save }: Props) => {
   const totalDraws = save.clubHistory.reduce((s, c) => s + c.draws, 0);
   const totalLosses = save.clubHistory.reduce((s, c) => s + c.losses, 0);
 
-  const topScorer = [...allPlayers].sort((a, b) => b.goals - a.goals)[0];
-  const topAssist = [...allPlayers].sort((a, b) => b.assists - a.assists)[0];
+  const topScorer = allPlayers.length > 0 ? [...allPlayers].sort((a, b) => b.goals - a.goals)[0] : null;
+  const topAssist = allPlayers.length > 0 ? [...allPlayers].sort((a, b) => b.assists - a.assists)[0] : null;
 
   const purchases = save.transfers.filter(t => t.type === "compra");
   const sales = save.transfers.filter(t => t.type === "venda");
