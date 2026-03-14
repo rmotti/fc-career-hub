@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { useUpdatePlayerStats } from "@/hooks/usePlayers";
@@ -13,36 +14,39 @@ interface Props {
   saveId: string;
 }
 
-const emptyForm = {
+const EMPTY_PLAYER = {
   name: "", position: "MEI" as string, age: 20, status: "Important" as string, ovr: 70,
   salary: "", marketValue: "",
   goals: 0, assists: 0, yellowCards: 0, redCards: 0, matches: 0,
 };
 
 const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(EMPTY_PLAYER);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!player;
   const updateStats = useUpdatePlayerStats();
 
   useEffect(() => {
-    if (player) {
-      const stats = player.currentSeasonStats || player.totalStats;
-      setForm({
-        name: player.name,
-        position: player.position,
-        age: player.age,
-        status: player.status,
-        ovr: player.ovr,
-        salary: player.salary ?? "",
-        marketValue: player.marketValue ?? "",
-        goals: stats?.goals ?? 0,
-        assists: stats?.assists ?? 0,
-        yellowCards: stats?.yellowCards ?? 0,
-        redCards: stats?.redCards ?? 0,
-        matches: stats?.matches ?? 0,
-      });
-    } else {
-      setForm(emptyForm);
+    if (open) {
+      if (player) {
+        const stats = player.currentSeasonStats || player.totalStats;
+        setForm({
+          name: player.name,
+          position: player.position,
+          age: player.age,
+          status: player.status,
+          ovr: player.ovr,
+          salary: player.salary ?? "",
+          marketValue: player.marketValue ?? "",
+          goals: stats?.goals ?? 0,
+          assists: stats?.assists ?? 0,
+          yellowCards: stats?.yellowCards ?? 0,
+          redCards: stats?.redCards ?? 0,
+          matches: stats?.matches ?? 0,
+        });
+      } else {
+        setForm(EMPTY_PLAYER);
+      }
     }
   }, [player, open]);
 
@@ -57,6 +61,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
     const salary = normalizeCurrencyInput(form.salary);
     const marketValue = normalizeCurrencyInput(form.marketValue);
 
+    setIsSubmitting(true);
     try {
       await onSave({ ...form, salary, marketValue }, player?.id);
 
@@ -78,9 +83,12 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           toast.success("Estatísticas atualizadas!", { duration: 3000 });
         }
       }
+      setForm(EMPTY_PLAYER);
       onOpenChange(false);
     } catch (err: any) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -94,7 +102,8 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           <DialogTitle className="font-display text-lg">{isEdit ? "Editar Jogador" : "Adicionar Jogador"}</DialogTitle>
           <DialogDescription>Preencha os dados do jogador.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit}>
+          <fieldset className="space-y-3" disabled={isSubmitting}>
           <div>
             <label className={labelClass}>Nome</label>
             <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -175,13 +184,15 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity">
+            <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
               {isEdit ? "Salvar" : "Adicionar"}
             </button>
-            <button type="button" onClick={() => onOpenChange(false)} className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors">
+            <button type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50">
               Cancelar
             </button>
           </div>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

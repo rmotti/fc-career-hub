@@ -51,12 +51,18 @@ const SquadScreen = ({ saveId }: Props) => {
   };
 
   const handleSavePlayer = async (data: any, playerId?: string) => {
-    const { goals, assists, yellowCards, redCards, ...playerData } = data;
+    const { goals, assists, yellowCards, redCards, matches, ...playerData } = data;
     if (playerId) {
       await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
       toast.success("Jogador atualizado!", { duration: 3000 });
     } else {
-      await createPlayer.mutateAsync({ saveId, data: playerData });
+      await createPlayer.mutateAsync({ 
+        saveId, 
+        data: { 
+          ...playerData, 
+          seasonStats: { goals, assists, yellowCards, redCards, matches } 
+        } 
+      });
       toast.success("Jogador adicionado ao elenco!", { duration: 3000 });
     }
     setEditingPlayer(null); // Will not throw an unmounted error because modal parent still exists (SquadScreen)

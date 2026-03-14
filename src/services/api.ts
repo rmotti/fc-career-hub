@@ -180,7 +180,7 @@ export const playersApi = {
     request<ApiPlayer[]>(`/saves/${saveId}/players${active ? "?active=true" : ""}`),
   get: (saveId: string, playerId: string) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`),
-  create: (saveId: string, data: { name: string; position: string; age: number; status: string; ovr: number; salary?: string; marketValue?: string }) =>
+  create: (saveId: string, data: { name: string; position: string; age: number; status: string; ovr: number; salary?: string; marketValue?: string; seasonStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; } }) =>
     request<ApiPlayer>(`/saves/${saveId}/players`, { method: "POST", body: JSON.stringify(data) }),
   update: (saveId: string, playerId: string, data: { name?: string; position?: string; age?: number; status?: string; ovr?: number; salary?: string; marketValue?: string }) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`, { method: "PUT", body: JSON.stringify(data) }),
