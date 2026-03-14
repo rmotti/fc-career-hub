@@ -26,6 +26,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
   useEffect(() => {
     if (player) {
+      const stats = player.seasonStats || player.totalStats;
       setForm({
         name: player.name,
         position: player.position,
@@ -34,11 +35,11 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
         ovr: player.ovr,
         salary: player.salary ?? "",
         marketValue: player.marketValue ?? "",
-        goals: player.seasonStats?.goals ?? 0,
-        assists: player.seasonStats?.assists ?? 0,
-        yellowCards: player.seasonStats?.yellowCards ?? 0,
-        redCards: player.seasonStats?.redCards ?? 0,
-        matches: player.seasonStats?.matches ?? 0,
+        goals: stats?.goals ?? 0,
+        assists: stats?.assists ?? 0,
+        yellowCards: stats?.yellowCards ?? 0,
+        redCards: stats?.redCards ?? 0,
+        matches: stats?.matches ?? 0,
       });
     } else {
       setForm(emptyForm);
@@ -60,12 +61,13 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       await onSave({ ...form, salary, marketValue }, player?.id);
 
       if (player) {
+        const stats = player.seasonStats || player.totalStats;
         const statsChanged =
-          form.goals !== (player.seasonStats?.goals ?? 0) ||
-          form.assists !== (player.seasonStats?.assists ?? 0) ||
-          form.yellowCards !== (player.seasonStats?.yellowCards ?? 0) ||
-          form.redCards !== (player.seasonStats?.redCards ?? 0) ||
-          form.matches !== (player.seasonStats?.matches ?? 0);
+          form.goals !== (stats?.goals ?? 0) ||
+          form.assists !== (stats?.assists ?? 0) ||
+          form.yellowCards !== (stats?.yellowCards ?? 0) ||
+          form.redCards !== (stats?.redCards ?? 0) ||
+          form.matches !== (stats?.matches ?? 0);
         
         if (statsChanged) {
           await updateStats.mutateAsync({

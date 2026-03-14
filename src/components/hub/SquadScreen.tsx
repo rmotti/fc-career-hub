@@ -30,10 +30,11 @@ const SquadScreen = ({ saveId }: Props) => {
   const releasePlayer = useReleasePlayer();
 
   const getValue = (p: ApiPlayer, key: SortKey): string | number => {
-    if (key === "matches") return p.seasonStats?.matches ?? 0;
-    if (key === "goals") return p.seasonStats?.goals ?? 0;
-    if (key === "assists") return p.seasonStats?.assists ?? 0;
-    if (key === "goalContributions") return p.seasonStats?.goalContributions ?? 0;
+    const stats = p.seasonStats || p.totalStats;
+    if (key === "matches") return stats?.matches ?? 0;
+    if (key === "goals") return stats?.goals ?? 0;
+    if (key === "assists") return stats?.assists ?? 0;
+    if (key === "goalContributions") return stats?.goalContributions ?? 0;
     return (p as unknown as Record<string, string | number>)[key] ?? "";
   };
 
@@ -119,7 +120,9 @@ const SquadScreen = ({ saveId }: Props) => {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((p) => (
+              {sorted.map((p) => {
+                const stats = p.seasonStats || p.totalStats;
+                return (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3">
@@ -131,10 +134,10 @@ const SquadScreen = ({ saveId }: Props) => {
                       {p.ovr}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-display">{p.seasonStats?.matches ?? 0}</td>
-                  <td className="px-4 py-3 font-display font-bold">{p.seasonStats?.goals ?? 0}</td>
-                  <td className="px-4 py-3 font-display">{p.seasonStats?.assists ?? 0}</td>
-                  <td className="px-4 py-3 font-display text-primary">{p.seasonStats?.goalContributions ?? 0}</td>
+                  <td className="px-4 py-3 font-display">{stats?.matches ?? 0}</td>
+                  <td className="px-4 py-3 font-display font-bold">{stats?.goals ?? 0}</td>
+                  <td className="px-4 py-3 font-display">{stats?.assists ?? 0}</td>
+                  <td className="px-4 py-3 font-display text-primary">{stats?.goalContributions ?? 0}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.salary ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.marketValue ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
@@ -156,7 +159,8 @@ const SquadScreen = ({ saveId }: Props) => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {players.length === 0 && (
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador no elenco.</td></tr>
               )}

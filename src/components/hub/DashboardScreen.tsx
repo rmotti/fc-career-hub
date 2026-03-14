@@ -20,7 +20,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
   const teamStats = teamStatsArr[0];
 
   const topScorer = players.length > 0
-    ? [...players].sort((a, b) => (b.seasonStats?.goals ?? 0) - (a.seasonStats?.goals ?? 0))[0]
+    ? [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.goals ?? 0) - ((a.seasonStats || a.totalStats)?.goals ?? 0))[0]
     : null;
 
   if (!save) {
@@ -69,7 +69,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatCard
           label="Artilheiro"
-          value={topScorer && topScorer.seasonStats?.goals ? `${topScorer.name} (${topScorer.seasonStats.goals})` : "—"}
+          value={topScorer && (topScorer.seasonStats || topScorer.totalStats)?.goals ? `${topScorer.name} (${(topScorer.seasonStats || topScorer.totalStats)?.goals})` : "—"}
           icon={Target}
         />
         <StatCard label="Troféus" value={trophies.length} icon={Trophy} />
@@ -106,7 +106,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
         ) : players.length > 0 ? (
           <div className="space-y-3">
             {[...players]
-              .sort((a, b) => (b.seasonStats?.goals ?? 0) - (a.seasonStats?.goals ?? 0))
+              .sort((a, b) => ((b.seasonStats || b.totalStats)?.goals ?? 0) - ((a.seasonStats || a.totalStats)?.goals ?? 0))
               .slice(0, 5)
               .map((p, i) => (
                 <div key={p.id} className="flex items-center justify-between">
@@ -117,7 +117,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
                     <span className="text-sm font-medium">{p.name}</span>
                     <span className="text-xs text-muted-foreground">{p.position}</span>
                   </div>
-                  <span className="font-display font-bold text-primary">{p.seasonStats?.goals ?? 0}</span>
+                  <span className="font-display font-bold text-primary">{(p.seasonStats || p.totalStats)?.goals ?? 0}</span>
                 </div>
               ))}
           </div>
