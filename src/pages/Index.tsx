@@ -9,11 +9,13 @@ import StatsScreen from "@/components/hub/StatsScreen";
 import HistoryScreen from "@/components/hub/HistoryScreen";
 import TransfersScreen from "@/components/hub/TransfersScreen";
 import ChangeClubScreen from "@/components/hub/ChangeClubScreen";
+import NewSeasonModal from "@/components/modals/NewSeasonModal";
 
 const Index = () => {
   const [saves, setSaves] = useState<SaveData[]>(mockSaves);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
   const [screen, setScreen] = useState<HubScreen>("dashboard");
+  const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
 
   const updateActiveSave = (updated: SaveData) => {
     setActiveSave(updated);
@@ -84,6 +86,22 @@ const Index = () => {
     updateActiveSave({ ...activeSave, transfers });
   };
 
+  const handleNewSeason = () => {
+    if (!activeSave) return;
+    const newYear = activeSave.year + 1;
+    const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
+    const updated: SaveData = {
+      ...activeSave,
+      year: newYear,
+      season: newSeason,
+      leaguePosition: 0,
+      teamStats: { goalsPro: 0, goalsAgainst: 0, possession: 0, wins: 0, draws: 0, losses: 0 },
+      players: activeSave.players.map((p) => ({ ...p, goals: 0, assists: 0, yellowCards: 0, redCards: 0 })),
+    };
+    updateActiveSave(updated);
+    setScreen("dashboard");
+  };
+
   if (!activeSave) {
     return <SaveSelect saves={saves} onSelectSave={handleSelectSave} onCreateSave={handleCreateSave} />;
   }
@@ -101,13 +119,19 @@ const Index = () => {
 
   return (
     <div className="flex min-h-screen w-full">
-      <HubSidebar active={screen} onNavigate={setScreen} onExitSave={() => setActiveSave(null)} />
+      <HubSidebar active={screen} onNavigate={setScreen} onNewSeason={() => setShowNewSeasonModal(true)} onExitSave={() => setActiveSave(null)} />
       <div className="flex-1 flex flex-col min-w-0">
         <HubHeader saveName={activeSave.name} clubName={activeSave.currentClub} season={activeSave.season} />
         <main className="flex-1 p-6 overflow-y-auto">
           {renderScreen()}
         </main>
       </div>
+      <NewSeasonModal
+        open={showNewSeasonModal}
+        onOpenChange={setShowNewSeasonModal}
+        save={activeSave}
+        onConfirm={handleNewSeason}
+      />
     </div>
   );
 };

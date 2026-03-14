@@ -3,11 +3,12 @@ export interface Player {
   name: string;
   position: "GOL" | "ZAG" | "MEI" | "ATA";
   age: number;
+  status: "Crucial" | "Important" | "Role" | "Sporadic" | "Promising";
   ovr: number;
   goals: number;
   assists: number;
-  salary: string;
   marketValue: string;
+  salary: string;
   yellowCards: number;
   redCards: number;
 }
@@ -71,21 +72,21 @@ export const availableClubs = [
 ];
 
 const forestPlayers: Player[] = [
-  { id: 1, name: "Matt Turner", position: "GOL", age: 30, ovr: 78, goals: 0, assists: 0, salary: "€45K", marketValue: "€8M", yellowCards: 1, redCards: 0 },
-  { id: 2, name: "Murillo", position: "ZAG", age: 25, ovr: 82, goals: 3, assists: 1, salary: "€75K", marketValue: "€35M", yellowCards: 4, redCards: 0 },
-  { id: 3, name: "Nikola Milenković", position: "ZAG", age: 30, ovr: 80, goals: 2, assists: 0, salary: "€65K", marketValue: "€18M", yellowCards: 6, redCards: 1 },
-  { id: 4, name: "Neco Williams", position: "ZAG", age: 27, ovr: 79, goals: 1, assists: 5, salary: "€55K", marketValue: "€15M", yellowCards: 3, redCards: 0 },
-  { id: 5, name: "Ola Aina", position: "ZAG", age: 31, ovr: 78, goals: 0, assists: 3, salary: "€50K", marketValue: "€10M", yellowCards: 5, redCards: 0 },
-  { id: 6, name: "Morgan Gibbs-White", position: "MEI", age: 28, ovr: 83, goals: 8, assists: 10, salary: "€90K", marketValue: "€42M", yellowCards: 3, redCards: 0 },
-  { id: 7, name: "Ibrahim Sangaré", position: "MEI", age: 30, ovr: 81, goals: 2, assists: 4, salary: "€70K", marketValue: "€22M", yellowCards: 7, redCards: 0 },
-  { id: 8, name: "Danilo", position: "MEI", age: 27, ovr: 80, goals: 4, assists: 6, salary: "€60K", marketValue: "€25M", yellowCards: 2, redCards: 0 },
-  { id: 9, name: "Anthony Elanga", position: "ATA", age: 26, ovr: 81, goals: 12, assists: 7, salary: "€80K", marketValue: "€38M", yellowCards: 1, redCards: 0 },
-  { id: 10, name: "Callum Hudson-Odoi", position: "ATA", age: 27, ovr: 82, goals: 9, assists: 8, salary: "€85K", marketValue: "€40M", yellowCards: 2, redCards: 0 },
-  { id: 11, name: "Chris Wood", position: "ATA", age: 36, ovr: 79, goals: 15, assists: 3, salary: "€55K", marketValue: "€5M", yellowCards: 4, redCards: 0 },
-  { id: 12, name: "Taiwo Awoniyi", position: "ATA", age: 30, ovr: 78, goals: 6, assists: 2, salary: "€50K", marketValue: "€12M", yellowCards: 1, redCards: 0 },
-  { id: 13, name: "Ryan Yates", position: "MEI", age: 30, ovr: 77, goals: 3, assists: 2, salary: "€45K", marketValue: "€8M", yellowCards: 8, redCards: 1 },
-  { id: 14, name: "Matz Sels", position: "GOL", age: 31, ovr: 80, goals: 0, assists: 0, salary: "€55K", marketValue: "€12M", yellowCards: 0, redCards: 0 },
-  { id: 15, name: "Gonzalo Montiel", position: "ZAG", age: 31, ovr: 78, goals: 0, assists: 2, salary: "€45K", marketValue: "€7M", yellowCards: 3, redCards: 0 },
+  { id: 1, name: "Matt Turner", position: "GOL", age: 30, status: "Important", ovr: 78, goals: 0, assists: 0, salary: "€45K", marketValue: "€8M", yellowCards: 1, redCards: 0 },
+  { id: 2, name: "Murillo", position: "ZAG", age: 25, status: "Crucial", ovr: 82, goals: 3, assists: 1, salary: "€75K", marketValue: "€35M", yellowCards: 4, redCards: 0 },
+  { id: 3, name: "Nikola Milenković", position: "ZAG", age: 30, status: "Important", ovr: 80, goals: 2, assists: 0, salary: "€65K", marketValue: "€18M", yellowCards: 6, redCards: 1 },
+  { id: 4, name: "Neco Williams", position: "ZAG", age: 27, status: "Role", ovr: 79, goals: 1, assists: 5, salary: "€55K", marketValue: "€15M", yellowCards: 3, redCards: 0 },
+  { id: 5, name: "Ola Aina", position: "ZAG", age: 31, status: "Sporadic", ovr: 78, goals: 0, assists: 3, salary: "€50K", marketValue: "€10M", yellowCards: 5, redCards: 0 },
+  { id: 6, name: "Morgan Gibbs-White", position: "MEI", age: 28, status: "Crucial", ovr: 83, goals: 8, assists: 10, salary: "€90K", marketValue: "€42M", yellowCards: 3, redCards: 0 },
+  { id: 7, name: "Ibrahim Sangaré", position: "MEI", age: 30, status: "Important", ovr: 81, goals: 2, assists: 4, salary: "€70K", marketValue: "€22M", yellowCards: 7, redCards: 0 },
+  { id: 8, name: "Danilo", position: "MEI", age: 27, status: "Role", ovr: 80, goals: 4, assists: 6, salary: "€60K", marketValue: "€25M", yellowCards: 2, redCards: 0 },
+  { id: 9, name: "Anthony Elanga", position: "ATA", age: 26, status: "Promising", ovr: 81, goals: 12, assists: 7, salary: "€80K", marketValue: "€38M", yellowCards: 1, redCards: 0 },
+  { id: 10, name: "Callum Hudson-Odoi", position: "ATA", age: 27, status: "Important", ovr: 82, goals: 9, assists: 8, salary: "€85K", marketValue: "€40M", yellowCards: 2, redCards: 0 },
+  { id: 11, name: "Chris Wood", position: "ATA", age: 36, status: "Role", ovr: 79, goals: 15, assists: 3, salary: "€55K", marketValue: "€5M", yellowCards: 4, redCards: 0 },
+  { id: 12, name: "Taiwo Awoniyi", position: "ATA", age: 30, status: "Sporadic", ovr: 78, goals: 6, assists: 2, salary: "€50K", marketValue: "€12M", yellowCards: 1, redCards: 0 },
+  { id: 13, name: "Ryan Yates", position: "MEI", age: 30, status: "Role", ovr: 77, goals: 3, assists: 2, salary: "€45K", marketValue: "€8M", yellowCards: 8, redCards: 1 },
+  { id: 14, name: "Matz Sels", position: "GOL", age: 31, status: "Sporadic", ovr: 80, goals: 0, assists: 0, salary: "€55K", marketValue: "€12M", yellowCards: 0, redCards: 0 },
+  { id: 15, name: "Gonzalo Montiel", position: "ZAG", age: 31, status: "Role", ovr: 78, goals: 0, assists: 2, salary: "€45K", marketValue: "€7M", yellowCards: 3, redCards: 0 },
 ];
 
 const forestTransfers: Transfer[] = [
@@ -136,11 +137,11 @@ export const mockSaves: SaveData[] = [
       { club: "AC Milan", years: "2028-2031", matches: 155, wins: 98, draws: 30, losses: 27 },
     ],
     players: [
-      { id: 1, name: "Mike Maignan", position: "GOL", age: 35, ovr: 85, goals: 0, assists: 0, salary: "€110K", marketValue: "€15M", yellowCards: 1, redCards: 0 },
-      { id: 2, name: "Fikayo Tomori", position: "ZAG", age: 33, ovr: 83, goals: 2, assists: 1, salary: "€95K", marketValue: "€20M", yellowCards: 5, redCards: 0 },
-      { id: 3, name: "Tijjani Reijnders", position: "MEI", age: 29, ovr: 86, goals: 10, assists: 12, salary: "€120K", marketValue: "€65M", yellowCards: 2, redCards: 0 },
-      { id: 4, name: "Rafael Leão", position: "ATA", age: 31, ovr: 88, goals: 18, assists: 9, salary: "€150K", marketValue: "€80M", yellowCards: 3, redCards: 0 },
-      { id: 5, name: "Christian Pulisic", position: "ATA", age: 32, ovr: 84, goals: 14, assists: 8, salary: "€100K", marketValue: "€30M", yellowCards: 1, redCards: 0 },
+      { id: 1, name: "Mike Maignan", position: "GOL", age: 35, status: "Crucial", ovr: 85, goals: 0, assists: 0, salary: "€110K", marketValue: "€15M", yellowCards: 1, redCards: 0 },
+      { id: 2, name: "Fikayo Tomori", position: "ZAG", age: 33, status: "Important", ovr: 83, goals: 2, assists: 1, salary: "€95K", marketValue: "€20M", yellowCards: 5, redCards: 0 },
+      { id: 3, name: "Tijjani Reijnders", position: "MEI", age: 29, status: "Crucial", ovr: 86, goals: 10, assists: 12, salary: "€120K", marketValue: "€65M", yellowCards: 2, redCards: 0 },
+      { id: 4, name: "Rafael Leão", position: "ATA", age: 31, status: "Crucial", ovr: 88, goals: 18, assists: 9, salary: "€150K", marketValue: "€80M", yellowCards: 3, redCards: 0 },
+      { id: 5, name: "Christian Pulisic", position: "ATA", age: 32, status: "Important", ovr: 84, goals: 14, assists: 8, salary: "€100K", marketValue: "€30M", yellowCards: 1, redCards: 0 },
     ],
     transfers: [
       { id: 1, playerName: "Lamine Yamal", type: "compra", from: "Barcelona", to: "AC Milan", fee: "€120M", year: 2030 },

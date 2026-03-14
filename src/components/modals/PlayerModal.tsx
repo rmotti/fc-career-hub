@@ -10,8 +10,8 @@ interface Props {
 }
 
 const emptyPlayer: Omit<Player, "id"> = {
-  name: "", position: "MEI", age: 20, ovr: 70,
-  goals: 0, assists: 0, salary: "€10K", marketValue: "€1M",
+  name: "", position: "MEI", age: 20, status:"Important" , ovr: 70,
+  goals: 0, assists: 0, salary: "€10K", marketValue: "€100M",
   yellowCards: 0, redCards: 0,
 };
 
@@ -49,7 +49,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave }: Props) => {
             <label className={labelClass}>Nome</label>
             <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Posição</label>
               <select className={inputClass} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value as Player["position"] })}>
@@ -57,6 +57,16 @@ const PlayerModal = ({ open, onOpenChange, player, onSave }: Props) => {
                 <option value="ZAG">ZAG</option>
                 <option value="MEI">MEI</option>
                 <option value="ATA">ATA</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Status</label>
+              <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Player["status"] })}>
+                <option value="Crucial">Crucial</option>
+                <option value="Important">Importante</option>
+                <option value="Role">Rotação</option>
+                <option value="Sporadic">Esporádico</option>
+                <option value="Promising">Promissor</option>
               </select>
             </div>
             <div>
