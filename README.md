@@ -44,13 +44,13 @@ npm run test
 - Criação de novo save com nome customizado e seleção de clube inicial (16 clubes disponíveis)
 
 ### 2. Dashboard (Visão Geral)
-- **Posição na Liga** — posição atual do time
-- **Artilheiro** — jogador com mais gols no elenco
-- **Saldo** — balanço financeiro do clube
-- **Troféus** — total de troféus conquistados
-- **Próximo Jogo** — adversário e data da próxima partida
-- **Temporada Atual** — vitórias, empates e derrotas
-- **Top 5 Artilheiros** — ranking dos jogadores com mais gols
+- **Orçamento e Saldo** — Visualização lado a lado das finanças do clube.
+- **Alertas Financeiros** — Destaque visual e alertas quando o saldo está abaixo de 20% do orçamento.
+- **Máscaras de Moeda** — Formatação automática em formato de moeda do jogo (`€XK` para milhares, `€XM` para milhões).
+- **Artilheiro** — Jogador com mais gols no elenco.
+- **Troféus** — total de troféus conquistados.
+- **Temporada Atual** — Retrospecto de vitórias, empates e derrotas.
+- **Top 5 Artilheiros** — Ranking dos melhores marcadores.
 
 ### 3. Elenco (Squad)
 - Tabela completa de jogadores com **ordenação por coluna** (nome, posição, idade, OVR, gols, assistências, salário, valor de mercado)
@@ -60,24 +60,30 @@ npm run test
 - Campos do jogador: nome, posição, idade, OVR, gols, assistências, salário, valor de mercado, cartões amarelos/vermelhos, status (Crucial / Important / Role / Sporadic / Promising)
 
 ### 4. Estatísticas da Temporada
-- Cards resumo: **Gols Pró**, **Gols Contra**, **Posse de Bola**
-- Rankings: **Top 5 Artilheiros**, **Top 5 Assistentes**, **Top 5 Cartões**
-- Edição das estatísticas do time via modal
+- **Cards Resumo** — Gols Pró, Gols Contra e Posse de Bola.
+- **Novos Campos** — Acompanhamento de **Posição na Liga**, **Resultado na Copa Europeia** e **Resultado na Copa Nacional**.
+- **Rankings** — Top 5 Artilheiros, Top 5 Assistentes e Top 5 Cartões.
+- **Edição de Stats** — Modal para atualização rápida de todos os dados do time na temporada.
 
-### 5. Transferências
-- Duas abas: **Janela Atual** e **Histórico**
-- Janela Atual: orçamento disponível, lista de contratações e vendas recentes
-- Histórico: todas as transferências ordenadas por ano
-- **CRUD de transferências** — adicionar, editar e remover via modal
-- Campos: nome do jogador, tipo (compra/venda), clube de origem, clube de destino, valor, ano
+### 5. Avançar Temporada (End-of-Season)
+- **Fluxo de Encerramento** — Processo em 3 etapas (Confirmação, Resumo Geral e Celebração).
+- **Resumo Financeiro e Técnico** — Exibição de saldo final, artilheiros e garçons da temporada que finda.
+- **Criação Automática de Troféus** — Títulos de liga e copas são detectados e adicionados automaticamente à vitrine.
+- **Celebração de Títulos** — Modal animado para comemorar novas conquistas ao iniciar uma nova temporada.
 
-### 6. História (Legado do Save)
-- Estatísticas acumuladas: total de jogos, vitórias, empates e derrotas
-- **Vitrine de troféus** conquistados
-- **Clubes gerenciados** com período e retrospecto (V/E/D)
-- **Recordes**: maior compra, maior venda, artilheiro histórico, assistente histórico
+### 6. Transferências
+- **Duas abas** — Janela Atual e Histórico.
+- **Controle Orçamentário** — O saldo do save é atualizado automaticamente ao registrar compras ou vendas.
+- **CRUD de Transferências** — Adicionar, editar e remover via modal com máscaras de valor de mercado.
+- **Histórico Completo** — Todas as transferências ordenadas por ano e clube.
 
-### 7. Mudar de Clube
+### 7. História (Legado do Save)
+- **Vitrine de Troféus** — Exibição visual dos títulos com identificação por cores (Liga, Continental, Copas) e nome do clube.
+- **Clubes Gerenciados** — Registro de passagens com período e retrospecto técnico.
+- **Recordes do Save** — Maior compra, maior venda, artilheiro e assistente histórico acumulados.
+- **Estatísticas Globais** — Total de jogos e retrospecto de toda a carreira.
+
+### 8. Mudar de Clube
 - Grid de clubes disponíveis para selecionar novo clube
 - Preserva histórico global ao mudar de clube
 - Reseta elenco, orçamento e estatísticas para o novo clube
@@ -110,9 +116,10 @@ A aplicação utiliza **navegação por estado** (`screen`) em vez de rotas sepa
 
 | Modal | Disparado em | Função |
 |-------|-------------|--------|
-| `PlayerModal` | `SquadScreen` | Adicionar/Editar jogador |
-| `StatsModal` | `StatsScreen` | Editar estatísticas do time |
-| `TransferModal` | `TransfersScreen` | Adicionar/Editar transferência |
+| `PlayerModal` | `SquadScreen` | Adicionar/Editar jogador com máscaras de moeda |
+| `StatsModal` | `StatsScreen` | Editar stats do time (incluindo liga e copas) |
+| `TransferModal` | `TransfersScreen` | Registrar transferências com impacto no saldo |
+| `NewSeasonModal` | `HubHeader` | Fluxo de encerramento de temporada e celebração |
 
 ---
 
