@@ -1,22 +1,35 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight } from "lucide-react";
-import type { SaveData } from "@/data/mockData";
+import { usePlayers } from "@/hooks/usePlayers";
+import { useTeamStats } from "@/hooks/useTeamStats";
+import { useTrophies } from "@/hooks/useTrophies";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  save: SaveData;
+  saveId: string;
+  currentSeason: string;
+  currentClub: string;
   onConfirm: () => void;
 }
 
-const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
+const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
   const [step, setStep] = useState<"confirm" | "overview">("confirm");
 
-  const topScorers = [...save.players].sort((a, b) => b.goals - a.goals).slice(0, 3);
-  const topAssisters = [...save.players].sort((a, b) => b.assists - a.assists).slice(0, 3);
-  const totalMatches = save.teamStats.wins + save.teamStats.draws + save.teamStats.losses;
-  const seasonTrophies = save.trophies.filter((t) => t.year === save.year);
+  const { data: players = [] } = usePlayers(saveId, true);
+  const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
+  const { data: trophies = [] } = useTrophies(saveId);
+
+  const teamStats = teamStatsArr[0];
+
+  const topScorers = [...players].sort((a, b) => (b.seasonStats?.goals ?? 0) - (a.seasonStats?.goals ?? 0)).slice(0, 3);
+  const topAssisters = [...players].sort((a, b) => (b.seasonStats?.assists ?? 0) - (a.seasonStats?.assists ?? 0)).slice(0, 3);
+  const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
+
+  // Extract current year from currentSeason (e.g. "2026/27" -> 2026)
+  const currentYear = parseInt(currentSeason.split("/")[0]) || 0;
+  const seasonTrophies = trophies.filter((t) => t.year === currentYear);
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
@@ -43,7 +56,7 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
             <DialogHeader>
               <DialogTitle className="font-display text-lg">Encerrar Temporada</DialogTitle>
               <DialogDescription>
-                Tem certeza que deseja encerrar a temporada <strong>{save.season}</strong>?
+                Tem certeza que deseja encerrar a temporada <strong>{currentSeason}</strong>?
                 As estatísticas da temporada serão resetadas.
               </DialogDescription>
             </DialogHeader>
@@ -66,72 +79,70 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-xl text-center">
-                📋 Resumo da Temporada {save.season}
+                📋 Resumo da Temporada {currentSeason}
               </DialogTitle>
               <DialogDescription className="text-center">
-                {save.currentClub} — Temporada encerrada
+                {currentClub} — Temporada encerrada
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               {/* League position & record */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp size={16} className="text-primary" />
-                  <span className="font-display font-semibold text-sm">Desempenho na Liga</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-center">
-                    <p className="text-2xl font-display font-bold text-primary">
-                      {save.leaguePosition ? `${save.leaguePosition}º` : "—"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Posição</p>
+              {teamStats && (
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp size={16} className="text-primary" />
+                    <span className="font-display font-semibold text-sm">Desempenho na Liga</span>
                   </div>
-                  <div className="flex gap-4 text-center">
-                    <div>
-                      <p className="text-lg font-display font-bold text-primary">{save.teamStats.wins}</p>
-                      <p className="text-xs text-muted-foreground">V</p>
+                  <div className="flex items-center justify-around">
+                    <div className="flex gap-4 text-center">
+                      <div>
+                        <p className="text-lg font-display font-bold text-primary">{teamStats.wins}</p>
+                        <p className="text-xs text-muted-foreground">V</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-display font-bold text-warning">{teamStats.draws}</p>
+                        <p className="text-xs text-muted-foreground">E</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-display font-bold text-destructive">{teamStats.losses}</p>
+                        <p className="text-xs text-muted-foreground">D</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-lg font-display font-bold text-warning">{save.teamStats.draws}</p>
-                      <p className="text-xs text-muted-foreground">E</p>
+                    <div className="text-center">
+                      <p className="text-lg font-display font-bold text-foreground">{totalMatches}</p>
+                      <p className="text-xs text-muted-foreground">Jogos</p>
                     </div>
-                    <div>
-                      <p className="text-lg font-display font-bold text-destructive">{save.teamStats.losses}</p>
-                      <p className="text-xs text-muted-foreground">D</p>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-display font-bold text-foreground">{totalMatches}</p>
-                    <p className="text-xs text-muted-foreground">Jogos</p>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Goals */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <Swords size={16} className="text-primary" />
-                  <span className="font-display font-semibold text-sm">Gols</span>
+              {teamStats && (
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Swords size={16} className="text-primary" />
+                    <span className="font-display font-semibold text-sm">Gols</span>
+                  </div>
+                  <div className="flex justify-around text-center">
+                    <div>
+                      <p className="text-2xl font-display font-bold text-primary">{teamStats.goalsPro}</p>
+                      <p className="text-xs text-muted-foreground">Marcados</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-display font-bold text-destructive">{teamStats.goalsAgainst}</p>
+                      <p className="text-xs text-muted-foreground">Sofridos</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-display font-bold text-foreground">
+                        {teamStats.goalsPro - teamStats.goalsAgainst > 0 ? "+" : ""}
+                        {teamStats.goalsPro - teamStats.goalsAgainst}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Saldo</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-around text-center">
-                  <div>
-                    <p className="text-2xl font-display font-bold text-primary">{save.teamStats.goalsPro}</p>
-                    <p className="text-xs text-muted-foreground">Marcados</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold text-destructive">{save.teamStats.goalsAgainst}</p>
-                    <p className="text-xs text-muted-foreground">Sofridos</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold text-foreground">
-                      {save.teamStats.goalsPro - save.teamStats.goalsAgainst > 0 ? "+" : ""}
-                      {save.teamStats.goalsPro - save.teamStats.goalsAgainst}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Saldo</p>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Trophies */}
               {seasonTrophies.length > 0 && (
@@ -143,7 +154,7 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
                   <div className="flex flex-wrap gap-2">
                     {seasonTrophies.map((t) => (
                       <span
-                        key={t.id}
+                        key={t._id}
                         className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded-full text-xs font-semibold"
                       >
                         🏆 {t.name}
@@ -154,15 +165,15 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
               )}
 
               {/* Top scorers */}
-              {topScorers.length > 0 && topScorers[0].goals > 0 && (
+              {topScorers.length > 0 && (topScorers[0].seasonStats?.goals ?? 0) > 0 && (
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Target size={16} className="text-primary" />
                     <span className="font-display font-semibold text-sm">Artilheiros</span>
                   </div>
                   <div className="space-y-2">
-                    {topScorers.filter((p) => p.goals > 0).map((p, i) => (
-                      <div key={p.id} className="flex items-center justify-between">
+                    {topScorers.filter((p) => (p.seasonStats?.goals ?? 0) > 0).map((p, i) => (
+                      <div key={p._id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                             i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
@@ -170,7 +181,7 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{p.position}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{p.goals} gols</span>
+                        <span className="font-display font-bold text-primary">{p.seasonStats?.goals} gols</span>
                       </div>
                     ))}
                   </div>
@@ -178,15 +189,15 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
               )}
 
               {/* Top assisters */}
-              {topAssisters.length > 0 && topAssisters[0].assists > 0 && (
+              {topAssisters.length > 0 && (topAssisters[0].seasonStats?.assists ?? 0) > 0 && (
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <BarChart3 size={16} className="text-primary" />
                     <span className="font-display font-semibold text-sm">Garçons</span>
                   </div>
                   <div className="space-y-2">
-                    {topAssisters.filter((p) => p.assists > 0).map((p, i) => (
-                      <div key={p.id} className="flex items-center justify-between">
+                    {topAssisters.filter((p) => (p.seasonStats?.assists ?? 0) > 0).map((p, i) => (
+                      <div key={p._id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                             i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
@@ -194,7 +205,7 @@ const NewSeasonModal = ({ open, onOpenChange, save, onConfirm }: Props) => {
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{p.position}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{p.assists} assist.</span>
+                        <span className="font-display font-bold text-primary">{p.seasonStats?.assists} assist.</span>
                       </div>
                     ))}
                   </div>

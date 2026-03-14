@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { mockSaves, type SaveData, type Player, type Transfer } from "@/data/mockData";
+import { toast } from "sonner";
 import SaveSelect from "@/components/SaveSelect";
 import HubSidebar, { type HubScreen } from "@/components/hub/HubSidebar";
 import HubHeader from "@/components/hub/HubHeader";
@@ -10,118 +10,95 @@ import HistoryScreen from "@/components/hub/HistoryScreen";
 import TransfersScreen from "@/components/hub/TransfersScreen";
 import ChangeClubScreen from "@/components/hub/ChangeClubScreen";
 import NewSeasonModal from "@/components/modals/NewSeasonModal";
+import { useSaves, useSave, useCreateSave, useUpdateSave } from "@/hooks/useSaves";
+import type { ApiSave } from "@/services/api";
 
 const Index = () => {
-  const [saves, setSaves] = useState<SaveData[]>(mockSaves);
-  const [activeSave, setActiveSave] = useState<SaveData | null>(null);
+  const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HubScreen>("dashboard");
   const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
 
-  const updateActiveSave = (updated: SaveData) => {
-    setActiveSave(updated);
-    setSaves((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-  };
+  const { data: saves = [], isLoading: savesLoading } = useSaves();
+  const { data: activeSave } = useSave(activeSaveId);
+  const createSave = useCreateSave();
+  const updateSave = useUpdateSave();
 
-  const handleSelectSave = (save: SaveData) => {
-    setActiveSave(save);
+  const handleSelectSave = (save: ApiSave) => {
+    setActiveSaveId(save._id);
     setScreen("dashboard");
   };
 
   const handleCreateSave = (name: string, club: string) => {
-    const newSave: SaveData = {
-      id: `save-${Date.now()}`,
-      name,
-      currentClub: club,
-      year: 2026,
-      season: "2026/27",
-      clubHistory: [{ club, years: "2026-", matches: 0, wins: 0, draws: 0, losses: 0 }],
-      players: [],
-      transfers: [],
-      trophies: [],
-      budget: "€30M",
-      leaguePosition: 0,
-      nextOpponent: "TBD",
-      nextMatchDate: "—",
-      teamStats: { goalsPro: 0, goalsAgainst: 0, possession: 0, wins: 0, draws: 0, losses: 0 },
-      balance: "€30M",
-    };
-    setSaves((prev) => [...prev, newSave]);
-    setActiveSave(newSave);
-    setScreen("dashboard");
-  };
-
-  const handleChangeClub = (club: string) => {
-    if (!activeSave) return;
-    const updated: SaveData = {
-      ...activeSave,
-      currentClub: club,
-      clubHistory: [
-        ...activeSave.clubHistory,
-        { club, years: `${activeSave.year}-`, matches: 0, wins: 0, draws: 0, losses: 0 },
-      ],
-      players: [],
-      budget: "€20M",
-      balance: "€20M",
-      leaguePosition: 0,
-      nextOpponent: "TBD",
-      nextMatchDate: "—",
-      teamStats: { goalsPro: 0, goalsAgainst: 0, possession: 0, wins: 0, draws: 0, losses: 0 },
-    };
-    updateActiveSave(updated);
-    setScreen("dashboard");
-  };
-
-  const handleUpdatePlayers = (players: Player[]) => {
-    if (!activeSave) return;
-    updateActiveSave({ ...activeSave, players });
-  };
-
-  const handleUpdateStats = (teamStats: SaveData["teamStats"]) => {
-    if (!activeSave) return;
-    updateActiveSave({ ...activeSave, teamStats });
-  };
-
-  const handleUpdateTransfers = (transfers: Transfer[]) => {
-    if (!activeSave) return;
-    updateActiveSave({ ...activeSave, transfers });
+    createSave.mutate({ name, club }, {
+      onSuccess: (newSave) => {
+        setActiveSaveId(newSave._id);
+        setScreen("dashboard");
+        toast.success("Save criado com sucesso!");
+      },
+      onError: (err) => toast.error(err.message),
+    });
   };
 
   const handleNewSeason = () => {
     if (!activeSave) return;
-    const newYear = activeSave.year + 1;
+    const newYear = activeSave.currentYear + 1;
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
-    const updated: SaveData = {
-      ...activeSave,
-      year: newYear,
-      season: newSeason,
-      leaguePosition: 0,
-      teamStats: { goalsPro: 0, goalsAgainst: 0, possession: 0, wins: 0, draws: 0, losses: 0 },
-      players: activeSave.players.map((p) => ({ ...p, goals: 0, assists: 0, yellowCards: 0, redCards: 0 })),
-    };
-    updateActiveSave(updated);
-    setScreen("dashboard");
+    updateSave.mutate(
+      { saveId: activeSave._id, data: { currentYear: newYear, currentSeason: newSeason } },
+      {
+        onSuccess: () => {
+          setScreen("dashboard");
+          toast.success(`Nova temporada ${newSeason} iniciada!`);
+        },
+        onError: (err) => toast.error(err.message),
+      }
+    );
   };
 
-  if (!activeSave) {
-    return <SaveSelect saves={saves} onSelectSave={handleSelectSave} onCreateSave={handleCreateSave} />;
+  if (!activeSaveId) {
+    return (
+      <SaveSelect
+        saves={saves}
+        loading={savesLoading}
+        onSelectSave={handleSelectSave}
+        onCreateSave={handleCreateSave}
+        creating={createSave.isPending}
+      />
+    );
   }
+
+  if (!activeSave) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground animate-pulse font-display text-lg">Carregando save...</div>
+      </div>
+    );
+  }
+
+  const currentClub = activeSave.currentClubStint?.club ?? "—";
 
   const renderScreen = () => {
     switch (screen) {
-      case "dashboard": return <DashboardScreen save={activeSave} />;
-      case "squad": return <SquadScreen players={activeSave.players} onUpdatePlayers={handleUpdatePlayers} />;
-      case "stats": return <StatsScreen save={activeSave} onUpdateStats={handleUpdateStats} />;
-      case "history": return <HistoryScreen save={activeSave} />;
-      case "transfers": return <TransfersScreen save={activeSave} onUpdateTransfers={handleUpdateTransfers} />;
-      case "changeClub": return <ChangeClubScreen currentClub={activeSave.currentClub} onChangeClub={handleChangeClub} />;
+      case "dashboard":
+        return <DashboardScreen saveId={activeSave._id} currentClub={currentClub} />;
+      case "squad":
+        return <SquadScreen saveId={activeSave._id} />;
+      case "stats":
+        return <StatsScreen saveId={activeSave._id} />;
+      case "history":
+        return <HistoryScreen saveId={activeSave._id} />;
+      case "transfers":
+        return <TransfersScreen saveId={activeSave._id} currentClub={currentClub} currentSeason={activeSave.currentSeason} />;
+      case "changeClub":
+        return <ChangeClubScreen saveId={activeSave._id} currentClub={currentClub} />;
     }
   };
 
   return (
     <div className="flex min-h-screen w-full">
-      <HubSidebar active={screen} onNavigate={setScreen} onNewSeason={() => setShowNewSeasonModal(true)} onExitSave={() => setActiveSave(null)} />
+      <HubSidebar active={screen} onNavigate={setScreen} onNewSeason={() => setShowNewSeasonModal(true)} onExitSave={() => setActiveSaveId(null)} />
       <div className="flex-1 flex flex-col min-w-0">
-        <HubHeader saveName={activeSave.name} clubName={activeSave.currentClub} season={activeSave.season} />
+        <HubHeader saveName={activeSave.name} clubName={currentClub} season={activeSave.currentSeason} />
         <main className="flex-1 p-6 overflow-y-auto">
           {renderScreen()}
         </main>
@@ -129,7 +106,9 @@ const Index = () => {
       <NewSeasonModal
         open={showNewSeasonModal}
         onOpenChange={setShowNewSeasonModal}
-        save={activeSave}
+        saveId={activeSave._id}
+        currentSeason={activeSave.currentSeason}
+        currentClub={currentClub}
         onConfirm={handleNewSeason}
       />
     </div>

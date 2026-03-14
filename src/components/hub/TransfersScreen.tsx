@@ -1,53 +1,69 @@
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, DollarSign, Plus, Pencil, Trash2 } from "lucide-react";
-import type { SaveData, Transfer } from "@/data/mockData";
+import { ArrowDownLeft, ArrowUpRight, DollarSign, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import type { ApiTransfer } from "@/services/api";
+import { useTransfers, useCreateTransfer, useUpdateTransfer, useDeleteTransfer } from "@/hooks/useTransfers";
+import { useSave } from "@/hooks/useSaves";
 import TransferModal from "@/components/modals/TransferModal";
 
 interface Props {
-  save: SaveData;
-  onUpdateTransfers: (transfers: Transfer[]) => void;
+  saveId: string;
+  currentClub: string;
+  currentSeason: string;
 }
 
-const TransfersScreen = ({ save, onUpdateTransfers }: Props) => {
+const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingTransfer, setEditingTransfer] = useState<Transfer | null>(null);
+  const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
 
-  const currentYear = save.year;
-  const currentTransfers = save.transfers.filter(t => t.year >= currentYear - 1);
-  const purchases = currentTransfers.filter(t => t.type === "compra");
-  const sales = currentTransfers.filter(t => t.type === "venda");
+  const { data: save } = useSave(saveId);
+  const { data: allTransfers = [], isLoading } = useTransfers(saveId);
+  const { data: currentTransfers = [] } = useTransfers(saveId, "current");
+  const createTransfer = useCreateTransfer();
+  const updateTransfer = useUpdateTransfer();
+  const deleteTransfer = useDeleteTransfer();
 
-  const handleSaveTransfer = (transfer: Transfer) => {
-    const exists = save.transfers.find((t) => t.id === transfer.id);
-    if (exists) {
-      onUpdateTransfers(save.transfers.map((t) => (t.id === transfer.id ? transfer : t)));
+  const displayTransfers = tab === "current" ? currentTransfers : allTransfers;
+  const purchases = displayTransfers.filter(t => t.type === "compra");
+  const sales = displayTransfers.filter(t => t.type === "venda");
+
+  const handleSaveTransfer = (data: { playerName: string; type: "compra" | "venda"; from: string; to: string; fee: string; season: string }, transferId?: string) => {
+    if (transferId) {
+      updateTransfer.mutate({ saveId, transferId, data }, {
+        onSuccess: () => toast.success("Transferência atualizada!"),
+        onError: (err) => toast.error(err.message),
+      });
     } else {
-      onUpdateTransfers([...save.transfers, transfer]);
+      createTransfer.mutate({ saveId, data }, {
+        onSuccess: () => toast.success("Transferência registrada!"),
+        onError: (err) => toast.error(err.message),
+      });
     }
     setEditingTransfer(null);
   };
 
-  const handleDelete = (id: number) => {
-    onUpdateTransfers(save.transfers.filter((t) => t.id !== id));
+  const handleDelete = (transfer: ApiTransfer) => {
+    deleteTransfer.mutate({ saveId, transferId: transfer._id }, {
+      onSuccess: () => toast.success("Transferência removida."),
+      onError: (err) => toast.error(err.message),
+    });
   };
 
-  const renderTransferRow = (t: Transfer, showType?: boolean) => (
-    <div key={t.id} className="flex items-center justify-between bg-muted/30 rounded-md px-3 py-2 group">
+  const renderTransferRow = (t: ApiTransfer) => (
+    <div key={t._id} className="flex items-center justify-between bg-muted/30 rounded-md px-3 py-2 group">
       <div className="flex items-center gap-3">
-        {(showType || true) && (
-          t.type === "compra" ? <ArrowDownLeft size={14} className="text-primary" /> : <ArrowUpRight size={14} className="text-accent" />
-        )}
+        {t.type === "compra" ? <ArrowDownLeft size={14} className="text-primary" /> : <ArrowUpRight size={14} className="text-accent" />}
         <div>
           <p className="font-medium text-sm">{t.playerName}</p>
           <p className="text-xs text-muted-foreground">
-            {t.type === "compra" ? `De: ${t.from}` : `Para: ${t.to}`} — {t.year}
+            {t.type === "compra" ? `De: ${t.from}` : `Para: ${t.to}`} — {t.season}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <span className={`font-display font-bold text-sm ${t.type === "compra" ? "text-primary" : "text-accent"}`}>
-          {t.fee}
+          {t.fee || "Livre"}
         </span>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -57,7 +73,7 @@ const TransfersScreen = ({ save, onUpdateTransfers }: Props) => {
             <Pencil size={12} />
           </button>
           <button
-            onClick={() => handleDelete(t.id)}
+            onClick={() => handleDelete(t)}
             className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
           >
             <Trash2 size={12} />
@@ -66,6 +82,14 @@ const TransfersScreen = ({ save, onUpdateTransfers }: Props) => {
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+        <Loader2 size={20} className="animate-spin" /> Carregando transferências...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -103,7 +127,7 @@ const TransfersScreen = ({ save, onUpdateTransfers }: Props) => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase">Orçamento Disponível</p>
-              <p className="text-xl font-display font-bold text-primary">{save.budget}</p>
+              <p className="text-xl font-display font-bold text-primary">{save?.budget ?? "—"}</p>
             </div>
           </div>
 
@@ -132,11 +156,11 @@ const TransfersScreen = ({ save, onUpdateTransfers }: Props) => {
       ) : (
         <div className="card-gamer p-5">
           <h3 className="font-display font-semibold mb-4">Histórico Completo</h3>
-          {save.transfers.length === 0 ? (
+          {allTransfers.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sem transferências registradas.</p>
           ) : (
             <div className="space-y-2">
-              {[...save.transfers].sort((a, b) => b.year - a.year).map((t) => renderTransferRow(t, true))}
+              {allTransfers.map((t) => renderTransferRow(t))}
             </div>
           )}
         </div>
@@ -146,8 +170,8 @@ const TransfersScreen = ({ save, onUpdateTransfers }: Props) => {
         open={modalOpen}
         onOpenChange={setModalOpen}
         transfer={editingTransfer}
-        currentClub={save.currentClub}
-        currentYear={save.year}
+        currentClub={currentClub}
+        currentSeason={currentSeason}
         onSave={handleSaveTransfer}
       />
     </div>

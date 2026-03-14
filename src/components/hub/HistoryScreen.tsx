@@ -1,25 +1,49 @@
-import { Trophy, TrendingUp, TrendingDown, User } from "lucide-react";
-import type { SaveData } from "@/data/mockData";
+import { Trophy, TrendingUp, TrendingDown, User, Loader2 } from "lucide-react";
 import StatCard from "./StatCard";
+import { useClubStints } from "@/hooks/useClubStints";
+import { useTrophies } from "@/hooks/useTrophies";
+import { useTransfers } from "@/hooks/useTransfers";
+import { usePlayers } from "@/hooks/usePlayers";
+import { useTeamStats } from "@/hooks/useTeamStats";
 
 interface Props {
-  save: SaveData;
+  saveId: string;
 }
 
-const HistoryScreen = ({ save }: Props) => {
-  const allPlayers = save.players;
-  const totalMatches = save.clubHistory.reduce((s, c) => s + c.matches, 0);
-  const totalWins = save.clubHistory.reduce((s, c) => s + c.wins, 0);
-  const totalDraws = save.clubHistory.reduce((s, c) => s + c.draws, 0);
-  const totalLosses = save.clubHistory.reduce((s, c) => s + c.losses, 0);
+const HistoryScreen = ({ saveId }: Props) => {
+  const { data: clubStints = [], isLoading } = useClubStints(saveId);
+  const { data: trophies = [] } = useTrophies(saveId);
+  const { data: transfers = [] } = useTransfers(saveId);
+  const { data: players = [] } = usePlayers(saveId);
+  const { data: allTeamStats = [] } = useTeamStats(saveId);
 
-  const topScorer = allPlayers.length > 0 ? [...allPlayers].sort((a, b) => b.goals - a.goals)[0] : null;
-  const topAssist = allPlayers.length > 0 ? [...allPlayers].sort((a, b) => b.assists - a.assists)[0] : null;
+  // Aggregate team stats across all seasons
+  const totalWins = allTeamStats.reduce((s, ts) => s + ts.wins, 0);
+  const totalDraws = allTeamStats.reduce((s, ts) => s + ts.draws, 0);
+  const totalLosses = allTeamStats.reduce((s, ts) => s + ts.losses, 0);
+  const totalMatches = totalWins + totalDraws + totalLosses;
 
-  const purchases = save.transfers.filter(t => t.type === "compra");
-  const sales = save.transfers.filter(t => t.type === "venda");
-  const biggestBuy = purchases.sort((a, b) => parseFloat(b.fee.replace(/[^0-9.]/g, "")) - parseFloat(a.fee.replace(/[^0-9.]/g, "")))[0];
-  const biggestSale = sales.sort((a, b) => parseFloat(b.fee.replace(/[^0-9.]/g, "")) - parseFloat(a.fee.replace(/[^0-9.]/g, "")))[0];
+  // All-time top scorers from totalStats
+  const topScorer = players.length > 0
+    ? [...players].sort((a, b) => (b.totalStats?.goals ?? 0) - (a.totalStats?.goals ?? 0))[0]
+    : null;
+  const topAssist = players.length > 0
+    ? [...players].sort((a, b) => (b.totalStats?.assists ?? 0) - (a.totalStats?.assists ?? 0))[0]
+    : null;
+
+  const purchases = transfers.filter(t => t.type === "compra");
+  const sales = transfers.filter(t => t.type === "venda");
+  const feeToNum = (fee?: string) => parseFloat((fee ?? "0").replace(/[^0-9.]/g, "")) || 0;
+  const biggestBuy = purchases.length > 0 ? [...purchases].sort((a, b) => feeToNum(b.fee) - feeToNum(a.fee))[0] : null;
+  const biggestSale = sales.length > 0 ? [...sales].sort((a, b) => feeToNum(b.fee) - feeToNum(a.fee))[0] : null;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+        <Loader2 size={20} className="animate-spin" /> Carregando histórico...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -35,32 +59,34 @@ const HistoryScreen = ({ save }: Props) => {
       {/* Trophies */}
       <div className="card-gamer p-6">
         <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-          <Trophy size={18} className="text-gold" /> Troféus ({save.trophies.length})
+          <Trophy size={18} className="text-gold" /> Troféus ({trophies.length})
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {save.trophies.map((t) => (
-            <div key={t.id} className="bg-muted/50 rounded-md p-3 border border-border">
-              <p className="font-display font-bold text-gold">{t.name}</p>
-              <p className="text-xs text-muted-foreground">{t.club} — {t.year}</p>
-            </div>
-          ))}
-        </div>
+        {trophies.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {trophies.map((t) => (
+              <div key={t._id} className="bg-muted/50 rounded-md p-3 border border-border">
+                <p className="font-display font-bold text-gold">{t.name}</p>
+                <p className="text-xs text-muted-foreground">{t.club ?? "—"} — {t.year}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Nenhum troféu conquistado ainda.</p>
+        )}
       </div>
 
       {/* Club history */}
       <div className="card-gamer p-6">
         <h3 className="font-display text-lg font-semibold mb-4">Clubes Gerenciados</h3>
         <div className="space-y-3">
-          {save.clubHistory.map((c, i) => (
-            <div key={i} className="flex items-center justify-between bg-muted/30 rounded-md p-3">
+          {clubStints.map((c) => (
+            <div key={c._id} className="flex items-center justify-between bg-muted/30 rounded-md p-3">
               <div>
                 <p className="font-medium">{c.club}</p>
-                <p className="text-xs text-muted-foreground">{c.years}</p>
-              </div>
-              <div className="text-right text-sm">
-                <span className="text-primary font-bold">{c.wins}V</span>{" / "}
-                <span className="text-warning font-bold">{c.draws}E</span>{" / "}
-                <span className="text-destructive font-bold">{c.losses}D</span>
+                <p className="text-xs text-muted-foreground">
+                  {c.startYear}–{c.endYear ?? "presente"}
+                  {c.isCurrent && <span className="ml-2 text-primary">(atual)</span>}
+                </p>
               </div>
             </div>
           ))}
@@ -74,7 +100,7 @@ const HistoryScreen = ({ save }: Props) => {
           {biggestBuy ? (
             <>
               <p className="font-display text-lg font-bold">{biggestBuy.playerName}</p>
-              <p className="text-sm text-primary font-bold">{biggestBuy.fee}</p>
+              <p className="text-sm text-primary font-bold">{biggestBuy.fee || "Livre"}</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
@@ -83,25 +109,25 @@ const HistoryScreen = ({ save }: Props) => {
           {biggestSale ? (
             <>
               <p className="font-display text-lg font-bold">{biggestSale.playerName}</p>
-              <p className="text-sm text-accent font-bold">{biggestSale.fee}</p>
+              <p className="text-sm text-accent font-bold">{biggestSale.fee || "Livre"}</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
         <div className="card-gamer p-5">
           <p className="text-xs text-muted-foreground uppercase mb-1">Top Artilheiro Histórico</p>
-          {topScorer ? (
+          {topScorer && topScorer.totalStats?.goals ? (
             <>
               <p className="font-display text-lg font-bold">{topScorer.name}</p>
-              <p className="text-sm text-primary font-bold">{topScorer.goals} gols</p>
+              <p className="text-sm text-primary font-bold">{topScorer.totalStats.goals} gols</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
         <div className="card-gamer p-5">
           <p className="text-xs text-muted-foreground uppercase mb-1">Top Assistente Histórico</p>
-          {topAssist ? (
+          {topAssist && topAssist.totalStats?.assists ? (
             <>
               <p className="font-display text-lg font-bold">{topAssist.name}</p>
-              <p className="text-sm text-accent font-bold">{topAssist.assists} assistências</p>
+              <p className="text-sm text-accent font-bold">{topAssist.totalStats.assists} assistências</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>

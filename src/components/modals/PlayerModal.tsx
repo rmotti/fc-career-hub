@@ -1,36 +1,69 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { Player } from "@/data/mockData";
+import type { ApiPlayer } from "@/services/api";
+import { useUpdatePlayerStats } from "@/hooks/usePlayers";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  player: Player | null;
-  onSave: (player: Player) => void;
+  player: ApiPlayer | null;
+  onSave: (data: { name: string; position: string; age: number; status: string; ovr: number; salary?: string; marketValue?: string; goals?: number; assists?: number; yellowCards?: number; redCards?: number }, playerId?: string) => void;
+  saveId: string;
 }
 
-const emptyPlayer: Omit<Player, "id"> = {
-  name: "", position: "MEI", age: 20, status:"Important" , ovr: 70,
-  goals: 0, assists: 0, salary: "€10K", marketValue: "€100M",
-  yellowCards: 0, redCards: 0,
+const emptyForm = {
+  name: "", position: "MEI" as string, age: 20, status: "Important" as string, ovr: 70,
+  salary: "", marketValue: "",
+  goals: 0, assists: 0, yellowCards: 0, redCards: 0,
 };
 
-const PlayerModal = ({ open, onOpenChange, player, onSave }: Props) => {
-  const [form, setForm] = useState<Omit<Player, "id">>(emptyPlayer);
+const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
+  const [form, setForm] = useState(emptyForm);
   const isEdit = !!player;
+  const updateStats = useUpdatePlayerStats();
 
   useEffect(() => {
     if (player) {
-      const { id, ...rest } = player;
-      setForm(rest);
+      setForm({
+        name: player.name,
+        position: player.position,
+        age: player.age,
+        status: player.status,
+        ovr: player.ovr,
+        salary: player.salary ?? "",
+        marketValue: player.marketValue ?? "",
+        goals: player.seasonStats?.goals ?? 0,
+        assists: player.seasonStats?.assists ?? 0,
+        yellowCards: player.seasonStats?.yellowCards ?? 0,
+        redCards: player.seasonStats?.redCards ?? 0,
+      });
     } else {
-      setForm(emptyPlayer);
+      setForm(emptyForm);
     }
   }, [player, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...form, id: player?.id ?? Date.now() });
+    onSave(form, player?._id);
+
+    // If editing, also update stats if they changed
+    if (player) {
+      const statsChanged =
+        form.goals !== (player.seasonStats?.goals ?? 0) ||
+        form.assists !== (player.seasonStats?.assists ?? 0) ||
+        form.yellowCards !== (player.seasonStats?.yellowCards ?? 0) ||
+        form.redCards !== (player.seasonStats?.redCards ?? 0);
+      if (statsChanged) {
+        updateStats.mutate({
+          saveId,
+          playerId: player._id,
+          data: { goals: form.goals, assists: form.assists, yellowCards: form.yellowCards, redCards: form.redCards },
+        }, {
+          onError: (err) => toast.error(`Erro ao atualizar stats: ${err.message}`),
+        });
+      }
+    }
     onOpenChange(false);
   };
 
@@ -52,7 +85,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave }: Props) => {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Posição</label>
-              <select className={inputClass} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value as Player["position"] })}>
+              <select className={inputClass} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })}>
                 <option value="GOL">GOL</option>
                 <option value="ZAG">ZAG</option>
                 <option value="MEI">MEI</option>
@@ -61,7 +94,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave }: Props) => {
             </div>
             <div>
               <label className={labelClass}>Status</label>
-              <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Player["status"] })}>
+              <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 <option value="Crucial">Crucial</option>
                 <option value="Important">Importante</option>
                 <option value="Role">Rotação</option>

@@ -1,0 +1,22 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { teamStatsApi } from "@/services/api";
+
+export function useTeamStats(saveId: string | null, season?: "current") {
+  return useQuery({
+    queryKey: ["teamStats", saveId, { season }],
+    queryFn: () => teamStatsApi.list(saveId!, season),
+    enabled: !!saveId,
+  });
+}
+
+export function useUpdateTeamStats() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId, statsId, data }: { saveId: string; statsId: string; data: Parameters<typeof teamStatsApi.update>[2] }) =>
+      teamStatsApi.update(saveId, statsId, data),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
+    },
+  });
+}

@@ -1,19 +1,39 @@
 import { useState } from "react";
-import { Check, Shield } from "lucide-react";
-import { availableClubs } from "@/data/mockData";
+import { Check, Shield, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useClubs } from "@/hooks/useClubs";
+import { useChangeClub } from "@/hooks/useClubStints";
 
 interface Props {
+  saveId: string;
   currentClub: string;
-  onChangeClub: (club: string) => void;
 }
 
-const ChangeClubScreen = ({ currentClub, onChangeClub }: Props) => {
+const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   const [selected, setSelected] = useState<string | null>(null);
-  const clubs = availableClubs.filter(c => c !== currentClub);
+  const { data: allClubs = [], isLoading } = useClubs();
+  const changeClub = useChangeClub();
+
+  const clubs = allClubs.filter(c => c !== currentClub);
 
   const handleConfirm = () => {
-    if (selected) onChangeClub(selected);
+    if (!selected) return;
+    changeClub.mutate({ saveId, club: selected }, {
+      onSuccess: () => {
+        toast.success(`Agora você gerencia o ${selected}!`);
+        setSelected(null);
+      },
+      onError: (err) => toast.error(err.message),
+    });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+        <Loader2 size={20} className="animate-spin" /> Carregando clubes...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,9 +63,10 @@ const ChangeClubScreen = ({ currentClub, onChangeClub }: Props) => {
       {selected && (
         <button
           onClick={handleConfirm}
-          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity animate-pulse-glow"
+          disabled={changeClub.isPending}
+          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity animate-pulse-glow disabled:opacity-50"
         >
-          Assinar com {selected}
+          {changeClub.isPending ? "Transferindo..." : `Assinar com ${selected}`}
         </button>
       )}
     </div>

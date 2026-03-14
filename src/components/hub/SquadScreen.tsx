@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import type { Player } from "@/data/mockData";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import type { ApiPlayer } from "@/services/api";
+import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer } from "@/hooks/usePlayers";
 import PlayerModal from "@/components/modals/PlayerModal";
 
 interface Props {
-  players: Player[];
-  onUpdatePlayers: (players: Player[]) => void;
+  saveId: string;
 }
 
-type SortKey = keyof Player;
+type SortKey = "name" | "position" | "age" | "ovr" | "goals" | "assists" | "salary" | "marketValue";
 
 const positionColor: Record<string, string> = {
   GOL: "bg-warning/20 text-warning",
@@ -17,15 +18,26 @@ const positionColor: Record<string, string> = {
   ATA: "bg-destructive/20 text-destructive",
 };
 
-const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
+const SquadScreen = ({ saveId }: Props) => {
   const [sortKey, setSortKey] = useState<SortKey>("ovr");
   const [sortAsc, setSortAsc] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<ApiPlayer | null>(null);
+
+  const { data: players = [], isLoading } = usePlayers(saveId, true);
+  const createPlayer = useCreatePlayer();
+  const updatePlayer = useUpdatePlayer();
+  const releasePlayer = useReleasePlayer();
+
+  const getValue = (p: ApiPlayer, key: SortKey): string | number => {
+    if (key === "goals") return p.seasonStats?.goals ?? 0;
+    if (key === "assists") return p.seasonStats?.assists ?? 0;
+    return (p as Record<string, unknown>)[key] as string | number ?? "";
+  };
 
   const sorted = [...players].sort((a, b) => {
-    const va = a[sortKey];
-    const vb = b[sortKey];
+    const va = getValue(a, sortKey);
+    const vb = getValue(b, sortKey);
     if (typeof va === "number" && typeof vb === "number") return sortAsc ? va - vb : vb - va;
     return String(va).localeCompare(String(vb)) * (sortAsc ? 1 : -1);
   });
@@ -35,18 +47,27 @@ const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  const handleSavePlayer = (player: Player) => {
-    const exists = players.find((p) => p.id === player.id);
-    if (exists) {
-      onUpdatePlayers(players.map((p) => (p.id === player.id ? player : p)));
+  const handleSavePlayer = (data: { name: string; position: string; age: number; status: string; ovr: number; salary?: string; marketValue?: string; goals?: number; assists?: number; yellowCards?: number; redCards?: number }, playerId?: string) => {
+    const { goals, assists, yellowCards, redCards, ...playerData } = data;
+    if (playerId) {
+      updatePlayer.mutate({ saveId, playerId, data: playerData }, {
+        onSuccess: () => toast.success("Jogador atualizado!"),
+        onError: (err) => toast.error(err.message),
+      });
     } else {
-      onUpdatePlayers([...players, player]);
+      createPlayer.mutate({ saveId, data: playerData }, {
+        onSuccess: () => toast.success("Jogador adicionado!"),
+        onError: (err) => toast.error(err.message),
+      });
     }
     setEditingPlayer(null);
   };
 
-  const handleDelete = (id: number) => {
-    onUpdatePlayers(players.filter((p) => p.id !== id));
+  const handleDelete = (player: ApiPlayer) => {
+    releasePlayer.mutate({ saveId, playerId: player._id }, {
+      onSuccess: () => toast.success(`${player.name} foi dispensado.`),
+      onError: (err) => toast.error(err.message),
+    });
   };
 
   const columns: { key: SortKey; label: string }[] = [
@@ -59,6 +80,14 @@ const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
     { key: "salary", label: "Salário" },
     { key: "marketValue", label: "Valor" },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+        <Loader2 size={20} className="animate-spin" /> Carregando elenco...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -91,7 +120,7 @@ const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
             </thead>
             <tbody>
               {sorted.map((p) => (
-                <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                <tr key={p._id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>
@@ -102,10 +131,10 @@ const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
                       {p.ovr}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-display font-bold">{p.goals}</td>
-                  <td className="px-4 py-3 font-display">{p.assists}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.salary}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.marketValue}</td>
+                  <td className="px-4 py-3 font-display font-bold">{p.seasonStats?.goals ?? 0}</td>
+                  <td className="px-4 py-3 font-display">{p.seasonStats?.assists ?? 0}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.salary ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.marketValue ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -116,9 +145,9 @@ const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
                         <Pencil size={14} />
                       </button>
                       <button
-                        onClick={() => handleDelete(p.id)}
+                        onClick={() => handleDelete(p)}
                         className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        title="Remover"
+                        title="Dispensar"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -139,6 +168,7 @@ const SquadScreen = ({ players, onUpdatePlayers }: Props) => {
         onOpenChange={setModalOpen}
         player={editingPlayer}
         onSave={handleSavePlayer}
+        saveId={saveId}
       />
     </div>
   );

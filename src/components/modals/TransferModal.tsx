@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { Transfer } from "@/data/mockData";
+import type { ApiTransfer } from "@/services/api";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transfer: Transfer | null;
+  transfer: ApiTransfer | null;
   currentClub: string;
-  currentYear: number;
-  onSave: (transfer: Transfer) => void;
+  currentSeason: string;
+  onSave: (data: { playerName: string; type: "compra" | "venda"; from: string; to: string; fee: string; season: string }, transferId?: string) => void;
 }
 
-const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentYear, onSave }: Props) => {
+const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeason, onSave }: Props) => {
   const [form, setForm] = useState({
     playerName: "",
     type: "compra" as "compra" | "venda",
     from: "",
     to: "",
     fee: "",
-    year: currentYear,
+    season: currentSeason,
   });
 
   useEffect(() => {
@@ -28,8 +28,8 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentYear,
         type: transfer.type,
         from: transfer.from,
         to: transfer.to,
-        fee: transfer.fee,
-        year: transfer.year,
+        fee: transfer.fee ?? "",
+        season: transfer.season,
       });
     } else {
       setForm({
@@ -38,10 +38,10 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentYear,
         from: "",
         to: currentClub,
         fee: "",
-        year: currentYear,
+        season: currentSeason,
       });
     }
-  }, [transfer, open, currentClub, currentYear]);
+  }, [transfer, open, currentClub, currentSeason]);
 
   // Auto-fill club based on type
   useEffect(() => {
@@ -56,7 +56,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentYear,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...form, id: transfer?.id ?? Date.now() });
+    onSave(form, transfer?._id);
     onOpenChange(false);
   };
 
@@ -95,11 +95,11 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentYear,
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Valor</label>
-              <input className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="€10M" required />
+              <input className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="€10M" />
             </div>
             <div>
-              <label className={labelClass}>Ano</label>
-              <input type="number" className={inputClass} value={form.year} onChange={(e) => setForm({ ...form, year: +e.target.value })} min={2020} max={2050} />
+              <label className={labelClass}>Temporada</label>
+              <input className={inputClass} value={form.season} onChange={(e) => setForm({ ...form, season: e.target.value })} placeholder="2026/27" required />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
