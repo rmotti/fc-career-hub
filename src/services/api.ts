@@ -87,7 +87,7 @@ export interface ApiPlayer {
   salary?: string;
   marketValue?: string;
   isActive: boolean;
-  seasonStats?: ApiPlayerSeasonStats;
+  currentSeasonStats?: ApiPlayerSeasonStats;
   totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; };
 }
 

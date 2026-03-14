@@ -36,8 +36,8 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   const teamStats = teamStatsArr[0];
 
-  const topScorers = [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.goals ?? 0) - ((a.seasonStats || a.totalStats)?.goals ?? 0)).slice(0, 3);
-  const topAssisters = [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.assists ?? 0) - ((a.seasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
+  const topScorers = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 3);
+  const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
   // Extract current year from currentSeason (e.g. "2026/27" -> 2026)
@@ -320,14 +320,14 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
 
               {/* Top scorers */}
-              {topScorers.length > 0 && ((topScorers[0].seasonStats || topScorers[0].totalStats)?.goals ?? 0) > 0 && (
+              {topScorers.length > 0 && ((topScorers[0].currentSeasonStats || topScorers[0].totalStats)?.goals ?? 0) > 0 && (
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Target size={16} className="text-primary" />
                     <span className="font-display font-semibold text-sm">Artilheiros</span>
                   </div>
                   <div className="space-y-2">
-                    {topScorers.filter((p) => ((p.seasonStats || p.totalStats)?.goals ?? 0) > 0).map((p, i) => (
+                    {topScorers.filter((p) => ((p.currentSeasonStats || p.totalStats)?.goals ?? 0) > 0).map((p, i) => (
                       <div key={p.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -336,7 +336,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{p.position}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{(p.seasonStats || p.totalStats)?.goals} gols</span>
+                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals} gols</span>
                       </div>
                     ))}
                   </div>
@@ -344,14 +344,14 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
 
               {/* Top assisters */}
-              {topAssisters.length > 0 && ((topAssisters[0].seasonStats || topAssisters[0].totalStats)?.assists ?? 0) > 0 && (
+              {topAssisters.length > 0 && ((topAssisters[0].currentSeasonStats || topAssisters[0].totalStats)?.assists ?? 0) > 0 && (
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <BarChart3 size={16} className="text-primary" />
                     <span className="font-display font-semibold text-sm">Garçons</span>
                   </div>
                   <div className="space-y-2">
-                    {topAssisters.filter((p) => ((p.seasonStats || p.totalStats)?.assists ?? 0) > 0).map((p, i) => (
+                    {topAssisters.filter((p) => ((p.currentSeasonStats || p.totalStats)?.assists ?? 0) > 0).map((p, i) => (
                       <div key={p.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -360,7 +360,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{p.position}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{(p.seasonStats || p.totalStats)?.assists} assist.</span>
+                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.assists} assist.</span>
                       </div>
                     ))}
                   </div>

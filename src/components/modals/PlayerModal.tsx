@@ -26,7 +26,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
   useEffect(() => {
     if (player) {
-      const stats = player.seasonStats || player.totalStats;
+      const stats = player.currentSeasonStats || player.totalStats;
       setForm({
         name: player.name,
         position: player.position,
@@ -61,7 +61,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       await onSave({ ...form, salary, marketValue }, player?.id);
 
       if (player) {
-        const stats = player.seasonStats || player.totalStats;
+        const stats = player.currentSeasonStats || player.totalStats;
         const statsChanged =
           form.goals !== (stats?.goals ?? 0) ||
           form.assists !== (stats?.assists ?? 0) ||

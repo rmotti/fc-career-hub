@@ -20,17 +20,17 @@ const StatsScreen = ({ saveId }: Props) => {
 
   const teamStats = teamStatsArr[0];
 
-  const topScorers = [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.goals ?? 0) - ((a.seasonStats || a.totalStats)?.goals ?? 0)).slice(0, 5);
-  const topAssists = [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.assists ?? 0) - ((a.seasonStats || a.totalStats)?.assists ?? 0)).slice(0, 5);
+  const topScorers = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 5);
+  const topAssists = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 5);
   const topCards = [...players].sort((a, b) => {
-    const statsA = a.seasonStats || a.totalStats;
-    const statsB = b.seasonStats || b.totalStats;
+    const statsA = a.currentSeasonStats || a.totalStats;
+    const statsB = b.currentSeasonStats || b.totalStats;
     const cardA = (statsA?.yellowCards ?? 0) + (statsA?.redCards ?? 0) * 3;
     const cardB = (statsB?.yellowCards ?? 0) + (statsB?.redCards ?? 0) * 3;
     return cardB - cardA;
   }).slice(0, 5);
-  const topMatches = [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.matches ?? 0) - ((a.seasonStats || a.totalStats)?.matches ?? 0)).slice(0, 5);
-  const topContributions = [...players].sort((a, b) => ((b.seasonStats || b.totalStats)?.goalContributions ?? 0) - ((a.seasonStats || a.totalStats)?.goalContributions ?? 0)).slice(0, 5);
+  const topMatches = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.matches ?? 0) - ((a.currentSeasonStats || a.totalStats)?.matches ?? 0)).slice(0, 5);
+  const topContributions = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goalContributions ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goalContributions ?? 0)).slice(0, 5);
 
   const handleUpdateStats = async (stats: any) => {
     if (!teamStats) return;
@@ -83,7 +83,7 @@ const StatsScreen = ({ saveId }: Props) => {
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
                 </div>
-                <span className="font-display font-bold text-primary">{(p.seasonStats || p.totalStats)?.goals ?? 0}</span>
+                <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals ?? 0}</span>
               </div>
             ))}
             {topScorers.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
@@ -101,7 +101,7 @@ const StatsScreen = ({ saveId }: Props) => {
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
                 </div>
-                <span className="font-display font-bold text-accent">{(p.seasonStats || p.totalStats)?.assists ?? 0}</span>
+                <span className="font-display font-bold text-accent">{(p.currentSeasonStats || p.totalStats)?.assists ?? 0}</span>
               </div>
             ))}
             {topAssists.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
@@ -120,8 +120,8 @@ const StatsScreen = ({ saveId }: Props) => {
                   <span className="text-sm">{p.name}</span>
                 </div>
                 <div className="flex gap-2 text-xs">
-                  <span className="text-warning font-bold">{(p.seasonStats || p.totalStats)?.yellowCards ?? 0}🟨</span>
-                  {((p.seasonStats || p.totalStats)?.redCards ?? 0) > 0 && <span className="text-destructive font-bold">{(p.seasonStats || p.totalStats)?.redCards}🟥</span>}
+                  <span className="text-warning font-bold">{(p.currentSeasonStats || p.totalStats)?.yellowCards ?? 0}🟨</span>
+                  {((p.currentSeasonStats || p.totalStats)?.redCards ?? 0) > 0 && <span className="text-destructive font-bold">{(p.currentSeasonStats || p.totalStats)?.redCards}🟥</span>}
                 </div>
               </div>
             ))}
@@ -142,7 +142,7 @@ const StatsScreen = ({ saveId }: Props) => {
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
                 </div>
-                <span className="font-display font-bold text-primary">{(p.seasonStats || p.totalStats)?.matches ?? 0}</span>
+                <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.matches ?? 0}</span>
               </div>
             ))}
             {topMatches.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
@@ -160,7 +160,7 @@ const StatsScreen = ({ saveId }: Props) => {
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
                 </div>
-                <span className="font-display font-bold text-accent">{(p.seasonStats || p.totalStats)?.goalContributions ?? 0}</span>
+                <span className="font-display font-bold text-accent">{(p.currentSeasonStats || p.totalStats)?.goalContributions ?? 0}</span>
               </div>
             ))}
             {topContributions.length === 0 && <p className="text-sm text-muted-foreground">—</p>}

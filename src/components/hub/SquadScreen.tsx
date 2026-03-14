@@ -30,7 +30,7 @@ const SquadScreen = ({ saveId }: Props) => {
   const releasePlayer = useReleasePlayer();
 
   const getValue = (p: ApiPlayer, key: SortKey): string | number => {
-    const stats = p.seasonStats || p.totalStats;
+    const stats = p.currentSeasonStats || p.totalStats;
     if (key === "matches") return stats?.matches ?? 0;
     if (key === "goals") return stats?.goals ?? 0;
     if (key === "assists") return stats?.assists ?? 0;
@@ -121,7 +121,7 @@ const SquadScreen = ({ saveId }: Props) => {
             </thead>
             <tbody>
               {sorted.map((p) => {
-                const stats = p.seasonStats || p.totalStats;
+                const stats = p.currentSeasonStats || p.totalStats;
                 return (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
