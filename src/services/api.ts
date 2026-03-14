@@ -74,6 +74,9 @@ export interface ApiTeamStats {
   wins: number;
   draws: number;
   losses: number;
+  leaguePosition?: number;
+  europeanCupResult?: string;
+  nationalCupResult?: string;
 }
 
 export interface ApiTransfer {
@@ -108,7 +111,7 @@ export const clubsApi = {
 export const savesApi = {
   list: () => request<ApiSave[]>("/saves"),
   get: (saveId: string) => request<ApiSave>(`/saves/${saveId}`),
-  create: (data: { name: string; club: string }) =>
+  create: (data: { name: string; club: string; budget: string }) =>
     request<ApiSave>("/saves", { method: "POST", body: JSON.stringify(data) }),
   update: (saveId: string, data: { currentYear?: number; currentSeason?: string; budget?: string; balance?: string }) =>
     request<ApiSave>(`/saves/${saveId}`, { method: "PATCH", body: JSON.stringify(data) }),
@@ -151,7 +154,7 @@ export const playersApi = {
 export const teamStatsApi = {
   list: (saveId: string, season?: "current") =>
     request<ApiTeamStats[]>(`/saves/${saveId}/team-stats${season ? `?season=${season}` : ""}`),
-  update: (saveId: string, statsId: string, data: { goalsPro?: number; goalsAgainst?: number; possession?: number; wins?: number; draws?: number; losses?: number }) =>
+  update: (saveId: string, statsId: string, data: { goalsPro?: number; goalsAgainst?: number; possession?: number; wins?: number; draws?: number; losses?: number; leaguePosition?: number; europeanCupResult?: string; nationalCupResult?: string }) =>
     request<ApiTeamStats>(`/saves/${saveId}/team-stats/${statsId}`, { method: "PATCH", body: JSON.stringify(data) }),
 };
 

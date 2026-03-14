@@ -63,12 +63,34 @@ const HistoryScreen = ({ saveId }: Props) => {
         </h3>
         {trophies.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {trophies.map((t) => (
-              <div key={t.id} className="bg-muted/50 rounded-md p-3 border border-border">
-                <p className="font-display font-bold text-gold">{t.name}</p>
-                <p className="text-xs text-muted-foreground">{t.club ?? "—"} — {t.year}</p>
-              </div>
-            ))}
+            {trophies.map((t) => {
+              const isLeague = /league|liga|serie|ligue|bundesliga|premier|laliga|eredivisie/i.test(t.name);
+              const isCup = /cup|copa|coppa|pokal|taça|coupe/i.test(t.name);
+              const isChampions = /champions|europa league|conference/i.test(t.name);
+
+              let borderClass = "border-border";
+              let bgClass = "bg-muted/50";
+              if (isLeague) {
+                borderClass = "border-yellow-500/30";
+                bgClass = "bg-yellow-500/5";
+              } else if (isChampions) {
+                borderClass = "border-primary/30";
+                bgClass = "bg-primary/5";
+              } else if (isCup) {
+                borderClass = "border-accent/30";
+                bgClass = "bg-accent/5";
+              }
+
+              return (
+                <div key={t.id} className={`${bgClass} rounded-md p-3 border ${borderClass}`}>
+                  <p className="font-display font-bold text-gold flex items-center gap-1.5">
+                    🏆 {t.name}
+                  </p>
+                  <p className="text-sm text-foreground mt-1">{t.club ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">{t.year}</p>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">Nenhum troféu conquistado ainda.</p>

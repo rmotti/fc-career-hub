@@ -1,12 +1,33 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { SaveData } from "@/data/mockData";
+
+const CUP_OPTIONS = [
+  { value: "NaoParticipou", label: "Não participou" },
+  { value: "Eliminado", label: "Fase de grupos / 1ª fase" },
+  { value: "OitavasOuFaseDeGrupos", label: "Oitavas de final" },
+  { value: "Quartas", label: "Quartas de final" },
+  { value: "Semifinal", label: "Semifinal" },
+  { value: "Final", label: "Final" },
+  { value: "Campeao", label: "🏆 Campeão" },
+] as const;
+
+interface StatsForm {
+  goalsPro: number;
+  goalsAgainst: number;
+  possession: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  leaguePosition: number;
+  europeanCupResult: string;
+  nationalCupResult: string;
+}
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  stats: SaveData["teamStats"];
-  onSave: (stats: SaveData["teamStats"]) => void;
+  stats: StatsForm;
+  onSave: (stats: StatsForm) => void;
 }
 
 const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
@@ -27,7 +48,7 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-sm">
+      <DialogContent className="bg-card border-border max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-lg">Editar Estatísticas</DialogTitle>
           <DialogDescription>Atualize as estatísticas do time na temporada.</DialogDescription>
@@ -61,6 +82,33 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
               <input type="number" className={inputClass} value={form.losses} onChange={(e) => setForm({ ...form, losses: +e.target.value })} min={0} />
             </div>
           </div>
+
+          {/* New fields */}
+          <div className="border-t border-border pt-3 mt-3">
+            <div>
+              <label className={labelClass}>Posição na Liga</label>
+              <input type="number" className={inputClass} value={form.leaguePosition} onChange={(e) => setForm({ ...form, leaguePosition: +e.target.value })} min={1} placeholder="Ex: 1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Copa Europeia</label>
+              <select className={inputClass} value={form.europeanCupResult} onChange={(e) => setForm({ ...form, europeanCupResult: e.target.value })}>
+                {CUP_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Copa Nacional</label>
+              <select className={inputClass} value={form.nationalCupResult} onChange={(e) => setForm({ ...form, nationalCupResult: e.target.value })}>
+                {CUP_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="flex gap-3 pt-2">
             <button type="submit" className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity">
               Salvar

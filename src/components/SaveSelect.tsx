@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2 } from "lucide-react";
 import type { ApiSave } from "@/services/api";
 import { useClubs } from "@/hooks/useClubs";
+import { normalizeCurrencyInput, isValidCurrencyFormat } from "@/utils/currency";
 
 interface Props {
   saves: ApiSave[];
   loading: boolean;
   onSelectSave: (save: ApiSave) => void;
-  onCreateSave: (name: string, club: string) => void;
+  onCreateSave: (name: string, club: string, budget: string) => void;
   creating: boolean;
 }
 
@@ -15,6 +16,8 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newClub, setNewClub] = useState("");
+  const [newBudget, setNewBudget] = useState("");
+  const [budgetError, setBudgetError] = useState("");
   const { data: clubs = [] } = useClubs();
 
   // Set default club when clubs load
@@ -22,12 +25,29 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
     setNewClub(clubs[0]);
   }
 
-  const handleCreate = () => {
-    if (newName.trim() && newClub) {
-      onCreateSave(newName.trim(), newClub);
-      setShowForm(false);
-      setNewName("");
+  const handleBudgetBlur = () => {
+    const normalized = normalizeCurrencyInput(newBudget);
+    setNewBudget(normalized);
+    if (normalized && !isValidCurrencyFormat(normalized)) {
+      setBudgetError("Formato inválido. Use €XK ou €XM (ex: €85M)");
+    } else {
+      setBudgetError("");
     }
+  };
+
+  const handleCreate = () => {
+    const budget = normalizeCurrencyInput(newBudget);
+    if (!newName.trim()) return;
+    if (!newClub) return;
+    if (!budget || !isValidCurrencyFormat(budget)) {
+      setBudgetError("Orçamento obrigatório no formato €XK ou €XM");
+      return;
+    }
+    setBudgetError("");
+    onCreateSave(newName.trim(), newClub, budget);
+    setShowForm(false);
+    setNewName("");
+    setNewBudget("");
   };
 
   return (
@@ -107,6 +127,18 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
                 ))}
               </select>
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground uppercase mb-1 block">Orçamento inicial</label>
+              <input
+                type="text"
+                value={newBudget}
+                onChange={(e) => { setNewBudget(e.target.value); setBudgetError(""); }}
+                onBlur={handleBudgetBlur}
+                placeholder="Ex: €85M"
+                className={`w-full bg-muted border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary ${budgetError ? "border-destructive" : "border-border"}`}
+              />
+              {budgetError && <p className="text-xs text-destructive mt-1">{budgetError}</p>}
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={handleCreate}
@@ -116,7 +148,7 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
                 {creating ? "Criando..." : "Criar"}
               </button>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setBudgetError(""); }}
                 className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
               >
                 Cancelar

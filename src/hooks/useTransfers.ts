@@ -17,6 +17,7 @@ export function useCreateTransfer() {
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
     },
   });
 }
@@ -39,6 +40,7 @@ export function useDeleteTransfer() {
       transfersApi.delete(saveId, transferId),
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
     },
   });
 }

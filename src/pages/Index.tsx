@@ -28,8 +28,8 @@ const Index = () => {
     setScreen("dashboard");
   };
 
-  const handleCreateSave = (name: string, club: string) => {
-    createSave.mutate({ name, club }, {
+  const handleCreateSave = (name: string, club: string, budget: string) => {
+    createSave.mutate({ name, club, budget }, {
       onSuccess: (newSave) => {
         setActiveSaveId(newSave.id);
         setScreen("dashboard");

@@ -27,7 +27,7 @@ const StatsScreen = ({ saveId }: Props) => {
     return cardB - cardA;
   }).slice(0, 5);
 
-  const handleUpdateStats = (stats: { goalsPro: number; goalsAgainst: number; possession: number; wins: number; draws: number; losses: number }) => {
+  const handleUpdateStats = (stats: { goalsPro: number; goalsAgainst: number; possession: number; wins: number; draws: number; losses: number; leaguePosition: number; europeanCupResult: string; nationalCupResult: string }) => {
     if (!teamStats) return;
     updateTeamStats.mutate({
       saveId,
@@ -138,6 +138,9 @@ const StatsScreen = ({ saveId }: Props) => {
             wins: teamStats.wins,
             draws: teamStats.draws,
             losses: teamStats.losses,
+            leaguePosition: teamStats.leaguePosition ?? 1,
+            europeanCupResult: teamStats.europeanCupResult ?? "NaoParticipou",
+            nationalCupResult: teamStats.nationalCupResult ?? "NaoParticipou",
           }}
           onSave={handleUpdateStats}
         />

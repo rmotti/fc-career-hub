@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { ApiTransfer } from "@/services/api";
+import { normalizeCurrencyInput } from "@/utils/currency";
 
 interface Props {
   open: boolean;
@@ -54,9 +55,15 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     }
   }, [form.type, currentClub, transfer]);
 
+  const handleFeeBlur = () => {
+    const normalized = normalizeCurrencyInput(form.fee);
+    setForm((prev) => ({ ...prev, fee: normalized }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form, transfer?.id);
+    const fee = normalizeCurrencyInput(form.fee);
+    onSave({ ...form, fee }, transfer?.id);
     onOpenChange(false);
   };
 
@@ -95,7 +102,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Valor</label>
-              <input className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="€10M" />
+              <input className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} onBlur={handleFeeBlur} placeholder="€10M" />
             </div>
             <div>
               <label className={labelClass}>Temporada</label>

@@ -1,9 +1,10 @@
-import { Swords, Target, DollarSign, Trophy, TrendingUp, Loader2 } from "lucide-react";
+import { Swords, Target, DollarSign, Trophy, TrendingUp, Loader2, AlertTriangle } from "lucide-react";
 import StatCard from "./StatCard";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
 import { useSave } from "@/hooks/useSaves";
+import { parseCurrencyToNumber } from "@/utils/currency";
 
 interface Props {
   saveId: string;
@@ -30,13 +31,42 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
     );
   }
 
+  const budgetNum = parseCurrencyToNumber(save.budget || "0");
+  const balanceNum = parseCurrencyToNumber(save.balance || "0");
+  const isLowBalance = budgetNum > 0 && balanceNum < budgetNum * 0.2;
+
   return (
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold">Visão Geral</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Saldo" value={save.balance || "—"} icon={DollarSign} accent />
-        <StatCard label="Orçamento" value={save.budget || "—"} icon={DollarSign} />
+      {/* Financial overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card-gamer p-5 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+            <DollarSign size={20} />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground uppercase">Orçamento</p>
+            <p className="text-xl font-display font-bold text-foreground">{save.budget || "—"}</p>
+          </div>
+        </div>
+        <div className={`card-gamer p-5 flex items-center gap-4 ${isLowBalance ? "border-destructive/40" : ""}`}>
+          <div className={`w-10 h-10 rounded-md flex items-center justify-center ${isLowBalance ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+            {isLowBalance ? <AlertTriangle size={20} /> : <DollarSign size={20} />}
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground uppercase">Saldo disponível</p>
+            <p className={`text-xl font-display font-bold ${isLowBalance ? "text-destructive" : "text-primary"}`}>
+              {save.balance || "—"}
+            </p>
+          </div>
+          {isLowBalance && (
+            <span className="text-xs text-destructive font-medium">Saldo baixo!</span>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatCard
           label="Artilheiro"
           value={topScorer && topScorer.seasonStats?.goals ? `${topScorer.name} (${topScorer.seasonStats.goals})` : "—"}

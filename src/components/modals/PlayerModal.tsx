@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { ApiPlayer } from "@/services/api";
 import { useUpdatePlayerStats } from "@/hooks/usePlayers";
+import { normalizeCurrencyInput } from "@/utils/currency";
 import { toast } from "sonner";
 
 interface Props {
@@ -43,9 +44,19 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
     }
   }, [player, open]);
 
+  const handleCurrencyBlur = (field: "salary" | "marketValue") => {
+    const normalized = normalizeCurrencyInput(form[field]);
+    setForm((prev) => ({ ...prev, [field]: normalized }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form, player?.id);
+
+    // Normalize currency fields before submit
+    const salary = normalizeCurrencyInput(form.salary);
+    const marketValue = normalizeCurrencyInput(form.marketValue);
+
+    onSave({ ...form, salary, marketValue }, player?.id);
 
     // If editing, also update stats if they changed
     if (player) {
@@ -124,11 +135,23 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Salário</label>
-              <input className={inputClass} value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} placeholder="€50K" />
+              <input
+                className={inputClass}
+                value={form.salary}
+                onChange={(e) => setForm({ ...form, salary: e.target.value })}
+                onBlur={() => handleCurrencyBlur("salary")}
+                placeholder="€50K"
+              />
             </div>
             <div>
               <label className={labelClass}>Valor de Mercado</label>
-              <input className={inputClass} value={form.marketValue} onChange={(e) => setForm({ ...form, marketValue: e.target.value })} placeholder="€10M" />
+              <input
+                className={inputClass}
+                value={form.marketValue}
+                onChange={(e) => setForm({ ...form, marketValue: e.target.value })}
+                onBlur={() => handleCurrencyBlur("marketValue")}
+                placeholder="€10M"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

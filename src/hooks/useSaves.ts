@@ -19,7 +19,7 @@ export function useSave(saveId: string | null) {
 export function useCreateSave() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; club: string }) => savesApi.create(data),
+    mutationFn: (data: { name: string; club: string; budget: string }) => savesApi.create(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["saves"] }),
   });
 }
@@ -34,6 +34,7 @@ export function useUpdateSave() {
       qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["trophies", vars.saveId] });
     },
   });
 }

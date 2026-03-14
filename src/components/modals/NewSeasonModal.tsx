@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight } from "lucide-react";
+import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign, Star } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
+import { useSave } from "@/hooks/useSaves";
+
+const CUP_LABELS: Record<string, string> = {
+  NaoParticipou: "Não participou",
+  Eliminado: "Fase de grupos / 1ª fase",
+  OitavasOuFaseDeGrupos: "Oitavas de final",
+  Quartas: "Quartas de final",
+  Semifinal: "Semifinal",
+  Final: "Final",
+  Campeao: "🏆 Campeão",
+};
 
 interface Props {
   open: boolean;
@@ -15,8 +26,10 @@ interface Props {
 }
 
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
-  const [step, setStep] = useState<"confirm" | "overview">("confirm");
+  const [step, setStep] = useState<"confirm" | "overview" | "celebration">("confirm");
+  const previousTrophyCount = useRef<number>(0);
 
+  const { data: save } = useSave(saveId);
   const { data: players = [] } = usePlayers(saveId, true);
   const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
   const { data: trophies = [] } = useTrophies(saveId);
@@ -43,10 +56,21 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   };
 
   const handleFinish = () => {
+    // Store trophy count before advancing
+    previousTrophyCount.current = trophies.length;
     onConfirm();
-    setStep("confirm");
-    onOpenChange(false);
   };
+
+  // Watch for new trophies after advancing season
+  useEffect(() => {
+    if (step === "overview" && previousTrophyCount.current > 0 && trophies.length > previousTrophyCount.current) {
+      setStep("celebration");
+    }
+  }, [trophies.length, step]);
+
+  const newTrophies = step === "celebration"
+    ? trophies.filter((t) => t.year === currentYear)
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -60,6 +84,43 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 As estatísticas da temporada serão resetadas.
               </DialogDescription>
             </DialogHeader>
+
+            {/* Season summary in confirm step */}
+            <div className="space-y-3 my-2">
+              {teamStats && (
+                <div className="bg-muted/50 rounded-lg p-3 border border-border space-y-2">
+                  {teamStats.leaguePosition && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Posição na liga</span>
+                      <span className="font-display font-bold text-primary">{teamStats.leaguePosition}º</span>
+                    </div>
+                  )}
+                  {teamStats.europeanCupResult && teamStats.europeanCupResult !== "NaoParticipou" && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Copa Europeia</span>
+                      <span className="font-display font-semibold">{CUP_LABELS[teamStats.europeanCupResult] ?? teamStats.europeanCupResult}</span>
+                    </div>
+                  )}
+                  {teamStats.nationalCupResult && teamStats.nationalCupResult !== "NaoParticipou" && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Copa Nacional</span>
+                      <span className="font-display font-semibold">{CUP_LABELS[teamStats.nationalCupResult] ?? teamStats.nationalCupResult}</span>
+                    </div>
+                  )}
+                  {save?.balance && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Saldo final</span>
+                      <span className="font-display font-bold">{save.balance}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground italic">
+                ℹ️ Se você estiver em 1º lugar na liga ou tiver conquistado alguma copa, os troféus serão adicionados automaticamente.
+              </p>
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 onClick={handleConfirm}
@@ -72,6 +133,36 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
               >
                 Cancelar
+              </button>
+            </div>
+          </>
+        ) : step === "celebration" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl text-center">
+                🎉 Parabéns! 🎉
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Novos troféus conquistados!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex flex-col items-center gap-4">
+                {newTrophies.map((t) => (
+                  <div key={t.id} className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-6 text-center w-full animate-in fade-in zoom-in duration-500">
+                    <div className="text-4xl mb-2">🏆</div>
+                    <p className="font-display text-xl font-bold text-yellow-500">{t.name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t.club ?? currentClub} — {t.year}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={() => { setStep("confirm"); onOpenChange(false); }}
+                className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Fechar
               </button>
             </div>
           </>
@@ -93,6 +184,11 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp size={16} className="text-primary" />
                     <span className="font-display font-semibold text-sm">Desempenho na Liga</span>
+                    {teamStats.leaguePosition && (
+                      <span className="ml-auto bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold">
+                        {teamStats.leaguePosition}º lugar
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-around">
                     <div className="flex gap-4 text-center">
@@ -112,6 +208,54 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                     <div className="text-center">
                       <p className="text-lg font-display font-bold text-foreground">{totalMatches}</p>
                       <p className="text-xs text-muted-foreground">Jogos</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cup results */}
+              {teamStats && (teamStats.europeanCupResult !== "NaoParticipou" || teamStats.nationalCupResult !== "NaoParticipou") && (
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star size={16} className="text-primary" />
+                    <span className="font-display font-semibold text-sm">Competições de Copa</span>
+                  </div>
+                  <div className="space-y-2">
+                    {teamStats.europeanCupResult && teamStats.europeanCupResult !== "NaoParticipou" && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Copa Europeia</span>
+                        <span className={`font-display font-semibold ${teamStats.europeanCupResult === "Campeao" ? "text-yellow-500" : ""}`}>
+                          {CUP_LABELS[teamStats.europeanCupResult] ?? teamStats.europeanCupResult}
+                        </span>
+                      </div>
+                    )}
+                    {teamStats.nationalCupResult && teamStats.nationalCupResult !== "NaoParticipou" && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Copa Nacional</span>
+                        <span className={`font-display font-semibold ${teamStats.nationalCupResult === "Campeao" ? "text-yellow-500" : ""}`}>
+                          {CUP_LABELS[teamStats.nationalCupResult] ?? teamStats.nationalCupResult}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Balance */}
+              {save?.balance && (
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign size={16} className="text-primary" />
+                    <span className="font-display font-semibold text-sm">Financeiro</span>
+                  </div>
+                  <div className="flex justify-around text-center">
+                    <div>
+                      <p className="text-lg font-display font-bold text-foreground">{save.budget}</p>
+                      <p className="text-xs text-muted-foreground">Orçamento</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-display font-bold text-primary">{save.balance}</p>
+                      <p className="text-xs text-muted-foreground">Saldo final</p>
                     </div>
                   </div>
                 </div>
