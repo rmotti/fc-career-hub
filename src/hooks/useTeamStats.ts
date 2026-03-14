@@ -15,8 +15,10 @@ export function useUpdateTeamStats() {
     mutationFn: ({ saveId, statsId, data }: { saveId: string; statsId: string; data: Parameters<typeof teamStatsApi.update>[2] }) =>
       teamStatsApi.update(saveId, statsId, data),
     onSuccess: (_res, vars) => {
-      qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] });
-      qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["saves", vars.saveId] })
+      ]);
     },
   });
 }

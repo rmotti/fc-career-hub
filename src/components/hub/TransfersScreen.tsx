@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, DollarSign, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { ApiTransfer } from "@/services/api";
+import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { useTransfers, useCreateTransfer, useUpdateTransfer, useDeleteTransfer } from "@/hooks/useTransfers";
 import { useSave } from "@/hooks/useSaves";
 import TransferModal from "@/components/modals/TransferModal";
@@ -28,25 +28,21 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const purchases = displayTransfers.filter(t => t.type === "compra");
   const sales = displayTransfers.filter(t => t.type === "venda");
 
-  const handleSaveTransfer = (data: { playerName: string; type: "compra" | "venda"; from: string; to: string; fee: string; season: string }, transferId?: string) => {
+  const handleSaveTransfer = async (data: any, transferId?: string) => {
     if (transferId) {
-      updateTransfer.mutate({ saveId, transferId, data }, {
-        onSuccess: () => toast.success("Transferência atualizada!"),
-        onError: (err) => toast.error(err.message),
-      });
+      await updateTransfer.mutateAsync({ saveId, transferId, data });
+      toast.success("Transferência atualizada com sucesso!", { duration: 3000 });
     } else {
-      createTransfer.mutate({ saveId, data }, {
-        onSuccess: () => toast.success("Transferência registrada!"),
-        onError: (err) => toast.error(err.message),
-      });
+      await createTransfer.mutateAsync({ saveId, data });
+      toast.success("Transferência registrada com sucesso!", { duration: 3000 });
     }
     setEditingTransfer(null);
   };
 
   const handleDelete = (transfer: ApiTransfer) => {
     deleteTransfer.mutate({ saveId, transferId: transfer.id }, {
-      onSuccess: () => toast.success("Transferência removida."),
-      onError: (err) => toast.error(err.message),
+      onSuccess: () => toast.success("Transferência removida.", { duration: 3000 }),
+      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
   };
 

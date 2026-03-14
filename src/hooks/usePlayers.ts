@@ -23,7 +23,7 @@ export function useCreatePlayer() {
     mutationFn: ({ saveId, data }: { saveId: string; data: Parameters<typeof playersApi.create>[1] }) =>
       playersApi.create(saveId, data),
     onSuccess: (_res, vars) => {
-      qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
     },
   });
 }
@@ -34,7 +34,7 @@ export function useUpdatePlayer() {
     mutationFn: ({ saveId, playerId, data }: { saveId: string; playerId: string; data: Parameters<typeof playersApi.update>[2] }) =>
       playersApi.update(saveId, playerId, data),
     onSuccess: (_res, vars) => {
-      qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
     },
   });
 }
@@ -45,7 +45,7 @@ export function useUpdatePlayerStats() {
     mutationFn: ({ saveId, playerId, data }: { saveId: string; playerId: string; data: Parameters<typeof playersApi.updateStats>[2] }) =>
       playersApi.updateStats(saveId, playerId, data),
     onSuccess: (_res, vars) => {
-      qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
     },
   });
 }
@@ -56,7 +56,7 @@ export function useReleasePlayer() {
     mutationFn: ({ saveId, playerId }: { saveId: string; playerId: string }) =>
       playersApi.release(saveId, playerId),
     onSuccess: (_res, vars) => {
-      qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
     },
   });
 }

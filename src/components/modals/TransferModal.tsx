@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { ApiTransfer } from "@/services/api";
+import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { normalizeCurrencyInput } from "@/utils/currency";
+import { toast } from "sonner";
+import { Lock } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -9,7 +11,7 @@ interface Props {
   transfer: ApiTransfer | null;
   currentClub: string;
   currentSeason: string;
-  onSave: (data: { playerName: string; type: "compra" | "venda"; from: string; to: string; fee: string; season: string }, transferId?: string) => void;
+  onSave: (data: any, transferId?: string) => Promise<void>;
 }
 
 const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeason, onSave }: Props) => {
@@ -46,25 +48,27 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
   // Auto-fill club based on type
   useEffect(() => {
-    if (!transfer) {
-      if (form.type === "compra") {
-        setForm((prev) => ({ ...prev, to: currentClub }));
-      } else {
-        setForm((prev) => ({ ...prev, from: currentClub }));
-      }
+    if (form.type === "compra") {
+      setForm((prev) => ({ ...prev, to: currentClub }));
+    } else {
+      setForm((prev) => ({ ...prev, from: currentClub }));
     }
-  }, [form.type, currentClub, transfer]);
+  }, [form.type, currentClub]);
 
   const handleFeeBlur = () => {
     const normalized = normalizeCurrencyInput(form.fee);
     setForm((prev) => ({ ...prev, fee: normalized }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const fee = normalizeCurrencyInput(form.fee);
-    onSave({ ...form, fee }, transfer?.id);
-    onOpenChange(false);
+    try {
+      await onSave({ ...form, fee }, transfer?.id);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+    }
   };
 
   const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
@@ -92,11 +96,31 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>De</label>
-              <input className={inputClass} value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} required />
+              <div className="relative">
+                <input 
+                  className={`${inputClass} ${form.type === "venda" ? "opacity-70 cursor-not-allowed bg-muted/60 pl-9" : ""}`} 
+                  value={form.from} 
+                  onChange={(e) => setForm({ ...form, from: e.target.value })} 
+                  disabled={form.type === "venda"}
+                  placeholder={form.type === "compra" ? "Clube de origem" : ""}
+                  required 
+                />
+                {form.type === "venda" && <Lock size={14} className="absolute left-3 top-2.5 text-muted-foreground" />}
+              </div>
             </div>
             <div>
               <label className={labelClass}>Para</label>
-              <input className={inputClass} value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} required />
+              <div className="relative">
+                <input 
+                  className={`${inputClass} ${form.type === "compra" ? "opacity-70 cursor-not-allowed bg-muted/60 pl-9" : ""}`} 
+                  value={form.to} 
+                  onChange={(e) => setForm({ ...form, to: e.target.value })} 
+                  disabled={form.type === "compra"}
+                  placeholder={form.type === "venda" ? "Clube de destino" : ""}
+                  required 
+                />
+                {form.type === "compra" && <Lock size={14} className="absolute left-3 top-2.5 text-muted-foreground" />}
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { ApiPlayer } from "@/services/api";
+import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { useUpdatePlayerStats } from "@/hooks/usePlayers";
 import { normalizeCurrencyInput } from "@/utils/currency";
 import { toast } from "sonner";
@@ -9,14 +9,14 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   player: ApiPlayer | null;
-  onSave: (data: { name: string; position: string; age: number; status: string; ovr: number; salary?: string; marketValue?: string; goals?: number; assists?: number; yellowCards?: number; redCards?: number }, playerId?: string) => void;
+  onSave: (data: any, playerId?: string) => Promise<void>;
   saveId: string;
 }
 
 const emptyForm = {
   name: "", position: "MEI" as string, age: 20, status: "Important" as string, ovr: 70,
   salary: "", marketValue: "",
-  goals: 0, assists: 0, yellowCards: 0, redCards: 0,
+  goals: 0, assists: 0, yellowCards: 0, redCards: 0, matches: 0,
 };
 
 const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
@@ -38,6 +38,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
         assists: player.seasonStats?.assists ?? 0,
         yellowCards: player.seasonStats?.yellowCards ?? 0,
         redCards: player.seasonStats?.redCards ?? 0,
+        matches: player.seasonStats?.matches ?? 0,
       });
     } else {
       setForm(emptyForm);
@@ -49,33 +50,36 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
     setForm((prev) => ({ ...prev, [field]: normalized }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Normalize currency fields before submit
     const salary = normalizeCurrencyInput(form.salary);
     const marketValue = normalizeCurrencyInput(form.marketValue);
 
-    onSave({ ...form, salary, marketValue }, player?.id);
+    try {
+      await onSave({ ...form, salary, marketValue }, player?.id);
 
-    // If editing, also update stats if they changed
-    if (player) {
-      const statsChanged =
-        form.goals !== (player.seasonStats?.goals ?? 0) ||
-        form.assists !== (player.seasonStats?.assists ?? 0) ||
-        form.yellowCards !== (player.seasonStats?.yellowCards ?? 0) ||
-        form.redCards !== (player.seasonStats?.redCards ?? 0);
-      if (statsChanged) {
-        updateStats.mutate({
-          saveId,
-          playerId: player.id,
-          data: { goals: form.goals, assists: form.assists, yellowCards: form.yellowCards, redCards: form.redCards },
-        }, {
-          onError: (err) => toast.error(`Erro ao atualizar stats: ${err.message}`),
-        });
+      if (player) {
+        const statsChanged =
+          form.goals !== (player.seasonStats?.goals ?? 0) ||
+          form.assists !== (player.seasonStats?.assists ?? 0) ||
+          form.yellowCards !== (player.seasonStats?.yellowCards ?? 0) ||
+          form.redCards !== (player.seasonStats?.redCards ?? 0) ||
+          form.matches !== (player.seasonStats?.matches ?? 0);
+        
+        if (statsChanged) {
+          await updateStats.mutateAsync({
+            saveId,
+            playerId: player.id,
+            data: { goals: form.goals, assists: form.assists, yellowCards: form.yellowCards, redCards: form.redCards, matches: form.matches },
+          });
+          toast.success("Estatísticas atualizadas!", { duration: 3000 });
+        }
       }
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
     }
-    onOpenChange(false);
   };
 
   const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
@@ -118,10 +122,14 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               <input type="number" className={inputClass} value={form.age} onChange={(e) => setForm({ ...form, age: +e.target.value })} min={15} max={45} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div>
               <label className={labelClass}>OVR</label>
               <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: +e.target.value })} min={40} max={99} />
+            </div>
+            <div>
+              <label className={labelClass}>Partidas</label>
+              <input type="number" className={inputClass} value={form.matches} onChange={(e) => setForm({ ...form, matches: +e.target.value })} min={0} />
             </div>
             <div>
               <label className={labelClass}>Gols</label>

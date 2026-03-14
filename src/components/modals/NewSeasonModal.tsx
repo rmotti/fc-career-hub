@@ -22,7 +22,7 @@ interface Props {
   saveId: string;
   currentSeason: string;
   currentClub: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<boolean>;
 }
 
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
@@ -55,15 +55,26 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
     setStep("overview");
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // Store trophy count before advancing
     previousTrophyCount.current = trophies.length;
-    onConfirm();
+    const success = await onConfirm();
+    
+    if (success) {
+      const willCelebrate = teamStats?.leaguePosition === 1 || 
+        teamStats?.europeanCupResult === "Campeao" || 
+        teamStats?.nationalCupResult === "Campeao";
+        
+      if (!willCelebrate) {
+        setStep("confirm");
+        onOpenChange(false);
+      }
+    }
   };
 
   // Watch for new trophies after advancing season
   useEffect(() => {
-    if (step === "overview" && previousTrophyCount.current > 0 && trophies.length > previousTrophyCount.current) {
+    if (step === "overview" && trophies.length > previousTrophyCount.current) {
       setStep("celebration");
     }
   }, [trophies.length, step]);

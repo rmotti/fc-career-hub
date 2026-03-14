@@ -1,13 +1,52 @@
 const BASE_URL = "https://career-hub-api.vercel.app/api";
 
+export class ApiError extends Error {
+  status?: number;
+  data?: any;
+  isNetworkError?: boolean;
+
+  constructor(message: string, status?: number, data?: any, isNetworkError?: boolean) {
+    super(message);
+    this.status = status;
+    this.data = data;
+    this.isNetworkError = isNetworkError;
+    this.name = "ApiError";
+  }
+}
+
+export function extractErrorMessage(err: any): string {
+  if (err?.isNetworkError || err?.message === "Failed to fetch" || err?.message?.includes("NetworkError")) {
+    return "Não foi possível conectar ao servidor. Verifique sua conexão.";
+  }
+  
+  const status = err?.status || err?.response?.status;
+  const apiError = err?.data?.error || err?.response?.data?.error;
+  
+  if (status === 400 || status === 404) {
+    return apiError || err.message;
+  }
+  if (status >= 500) {
+    return "Erro interno. Tente novamente em instantes.";
+  }
+  
+  return apiError || err?.message || "Erro inesperado. Tente novamente.";
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+  } catch (err: any) {
+    // throw network error
+    throw new ApiError(err.message, undefined, undefined, true);
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Erro desconhecido" }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    throw new ApiError(err.error || `HTTP ${res.status}`, res.status, err);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -49,7 +88,7 @@ export interface ApiPlayer {
   marketValue?: string;
   isActive: boolean;
   seasonStats?: ApiPlayerSeasonStats;
-  totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number };
+  totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; };
 }
 
 export interface ApiPlayerSeasonStats {
@@ -60,6 +99,8 @@ export interface ApiPlayerSeasonStats {
   assists: number;
   yellowCards: number;
   redCards: number;
+  matches?: number;
+  goalContributions?: number;
 }
 
 export interface ApiTeamStats {
@@ -143,7 +184,7 @@ export const playersApi = {
     request<ApiPlayer>(`/saves/${saveId}/players`, { method: "POST", body: JSON.stringify(data) }),
   update: (saveId: string, playerId: string, data: { name?: string; position?: string; age?: number; status?: string; ovr?: number; salary?: string; marketValue?: string }) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`, { method: "PUT", body: JSON.stringify(data) }),
-  updateStats: (saveId: string, playerId: string, data: { goals?: number; assists?: number; yellowCards?: number; redCards?: number }) =>
+  updateStats: (saveId: string, playerId: string, data: { goals?: number; assists?: number; yellowCards?: number; redCards?: number; matches?: number; }) =>
     request<ApiPlayerSeasonStats>(`/saves/${saveId}/players/${playerId}/stats`, { method: "PATCH", body: JSON.stringify(data) }),
   release: (saveId: string, playerId: string) =>
     request<void>(`/saves/${saveId}/players/${playerId}/release`, { method: "DELETE" }),

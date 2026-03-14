@@ -3,6 +3,7 @@ import { Check, Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useClubs } from "@/hooks/useClubs";
 import { useChangeClub } from "@/hooks/useClubStints";
+import { extractErrorMessage } from "@/services/api";
 
 interface Props {
   saveId: string;
@@ -20,10 +21,10 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
     if (!selected) return;
     changeClub.mutate({ saveId, club: selected }, {
       onSuccess: () => {
-        toast.success(`Agora você gerencia o ${selected}!`);
+        toast.success(`Agora você gerencia o ${selected}!`, { duration: 3000 });
         setSelected(null);
       },
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
   };
 

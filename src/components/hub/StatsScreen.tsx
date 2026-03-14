@@ -4,6 +4,7 @@ import StatCard from "./StatCard";
 import StatsModal from "@/components/modals/StatsModal";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/hooks/useTeamStats";
+import { extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
 
 interface Props {
@@ -26,17 +27,17 @@ const StatsScreen = ({ saveId }: Props) => {
     const cardB = (b.seasonStats?.yellowCards ?? 0) + (b.seasonStats?.redCards ?? 0) * 3;
     return cardB - cardA;
   }).slice(0, 5);
+  const topMatches = [...players].sort((a, b) => (b.seasonStats?.matches ?? 0) - (a.seasonStats?.matches ?? 0)).slice(0, 5);
+  const topContributions = [...players].sort((a, b) => (b.seasonStats?.goalContributions ?? 0) - (a.seasonStats?.goalContributions ?? 0)).slice(0, 5);
 
-  const handleUpdateStats = (stats: { goalsPro: number; goalsAgainst: number; possession: number; wins: number; draws: number; losses: number; leaguePosition: number; europeanCupResult: string; nationalCupResult: string }) => {
+  const handleUpdateStats = async (stats: any) => {
     if (!teamStats) return;
-    updateTeamStats.mutate({
+    await updateTeamStats.mutateAsync({
       saveId,
       statsId: teamStats.id,
       data: stats,
-    }, {
-      onSuccess: () => toast.success("Estatísticas atualizadas!"),
-      onError: (err) => toast.error(err.message),
     });
+    toast.success("Estatísticas atualizadas!", { duration: 3000 });
   };
 
   if (isLoading) {
@@ -123,6 +124,44 @@ const StatsScreen = ({ saveId }: Props) => {
               </div>
             ))}
             {topCards.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card-gamer p-5">
+          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
+            <Target size={16} className="text-primary" /> Mais Partidas
+          </h3>
+          <div className="space-y-3">
+            {topMatches.map((p, i) => (
+              <div key={p.id} className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                  <span className="text-sm">{p.name}</span>
+                </div>
+                <span className="font-display font-bold text-primary">{p.seasonStats?.matches ?? 0}</span>
+              </div>
+            ))}
+            {topMatches.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+          </div>
+        </div>
+
+        <div className="card-gamer p-5">
+          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
+            <Target size={16} className="text-accent" /> Part. em Gols
+          </h3>
+          <div className="space-y-3">
+            {topContributions.map((p, i) => (
+              <div key={p.id} className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                  <span className="text-sm">{p.name}</span>
+                </div>
+                <span className="font-display font-bold text-accent">{p.seasonStats?.goalContributions ?? 0}</span>
+              </div>
+            ))}
+            {topContributions.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
           </div>
         </div>
       </div>

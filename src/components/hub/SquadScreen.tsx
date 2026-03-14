@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { ApiPlayer } from "@/services/api";
+import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer } from "@/hooks/usePlayers";
 import PlayerModal from "@/components/modals/PlayerModal";
 
@@ -9,7 +9,7 @@ interface Props {
   saveId: string;
 }
 
-type SortKey = "name" | "position" | "age" | "ovr" | "goals" | "assists" | "salary" | "marketValue";
+type SortKey = "name" | "position" | "age" | "ovr" | "matches" | "goals" | "assists" | "goalContributions" | "salary" | "marketValue";
 
 const positionColor: Record<string, string> = {
   GOL: "bg-warning/20 text-warning",
@@ -30,8 +30,10 @@ const SquadScreen = ({ saveId }: Props) => {
   const releasePlayer = useReleasePlayer();
 
   const getValue = (p: ApiPlayer, key: SortKey): string | number => {
+    if (key === "matches") return p.seasonStats?.matches ?? 0;
     if (key === "goals") return p.seasonStats?.goals ?? 0;
     if (key === "assists") return p.seasonStats?.assists ?? 0;
+    if (key === "goalContributions") return p.seasonStats?.goalContributions ?? 0;
     return (p as unknown as Record<string, string | number>)[key] ?? "";
   };
 
@@ -47,26 +49,22 @@ const SquadScreen = ({ saveId }: Props) => {
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  const handleSavePlayer = (data: { name: string; position: string; age: number; status: string; ovr: number; salary?: string; marketValue?: string; goals?: number; assists?: number; yellowCards?: number; redCards?: number }, playerId?: string) => {
+  const handleSavePlayer = async (data: any, playerId?: string) => {
     const { goals, assists, yellowCards, redCards, ...playerData } = data;
     if (playerId) {
-      updatePlayer.mutate({ saveId, playerId, data: playerData }, {
-        onSuccess: () => toast.success("Jogador atualizado!"),
-        onError: (err) => toast.error(err.message),
-      });
+      await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
+      toast.success("Jogador atualizado!", { duration: 3000 });
     } else {
-      createPlayer.mutate({ saveId, data: playerData }, {
-        onSuccess: () => toast.success("Jogador adicionado!"),
-        onError: (err) => toast.error(err.message),
-      });
+      await createPlayer.mutateAsync({ saveId, data: playerData });
+      toast.success("Jogador adicionado ao elenco!", { duration: 3000 });
     }
-    setEditingPlayer(null);
+    setEditingPlayer(null); // Will not throw an unmounted error because modal parent still exists (SquadScreen)
   };
 
   const handleDelete = (player: ApiPlayer) => {
     releasePlayer.mutate({ saveId, playerId: player.id }, {
-      onSuccess: () => toast.success(`${player.name} foi dispensado.`),
-      onError: (err) => toast.error(err.message),
+      onSuccess: () => toast.success(`${player.name} foi dispensado.`, { duration: 3000 }),
+      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
   };
 
@@ -75,8 +73,10 @@ const SquadScreen = ({ saveId }: Props) => {
     { key: "position", label: "Pos" },
     { key: "age", label: "Idade" },
     { key: "ovr", label: "OVR" },
+    { key: "matches", label: "Part." },
     { key: "goals", label: "Gols" },
-    { key: "assists", label: "Assist" },
+    { key: "assists", label: "Assist." },
+    { key: "goalContributions", label: "Partic." },
     { key: "salary", label: "Salário" },
     { key: "marketValue", label: "Valor" },
   ];
@@ -131,8 +131,10 @@ const SquadScreen = ({ saveId }: Props) => {
                       {p.ovr}
                     </span>
                   </td>
+                  <td className="px-4 py-3 font-display">{p.seasonStats?.matches ?? 0}</td>
                   <td className="px-4 py-3 font-display font-bold">{p.seasonStats?.goals ?? 0}</td>
                   <td className="px-4 py-3 font-display">{p.seasonStats?.assists ?? 0}</td>
+                  <td className="px-4 py-3 font-display text-primary">{p.seasonStats?.goalContributions ?? 0}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.salary ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.marketValue ?? "—"}</td>
                   <td className="px-4 py-3 text-right">

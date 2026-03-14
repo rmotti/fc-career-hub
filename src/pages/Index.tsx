@@ -11,7 +11,7 @@ import TransfersScreen from "@/components/hub/TransfersScreen";
 import ChangeClubScreen from "@/components/hub/ChangeClubScreen";
 import NewSeasonModal from "@/components/modals/NewSeasonModal";
 import { useSaves, useSave, useCreateSave, useUpdateSave } from "@/hooks/useSaves";
-import type { ApiSave } from "@/services/api";
+import { type ApiSave, extractErrorMessage } from "@/services/api";
 
 const Index = () => {
   const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
@@ -33,26 +33,26 @@ const Index = () => {
       onSuccess: (newSave) => {
         setActiveSaveId(newSave.id);
         setScreen("dashboard");
-        toast.success("Save criado com sucesso!");
+        toast.success("Save criado com sucesso!", { duration: 3000 });
       },
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
   };
 
-  const handleNewSeason = () => {
-    if (!activeSave) return;
+  const handleNewSeason = async (): Promise<boolean> => {
+    if (!activeSave) return false;
     const newYear = activeSave.currentYear + 1;
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
-    updateSave.mutate(
-      { saveId: activeSave.id, data: { currentYear: newYear, currentSeason: newSeason } },
-      {
-        onSuccess: () => {
-          setScreen("dashboard");
-          toast.success(`Nova temporada ${newSeason} iniciada!`);
-        },
-        onError: (err) => toast.error(err.message),
-      }
-    );
+    
+    try {
+      await updateSave.mutateAsync({ saveId: activeSave.id, data: { currentYear: newYear, currentSeason: newSeason } });
+      setScreen("dashboard");
+      toast.success("Nova temporada iniciada!", { duration: 3000 });
+      return true;
+    } catch (err: any) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+      return false;
+    }
   };
 
   if (!activeSaveId) {

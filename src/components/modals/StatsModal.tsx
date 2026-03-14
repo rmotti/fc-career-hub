@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { extractErrorMessage } from "@/services/api";
+import { toast } from "sonner";
 
 const CUP_OPTIONS = [
   { value: "NaoParticipou", label: "Não participou" },
@@ -27,7 +29,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stats: StatsForm;
-  onSave: (stats: StatsForm) => void;
+  onSave: (stats: StatsForm) => Promise<void>;
 }
 
 const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
@@ -37,10 +39,14 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
     setForm(stats);
   }, [stats, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
-    onOpenChange(false);
+    try {
+      await onSave(form);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+    }
   };
 
   const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
