@@ -17,6 +17,15 @@ const Index = () => {
   const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HubScreen>("dashboard");
   const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar-collapsed') === 'true';
+  });
+
+  const handleToggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('sidebar-collapsed', String(next));
+  };
 
   const { data: saves = [], isLoading: savesLoading } = useSaves();
   const { data: activeSave } = useSave(activeSaveId);
@@ -95,11 +104,18 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full">
-      <HubSidebar active={screen} onNavigate={setScreen} onNewSeason={() => setShowNewSeasonModal(true)} onExitSave={() => setActiveSaveId(null)} />
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="flex min-h-screen w-full relative">
+      <HubSidebar 
+        active={screen} 
+        onNavigate={setScreen} 
+        onNewSeason={() => setShowNewSeasonModal(true)} 
+        onExitSave={() => setActiveSaveId(null)} 
+        collapsed={collapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
+      <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ${collapsed ? "md:ml-16" : "md:ml-60"}`}>
         <HubHeader saveName={activeSave.name} clubName={currentClub} season={activeSave.currentSeason} />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto w-full max-w-full">
           {renderScreen()}
         </main>
       </div>

@@ -93,7 +93,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
               <option value="venda">Venda</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>De</label>
               <div className="relative">

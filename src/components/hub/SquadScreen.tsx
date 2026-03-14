@@ -91,9 +91,12 @@ const SquadScreen = ({ saveId }: Props) => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl font-bold">Elenco</h2>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold font-display">Elenco</h2>
+          <p className="text-muted-foreground">Gerencie seus jogadores</p>
+        </div>
         <button
           onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"

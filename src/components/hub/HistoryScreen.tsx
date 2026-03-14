@@ -49,7 +49,7 @@ const HistoryScreen = ({ saveId }: Props) => {
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold">História — Legado do Save</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total de Jogos" value={totalMatches} icon={User} />
         <StatCard label="Vitórias" value={totalWins} icon={TrendingUp} />
         <StatCard label="Empates" value={totalDraws} icon={TrendingUp} accent />

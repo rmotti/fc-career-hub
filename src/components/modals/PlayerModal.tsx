@@ -99,7 +99,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
             <label className={labelClass}>Nome</label>
             <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Posição</label>
               <select className={inputClass} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })}>
@@ -124,7 +124,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               <input type="number" className={inputClass} value={form.age} onChange={(e) => setForm({ ...form, age: +e.target.value })} min={15} max={45} />
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className={labelClass}>OVR</label>
               <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: +e.target.value })} min={40} max={99} />

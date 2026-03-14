@@ -37,7 +37,10 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold">Visão Geral</h2>
+      <div>
+        <h2 className="font-display text-2xl font-bold break-words text-wrap">Visão Geral</h2>
+        <p className="text-muted-foreground">{save.name} - Temporada {save.currentSeason}</p>
+      </div>
 
       {/* Financial overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
