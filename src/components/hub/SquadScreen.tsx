@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
-import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer } from "@/hooks/usePlayers";
+import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
 import PlayerModal from "@/components/modals/PlayerModal";
 
 interface Props {
@@ -28,6 +28,7 @@ const SquadScreen = ({ saveId }: Props) => {
   const createPlayer = useCreatePlayer();
   const updatePlayer = useUpdatePlayer();
   const releasePlayer = useReleasePlayer();
+  const updateStats = useUpdatePlayerStats();
 
   const getValue = (p: ApiPlayer, key: SortKey): string | number => {
     const stats = p.currentSeasonStats || p.totalStats;
@@ -56,13 +57,20 @@ const SquadScreen = ({ saveId }: Props) => {
       await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
       toast.success("Jogador atualizado!", { duration: 3000 });
     } else {
-      await createPlayer.mutateAsync({ 
+      const newPlayer = await createPlayer.mutateAsync({ 
         saveId, 
-        data: { 
-          ...playerData, 
-          seasonStats: { goals, assists, yellowCards, redCards, matches } 
-        } 
+        data: playerData
       });
+      
+      const hasStats = goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || matches > 0;
+      if (hasStats && newPlayer?.id) {
+        await updateStats.mutateAsync({
+          saveId,
+          playerId: newPlayer.id,
+          data: { goals, assists, yellowCards, redCards, matches }
+        });
+      }
+      
       toast.success("Jogador adicionado ao elenco!", { duration: 3000 });
     }
     setEditingPlayer(null); // Will not throw an unmounted error because modal parent still exists (SquadScreen)
