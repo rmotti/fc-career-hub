@@ -24,14 +24,14 @@ const Index = () => {
   const updateSave = useUpdateSave();
 
   const handleSelectSave = (save: ApiSave) => {
-    setActiveSaveId(save._id);
+    setActiveSaveId(save.id);
     setScreen("dashboard");
   };
 
   const handleCreateSave = (name: string, club: string) => {
     createSave.mutate({ name, club }, {
       onSuccess: (newSave) => {
-        setActiveSaveId(newSave._id);
+        setActiveSaveId(newSave.id);
         setScreen("dashboard");
         toast.success("Save criado com sucesso!");
       },
@@ -44,7 +44,7 @@ const Index = () => {
     const newYear = activeSave.currentYear + 1;
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
     updateSave.mutate(
-      { saveId: activeSave._id, data: { currentYear: newYear, currentSeason: newSeason } },
+      { saveId: activeSave.id, data: { currentYear: newYear, currentSeason: newSeason } },
       {
         onSuccess: () => {
           setScreen("dashboard");
@@ -80,17 +80,17 @@ const Index = () => {
   const renderScreen = () => {
     switch (screen) {
       case "dashboard":
-        return <DashboardScreen saveId={activeSave._id} currentClub={currentClub} />;
+        return <DashboardScreen saveId={activeSave.id} currentClub={currentClub} />;
       case "squad":
-        return <SquadScreen saveId={activeSave._id} />;
+        return <SquadScreen saveId={activeSave.id} />;
       case "stats":
-        return <StatsScreen saveId={activeSave._id} />;
+        return <StatsScreen saveId={activeSave.id} />;
       case "history":
-        return <HistoryScreen saveId={activeSave._id} />;
+        return <HistoryScreen saveId={activeSave.id} />;
       case "transfers":
-        return <TransfersScreen saveId={activeSave._id} currentClub={currentClub} currentSeason={activeSave.currentSeason} />;
+        return <TransfersScreen saveId={activeSave.id} currentClub={currentClub} currentSeason={activeSave.currentSeason} />;
       case "changeClub":
-        return <ChangeClubScreen saveId={activeSave._id} currentClub={currentClub} />;
+        return <ChangeClubScreen saveId={activeSave.id} currentClub={currentClub} />;
     }
   };
 
@@ -106,7 +106,7 @@ const Index = () => {
       <NewSeasonModal
         open={showNewSeasonModal}
         onOpenChange={setShowNewSeasonModal}
-        saveId={activeSave._id}
+        saveId={activeSave.id}
         currentSeason={activeSave.currentSeason}
         currentClub={currentClub}
         onConfirm={handleNewSeason}

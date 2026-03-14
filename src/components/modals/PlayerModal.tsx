@@ -45,7 +45,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form, player?._id);
+    onSave(form, player?.id);
 
     // If editing, also update stats if they changed
     if (player) {
@@ -57,7 +57,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       if (statsChanged) {
         updateStats.mutate({
           saveId,
-          playerId: player._id,
+          playerId: player.id,
           data: { goals: form.goals, assists: form.assists, yellowCards: form.yellowCards, redCards: form.redCards },
         }, {
           onError: (err) => toast.error(`Erro ao atualizar stats: ${err.message}`),

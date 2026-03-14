@@ -53,7 +53,7 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {saves.map((save) => (
                 <button
-                  key={save._id}
+                  key={save.id}
                   onClick={() => onSelectSave(save)}
                   className="card-gamer p-5 text-left hover:border-primary/40 transition-all group"
                 >

@@ -16,7 +16,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // ─── Types (API response shapes) ────────────────────────────────────
 
 export interface ApiSave {
-  _id: string;
+  id: string;
   name: string;
   currentYear: number;
   currentSeason: string;
@@ -28,7 +28,7 @@ export interface ApiSave {
 }
 
 export interface ApiClubStint {
-  _id: string;
+  id: string;
   saveId: string;
   club: string;
   startYear: number;
@@ -37,7 +37,7 @@ export interface ApiClubStint {
 }
 
 export interface ApiPlayer {
-  _id: string;
+  id: string;
   saveId: string;
   clubStintId: string;
   name: string;
@@ -53,7 +53,7 @@ export interface ApiPlayer {
 }
 
 export interface ApiPlayerSeasonStats {
-  _id: string;
+  id: string;
   playerId: string;
   season: string;
   goals: number;
@@ -63,7 +63,7 @@ export interface ApiPlayerSeasonStats {
 }
 
 export interface ApiTeamStats {
-  _id: string;
+  id: string;
   saveId: string;
   clubStintId: string;
   season: string;
@@ -77,7 +77,7 @@ export interface ApiTeamStats {
 }
 
 export interface ApiTransfer {
-  _id: string;
+  id: string;
   saveId: string;
   playerName: string;
   type: "compra" | "venda";
@@ -89,7 +89,7 @@ export interface ApiTransfer {
 }
 
 export interface ApiTrophy {
-  _id: string;
+  id: string;
   saveId: string;
   clubStintId: string;
   name: string;

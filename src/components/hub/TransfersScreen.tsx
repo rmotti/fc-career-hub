@@ -44,14 +44,14 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   };
 
   const handleDelete = (transfer: ApiTransfer) => {
-    deleteTransfer.mutate({ saveId, transferId: transfer._id }, {
+    deleteTransfer.mutate({ saveId, transferId: transfer.id }, {
       onSuccess: () => toast.success("Transferência removida."),
       onError: (err) => toast.error(err.message),
     });
   };
 
   const renderTransferRow = (t: ApiTransfer) => (
-    <div key={t._id} className="flex items-center justify-between bg-muted/30 rounded-md px-3 py-2 group">
+    <div key={t.id} className="flex items-center justify-between bg-muted/30 rounded-md px-3 py-2 group">
       <div className="flex items-center gap-3">
         {t.type === "compra" ? <ArrowDownLeft size={14} className="text-primary" /> : <ArrowUpRight size={14} className="text-accent" />}
         <div>

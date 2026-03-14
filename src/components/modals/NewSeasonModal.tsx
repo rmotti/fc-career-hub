@@ -154,7 +154,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   <div className="flex flex-wrap gap-2">
                     {seasonTrophies.map((t) => (
                       <span
-                        key={t._id}
+                        key={t.id}
                         className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded-full text-xs font-semibold"
                       >
                         🏆 {t.name}
@@ -173,7 +173,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   </div>
                   <div className="space-y-2">
                     {topScorers.filter((p) => (p.seasonStats?.goals ?? 0) > 0).map((p, i) => (
-                      <div key={p._id} className="flex items-center justify-between">
+                      <div key={p.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                             i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
@@ -197,7 +197,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   </div>
                   <div className="space-y-2">
                     {topAssisters.filter((p) => (p.seasonStats?.assists ?? 0) > 0).map((p, i) => (
-                      <div key={p._id} className="flex items-center justify-between">
+                      <div key={p.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                             i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"

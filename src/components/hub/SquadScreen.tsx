@@ -32,7 +32,7 @@ const SquadScreen = ({ saveId }: Props) => {
   const getValue = (p: ApiPlayer, key: SortKey): string | number => {
     if (key === "goals") return p.seasonStats?.goals ?? 0;
     if (key === "assists") return p.seasonStats?.assists ?? 0;
-    return (p as Record<string, unknown>)[key] as string | number ?? "";
+    return (p as unknown as Record<string, string | number>)[key] ?? "";
   };
 
   const sorted = [...players].sort((a, b) => {
@@ -64,7 +64,7 @@ const SquadScreen = ({ saveId }: Props) => {
   };
 
   const handleDelete = (player: ApiPlayer) => {
-    releasePlayer.mutate({ saveId, playerId: player._id }, {
+    releasePlayer.mutate({ saveId, playerId: player.id }, {
       onSuccess: () => toast.success(`${player.name} foi dispensado.`),
       onError: (err) => toast.error(err.message),
     });
@@ -120,7 +120,7 @@ const SquadScreen = ({ saveId }: Props) => {
             </thead>
             <tbody>
               {sorted.map((p) => (
-                <tr key={p._id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>

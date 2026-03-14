@@ -56,7 +56,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form, transfer?._id);
+    onSave(form, transfer?.id);
     onOpenChange(false);
   };
 

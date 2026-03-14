@@ -79,7 +79,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
               .sort((a, b) => (b.seasonStats?.goals ?? 0) - (a.seasonStats?.goals ?? 0))
               .slice(0, 5)
               .map((p, i) => (
-                <div key={p._id} className="flex items-center justify-between">
+                <div key={p.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"

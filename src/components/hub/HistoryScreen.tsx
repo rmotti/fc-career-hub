@@ -64,7 +64,7 @@ const HistoryScreen = ({ saveId }: Props) => {
         {trophies.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {trophies.map((t) => (
-              <div key={t._id} className="bg-muted/50 rounded-md p-3 border border-border">
+              <div key={t.id} className="bg-muted/50 rounded-md p-3 border border-border">
                 <p className="font-display font-bold text-gold">{t.name}</p>
                 <p className="text-xs text-muted-foreground">{t.club ?? "—"} — {t.year}</p>
               </div>
@@ -80,7 +80,7 @@ const HistoryScreen = ({ saveId }: Props) => {
         <h3 className="font-display text-lg font-semibold mb-4">Clubes Gerenciados</h3>
         <div className="space-y-3">
           {clubStints.map((c) => (
-            <div key={c._id} className="flex items-center justify-between bg-muted/30 rounded-md p-3">
+            <div key={c.id} className="flex items-center justify-between bg-muted/30 rounded-md p-3">
               <div>
                 <p className="font-medium">{c.club}</p>
                 <p className="text-xs text-muted-foreground">

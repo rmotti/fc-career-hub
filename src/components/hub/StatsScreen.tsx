@@ -31,7 +31,7 @@ const StatsScreen = ({ saveId }: Props) => {
     if (!teamStats) return;
     updateTeamStats.mutate({
       saveId,
-      statsId: teamStats._id,
+      statsId: teamStats.id,
       data: stats,
     }, {
       onSuccess: () => toast.success("Estatísticas atualizadas!"),
@@ -75,7 +75,7 @@ const StatsScreen = ({ saveId }: Props) => {
           </h3>
           <div className="space-y-3">
             {topScorers.map((p, i) => (
-              <div key={p._id} className="flex justify-between items-center">
+              <div key={p.id} className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
@@ -93,7 +93,7 @@ const StatsScreen = ({ saveId }: Props) => {
           </h3>
           <div className="space-y-3">
             {topAssists.map((p, i) => (
-              <div key={p._id} className="flex justify-between items-center">
+              <div key={p.id} className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
@@ -111,7 +111,7 @@ const StatsScreen = ({ saveId }: Props) => {
           </h3>
           <div className="space-y-3">
             {topCards.map((p, i) => (
-              <div key={p._id} className="flex justify-between items-center">
+              <div key={p.id} className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
