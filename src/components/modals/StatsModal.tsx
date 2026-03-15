@@ -3,25 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
 
-const CUP_OPTIONS = [
-  { value: "NaoParticipou", label: "Não participou" },
-  { value: "Eliminado", label: "Fase de grupos / 1ª fase" },
-  { value: "OitavasOuFaseDeGrupos", label: "Oitavas de final" },
-  { value: "Quartas", label: "Quartas de final" },
-  { value: "Semifinal", label: "Semifinal" },
-  { value: "Final", label: "Final" },
-  { value: "Campeao", label: "🏆 Campeão" },
-] as const;
-
 interface StatsForm {
   goalsPro: number | "";
   goalsAgainst: number | "";
   wins: number | "";
   draws: number | "";
   losses: number | "";
-  leaguePosition: number | "";
-  europeanCupResult: string;
-  nationalCupResult: string;
 }
 
 interface Props {
@@ -47,7 +34,6 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
       wins: form.wins === "" ? 0 : form.wins,
       draws: form.draws === "" ? 0 : form.draws,
       losses: form.losses === "" ? 0 : form.losses,
-      leaguePosition: form.leaguePosition === "" ? 1 : form.leaguePosition,
     };
     try {
       await onSave(submissionForm as any);
@@ -62,7 +48,7 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-sm max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-lg">Editar Estatísticas</DialogTitle>
           <DialogDescription>Atualize as estatísticas do time na temporada.</DialogDescription>
@@ -90,31 +76,6 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
             <div>
               <label className={labelClass}>Derrotas</label>
               <input type="number" className={inputClass} value={form.losses} onChange={(e) => setForm({ ...form, losses: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-3 mt-3">
-            <div>
-              <label className={labelClass}>Posição na Liga</label>
-              <input type="number" className={inputClass} value={form.leaguePosition} onChange={(e) => setForm({ ...form, leaguePosition: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} placeholder="Ex: 1" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Copa Europeia</label>
-              <select className={inputClass} value={form.europeanCupResult} onChange={(e) => setForm({ ...form, europeanCupResult: e.target.value })}>
-                {CUP_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Copa Nacional</label>
-              <select className={inputClass} value={form.nationalCupResult} onChange={(e) => setForm({ ...form, nationalCupResult: e.target.value })}>
-                {CUP_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
             </div>
           </div>
 

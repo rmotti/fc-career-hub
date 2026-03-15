@@ -206,9 +206,6 @@ const StatsScreen = ({ saveId }: Props) => {
           wins: displayStats.wins,
           draws: displayStats.draws,
           losses: displayStats.losses,
-          leaguePosition: displayStats.leaguePosition,
-          europeanCupResult: displayStats.europeanCupResult,
-          nationalCupResult: displayStats.nationalCupResult,
         }}
         onSave={handleUpdateStats}
       />

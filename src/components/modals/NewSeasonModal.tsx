@@ -22,11 +22,18 @@ interface Props {
   saveId: string;
   currentSeason: string;
   currentClub: string;
-  onConfirm: () => Promise<boolean>;
+  onConfirm: (budget: number) => Promise<boolean>;
+}
+
+function computeNextSeason(current: string): string {
+  const startYear = parseInt(current.split("/")[0]) + 1;
+  const endYear = (startYear + 1).toString().slice(-2);
+  return `${startYear}/${endYear}`;
 }
 
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
-  const [step, setStep] = useState<"confirm" | "overview" | "celebration">("confirm");
+  const [step, setStep] = useState<"confirm" | "overview" | "budget" | "celebration">("confirm");
+  const [budgetInput, setBudgetInput] = useState("");
   const previousTrophyCount = useRef<number>(0);
 
   const { data: save } = useSave(saveId);
@@ -40,13 +47,14 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
-  // Extract current year from currentSeason (e.g. "2026/27" -> 2026)
   const currentYear = currentSeason ? parseInt(currentSeason.split("/")[0]) || 0 : 0;
   const seasonTrophies = trophies.filter((t) => t.year === currentYear);
+  const nextSeason = currentSeason ? computeNextSeason(currentSeason) : "";
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
       setStep("confirm");
+      setBudgetInput("");
     }
     onOpenChange(isOpen);
   };
@@ -56,17 +64,18 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   };
 
   const handleFinish = async () => {
-    // Store trophy count before advancing
     previousTrophyCount.current = trophies.length;
-    const success = await onConfirm();
-    
+    const budget = parseFloat(budgetInput);
+    const success = await onConfirm(budget);
+
     if (success) {
-      const willCelebrate = teamStats?.leaguePosition === 1 || 
-        teamStats?.europeanCupResult === "Campeao" || 
+      const willCelebrate = teamStats?.leaguePosition === 1 ||
+        teamStats?.europeanCupResult === "Campeao" ||
         teamStats?.nationalCupResult === "Campeao";
-        
+
       if (!willCelebrate) {
         setStep("confirm");
+        setBudgetInput("");
         onOpenChange(false);
       }
     }
@@ -74,7 +83,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   // Watch for new trophies after advancing season
   useEffect(() => {
-    if (step === "overview" && trophies.length > previousTrophyCount.current) {
+    if (step === "budget" && trophies.length > previousTrophyCount.current) {
       setStep("celebration");
     }
   }, [trophies.length, step]);
@@ -82,6 +91,9 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const newTrophies = step === "celebration"
     ? trophies.filter((t) => t.year === currentYear)
     : [];
+
+  const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
+  const labelClass = "text-xs text-muted-foreground uppercase mb-1 block";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -96,7 +108,6 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               </DialogDescription>
             </DialogHeader>
 
-            {/* Season summary in confirm step */}
             <div className="space-y-3 my-2">
               {teamStats && (
                 <div className="bg-muted/50 rounded-lg p-3 border border-border space-y-2">
@@ -147,6 +158,56 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               </button>
             </div>
           </>
+        ) : step === "budget" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-lg">Nova Temporada</DialogTitle>
+              <DialogDescription>Defina o orçamento para a próxima temporada.</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 my-2">
+              <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Temporada</span>
+                  <span className="font-display font-bold text-primary">{nextSeason}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Orçamento da temporada</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    min={0}
+                    autoFocus
+                    className={inputClass}
+                    value={budgetInput}
+                    onChange={(e) => setBudgetInput(e.target.value)}
+                    placeholder="85"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleFinish}
+                disabled={!budgetInput}
+                className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span>Confirmar</span>
+                <ChevronRight size={16} />
+              </button>
+              <button
+                onClick={() => handleClose(false)}
+                className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </>
         ) : step === "celebration" ? (
           <>
             <DialogHeader>
@@ -170,7 +231,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
             </div>
             <div className="pt-2">
               <button
-                onClick={() => { setStep("confirm"); onOpenChange(false); }}
+                onClick={() => { setStep("confirm"); setBudgetInput(""); onOpenChange(false); }}
                 className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 Fechar
@@ -371,7 +432,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
             {/* Next season button */}
             <div className="pt-2">
               <button
-                onClick={handleFinish}
+                onClick={() => setStep("budget")}
                 className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
                 <span>Iniciar Nova Temporada</span>

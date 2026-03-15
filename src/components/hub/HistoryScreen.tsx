@@ -29,7 +29,7 @@ const HistoryScreen = ({ saveId }: Props) => {
     .map(p => ({
       name: p.name,
       total: p.totalStats?.goals ?? 0,
-      clubs: [] as string[]
+      clubs: [...new Set(((p as any).history ?? []).map((h: any) => h.club))] as string[]
     }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
@@ -38,7 +38,7 @@ const HistoryScreen = ({ saveId }: Props) => {
     .map(p => ({
       name: p.name,
       total: p.totalStats?.assists ?? 0,
-      clubs: [] as string[]
+      clubs: [...new Set(((p as any).history ?? []).map((h: any) => h.club))] as string[]
     }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);

@@ -48,13 +48,13 @@ const Index = () => {
     });
   };
 
-  const handleNewSeason = async (): Promise<boolean> => {
+  const handleNewSeason = async (budget: number): Promise<boolean> => {
     if (!activeSave) return false;
     const newYear = activeSave.currentYear + 1;
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
-    
+
     try {
-      await updateSave.mutateAsync({ saveId: activeSave.id, data: { currentYear: newYear, currentSeason: newSeason } });
+      await updateSave.mutateAsync({ saveId: activeSave.id, data: { currentYear: newYear, currentSeason: newSeason, budget: String(budget) } });
       setScreen("dashboard");
       toast.success("Nova temporada iniciada!", { duration: 3000 });
       return true;

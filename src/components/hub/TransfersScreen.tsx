@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { useTransfers, useCreateTransfer, useUpdateTransfer, useDeleteTransfer } from "@/hooks/useTransfers";
 import { useSave } from "@/hooks/useSaves";
+import { usePlayer, useUpdatePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
 import TransferModal from "@/components/modals/TransferModal";
+import PlayerModal from "@/components/modals/PlayerModal";
 
 interface Props {
   saveId: string;
@@ -17,6 +19,8 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
   const [variation, setVariation] = useState<{ amount: string; type: "compra" | "venda" } | null>(null);
+  const [purchasePlayerId, setPurchasePlayerId] = useState<string | null>(null);
+  const [playerModalOpen, setPlayerModalOpen] = useState(false);
 
   const { data: save } = useSave(saveId);
   const { data: allTransfers = [], isLoading } = useTransfers(saveId);
@@ -24,6 +28,10 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const createTransfer = useCreateTransfer();
   const updateTransfer = useUpdateTransfer();
   const deleteTransfer = useDeleteTransfer();
+  const updatePlayer = useUpdatePlayer();
+  const updateStats = useUpdatePlayerStats();
+
+  const { data: purchasePlayer } = usePlayer(saveId, purchasePlayerId);
 
   const displayTransfers = tab === "current" ? currentTransfers : allTransfers;
   const purchases = displayTransfers.filter(t => t.type === "compra");
@@ -34,12 +42,31 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
       await updateTransfer.mutateAsync({ saveId, transferId, data });
       toast.success("Transferência atualizada com sucesso!", { duration: 3000 });
     } else {
-      await createTransfer.mutateAsync({ saveId, data });
+      const response = await createTransfer.mutateAsync({ saveId, data });
       setVariation({ amount: data.fee || "0", type: data.type });
       setTimeout(() => setVariation(null), 5000);
-      toast.success("Transferência registrada com sucesso!", { duration: 3000 });
+
+      if (data.type === "compra" && response.transfer?.playerId) {
+        setPurchasePlayerId(response.transfer.playerId);
+        setPlayerModalOpen(true);
+        toast.success("Jogador adicionado! Complete as informações abaixo.", { duration: 4000 });
+      } else {
+        toast.success("Transferência registrada com sucesso!", { duration: 3000 });
+      }
     }
     setEditingTransfer(null);
+  };
+
+  const handleSavePurchasePlayer = async (data: any, playerId?: string) => {
+    if (!playerId) return;
+    const { goals, assists, yellowCards, redCards, matches, ...playerData } = data;
+    await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
+    const hasStats = goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || matches > 0;
+    if (hasStats) {
+      await updateStats.mutateAsync({ saveId, playerId, data: { goals, assists, yellowCards, redCards, matches } });
+    }
+    toast.success("Jogador atualizado!", { duration: 3000 });
+    setPurchasePlayerId(null);
   };
 
   const handleDelete = (transfer: ApiTransfer) => {
@@ -62,7 +89,11 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
       </div>
       <div className="flex items-center gap-2">
         <span className={`font-display font-bold text-sm ${t.type === "compra" ? "text-primary" : "text-accent"}`}>
-          {t.fee || "Livre"}
+          {t.fee
+            ? t.fee
+            : ((t.type as string) === "emprestimo_saida" || (t.type as string) === "emprestimo_entrada")
+              ? "Empréstimo"
+              : "Livre"}
         </span>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -179,6 +210,17 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
         currentClub={currentClub}
         currentSeason={currentSeason}
         onSave={handleSaveTransfer}
+        saveId={saveId}
+      />
+
+      <PlayerModal
+        open={playerModalOpen}
+        onOpenChange={(open) => {
+          setPlayerModalOpen(open);
+          if (!open) setPurchasePlayerId(null);
+        }}
+        player={purchasePlayer ?? null}
+        onSave={handleSavePurchasePlayer}
         saveId={saveId}
       />
     </div>
