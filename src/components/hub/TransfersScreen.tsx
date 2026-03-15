@@ -16,6 +16,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
+  const [variation, setVariation] = useState<{ amount: string; type: "compra" | "venda" } | null>(null);
 
   const { data: save } = useSave(saveId);
   const { data: allTransfers = [], isLoading } = useTransfers(saveId);
@@ -34,6 +35,8 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
       toast.success("Transferência atualizada com sucesso!", { duration: 3000 });
     } else {
       await createTransfer.mutateAsync({ saveId, data });
+      setVariation({ amount: data.fee || "0", type: data.type });
+      setTimeout(() => setVariation(null), 5000);
       toast.success("Transferência registrada com sucesso!", { duration: 3000 });
     }
     setEditingTransfer(null);
@@ -123,7 +126,14 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase">Orçamento Disponível</p>
-              <p className="text-xl font-display font-bold text-primary">{save?.budget ?? "—"}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-xl font-display font-bold text-primary">{save?.balanceFormatted ?? save?.balance ?? "—"}</p>
+                {variation && (
+                  <span className={`text-sm font-bold ${variation.type === "venda" ? "text-green-500" : "text-destructive"} animate-in fade-in slide-in-from-left-2`}>
+                    {variation.type === "venda" ? "+" : "-"}€{variation.amount}M
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -169,6 +179,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
         currentClub={currentClub}
         currentSeason={currentSeason}
         onSave={handleSaveTransfer}
+        saveId={saveId}
       />
     </div>
   );

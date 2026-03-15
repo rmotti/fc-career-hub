@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { playersApi, type ApiPlayer } from "@/services/api";
 
-export function usePlayers(saveId: string | null, active?: boolean) {
+export function usePlayers(saveId: string | null, active?: boolean, sort?: string, order?: string) {
   return useQuery({
-    queryKey: ["players", saveId, { active }],
-    queryFn: () => playersApi.list(saveId!, active),
+    queryKey: ["players", saveId, { active, sort, order }],
+    queryFn: () => playersApi.list(saveId!, active, sort, order),
     enabled: !!saveId,
   });
 }

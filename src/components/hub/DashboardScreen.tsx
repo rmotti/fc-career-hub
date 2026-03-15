@@ -50,7 +50,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
           </div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground uppercase">Orçamento</p>
-            <p className="text-xl font-display font-bold text-foreground">{save.budget || "—"}</p>
+            <p className="text-xl font-display font-bold text-foreground">{save.budgetFormatted ?? save.budget ?? "—"}</p>
           </div>
         </div>
         <div className={`card-gamer p-5 flex items-center gap-4 ${isLowBalance ? "border-destructive/40" : ""}`}>
@@ -60,7 +60,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
           <div className="flex-1">
             <p className="text-xs text-muted-foreground uppercase">Saldo disponível</p>
             <p className={`text-xl font-display font-bold ${isLowBalance ? "text-destructive" : "text-primary"}`}>
-              {save.balance || "—"}
+              {save.balanceFormatted ?? save.balance ?? "—"}
             </p>
           </div>
           {isLowBalance && (

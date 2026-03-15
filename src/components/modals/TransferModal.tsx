@@ -4,6 +4,7 @@ import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { normalizeCurrencyInput } from "@/utils/currency";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
+import { usePlayers } from "@/hooks/usePlayers";
 
 interface Props {
   open: boolean;
@@ -12,10 +13,13 @@ interface Props {
   currentClub: string;
   currentSeason: string;
   onSave: (data: any, transferId?: string) => Promise<void>;
+  saveId: string;
 }
 
-const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeason, onSave }: Props) => {
+const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeason, onSave, saveId }: Props) => {
+  const { data: activePlayers = [] } = usePlayers(saveId, true);
   const [form, setForm] = useState({
+    playerId: "",
     playerName: "",
     type: "compra" as "compra" | "venda",
     from: "",
@@ -27,6 +31,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
   useEffect(() => {
     if (transfer) {
       setForm({
+        playerId: transfer.playerId || "",
         playerName: transfer.playerName,
         type: transfer.type,
         from: transfer.from,
@@ -36,6 +41,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
       });
     } else {
       setForm({
+        playerId: "",
         playerName: "",
         type: "compra",
         from: "",
@@ -55,16 +61,24 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     }
   }, [form.type, currentClub]);
 
-  const handleFeeBlur = () => {
-    const normalized = normalizeCurrencyInput(form.fee);
-    setForm((prev) => ({ ...prev, fee: normalized }));
+  const handlePlayerSelect = (pId: string) => {
+    const player = activePlayers.find(p => p.id === pId);
+    if (!player) {
+      setForm(prev => ({ ...prev, playerId: "", playerName: "" }));
+      return;
+    }
+    setForm(prev => ({
+      ...prev,
+      playerId: player.id,
+      playerName: player.name,
+      from: currentClub
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fee = normalizeCurrencyInput(form.fee);
     try {
-      await onSave({ ...form, fee }, transfer?.id);
+      await onSave({ ...form, fee: form.fee ? parseFloat(form.fee) : undefined }, transfer?.id);
       onOpenChange(false);
     } catch (err: any) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
@@ -84,7 +98,18 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className={labelClass}>Jogador</label>
-            <input className={inputClass} value={form.playerName} onChange={(e) => setForm({ ...form, playerName: e.target.value })} required />
+            {form.type === "venda" ? (
+              <select className={inputClass} value={form.playerId || ""} onChange={(e) => handlePlayerSelect(e.target.value)} required>
+                <option value="">Selecionar jogador do elenco...</option>
+                {activePlayers.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.position})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input className={inputClass} value={form.playerName} onChange={(e) => setForm({ ...form, playerName: e.target.value })} placeholder="Nome do jogador" required />
+            )}
           </div>
           <div>
             <label className={labelClass}>Tipo</label>
@@ -126,7 +151,10 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Valor</label>
-              <input className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} onBlur={handleFeeBlur} placeholder="€10M" />
+              <div className="relative">
+                <input type="number" step="0.1" min={0} className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="ex: 45" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
+              </div>
             </div>
             <div>
               <label className={labelClass}>Temporada</label>

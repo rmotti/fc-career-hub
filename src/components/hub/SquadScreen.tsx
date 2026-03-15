@@ -24,7 +24,8 @@ const SquadScreen = ({ saveId }: Props) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<ApiPlayer | null>(null);
 
-  const { data: players = [], isLoading } = usePlayers(saveId, true);
+  const orderParam = sortAsc ? "asc" : "desc";
+  const { data: players = [], isLoading } = usePlayers(saveId, true, sortKey, orderParam);
   const createPlayer = useCreatePlayer();
   const updatePlayer = useUpdatePlayer();
   const releasePlayer = useReleasePlayer();
@@ -42,7 +43,9 @@ const SquadScreen = ({ saveId }: Props) => {
   const sorted = [...players].sort((a, b) => {
     const va = getValue(a, sortKey);
     const vb = getValue(b, sortKey);
-    if (typeof va === "number" && typeof vb === "number") return sortAsc ? va - vb : vb - va;
+    if (typeof va === "number" && typeof vb === "number") {
+      return sortAsc ? va - vb : vb - va;
+    }
     return String(va).localeCompare(String(vb)) * (sortAsc ? 1 : -1);
   });
 
@@ -155,8 +158,8 @@ const SquadScreen = ({ saveId }: Props) => {
                   <td className="px-4 py-3 font-display font-bold">{stats?.goals ?? 0}</td>
                   <td className="px-4 py-3 font-display">{stats?.assists ?? 0}</td>
                   <td className="px-4 py-3 font-display text-primary">{stats?.goalContributions ?? 0}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.salary ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.marketValue ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.salaryFormatted ?? p.salary ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.marketValueFormatted ?? p.marketValue ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button

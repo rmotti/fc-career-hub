@@ -16,7 +16,7 @@ interface Props {
 
 const EMPTY_PLAYER = {
   name: "", position: "MEI" as string, age: 20, status: "Important" as string, ovr: 70,
-  salary: "", marketValue: "",
+  salary: "" as number | "", marketValue: "" as number | "",
   goals: 0, assists: 0, yellowCards: 0, redCards: 0, matches: 0,
 };
 
@@ -50,20 +50,12 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
     }
   }, [player, open]);
 
-  const handleCurrencyBlur = (field: "salary" | "marketValue") => {
-    const normalized = normalizeCurrencyInput(form[field]);
-    setForm((prev) => ({ ...prev, [field]: normalized }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const salary = normalizeCurrencyInput(form.salary);
-    const marketValue = normalizeCurrencyInput(form.marketValue);
-
     setIsSubmitting(true);
     try {
-      await onSave({ ...form, salary, marketValue }, player?.id);
+      await onSave({ ...form }, player?.id);
 
       if (player) {
         const stats = player.currentSeasonStats || player.totalStats;
@@ -154,23 +146,33 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Salário</label>
-              <input
-                className={inputClass}
-                value={form.salary}
-                onChange={(e) => setForm({ ...form, salary: e.target.value })}
-                onBlur={() => handleCurrencyBlur("salary")}
-                placeholder="€50K"
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  step="1"
+                  min={0}
+                  className={inputClass}
+                  value={form.salary ?? ""}
+                  onChange={(e) => setForm({ ...form, salary: e.target.value ? parseFloat(e.target.value) : "" })}
+                  placeholder="ex: 75"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">K€</span>
+              </div>
             </div>
             <div>
               <label className={labelClass}>Valor de Mercado</label>
-              <input
-                className={inputClass}
-                value={form.marketValue}
-                onChange={(e) => setForm({ ...form, marketValue: e.target.value })}
-                onBlur={() => handleCurrencyBlur("marketValue")}
-                placeholder="€10M"
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  className={inputClass}
+                  value={form.marketValue ?? ""}
+                  onChange={(e) => setForm({ ...form, marketValue: e.target.value ? parseFloat(e.target.value) : "" })}
+                  placeholder="ex: 35 ou 0.9"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

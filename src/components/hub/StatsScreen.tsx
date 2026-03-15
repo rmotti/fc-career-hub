@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Target, ShieldAlert, Circle, AlertTriangle, Pencil, Loader2 } from "lucide-react";
+import { Target, ShieldAlert, AlertTriangle, Pencil, Loader2, Trophy, Minus, X } from "lucide-react";
 import StatCard from "./StatCard";
 import StatsModal from "@/components/modals/StatsModal";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -64,10 +64,16 @@ const StatsScreen = ({ saveId }: Props) => {
       </div>
 
       {teamStats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard label="Gols Pró" value={teamStats.goalsPro} icon={Target} />
-          <StatCard label="Gols Contra" value={teamStats.goalsAgainst} icon={ShieldAlert} accent />
-          <StatCard label="Posse de Bola" value={`${teamStats.possession}%`} icon={Circle} />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard label="Vitórias" value={teamStats.wins} icon={Trophy} />
+            <StatCard label="Empates" value={teamStats.draws} icon={Minus} />
+            <StatCard label="Derrotas" value={teamStats.losses} icon={X} accent />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <StatCard label="Gols Pró" value={teamStats.goalsPro} icon={Target} />
+            <StatCard label="Gols Contra" value={teamStats.goalsAgainst} icon={ShieldAlert} accent />
+          </div>
         </div>
       )}
 
@@ -175,7 +181,6 @@ const StatsScreen = ({ saveId }: Props) => {
           stats={{
             goalsPro: teamStats.goalsPro,
             goalsAgainst: teamStats.goalsAgainst,
-            possession: teamStats.possession,
             wins: teamStats.wins,
             draws: teamStats.draws,
             losses: teamStats.losses,

@@ -16,7 +16,6 @@ const CUP_OPTIONS = [
 interface StatsForm {
   goalsPro: number;
   goalsAgainst: number;
-  possession: number;
   wins: number;
   draws: number;
   losses: number;
@@ -69,10 +68,6 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
               <label className={labelClass}>Gols Contra</label>
               <input type="number" className={inputClass} value={form.goalsAgainst} onChange={(e) => setForm({ ...form, goalsAgainst: +e.target.value })} min={0} />
             </div>
-          </div>
-          <div>
-            <label className={labelClass}>Posse de Bola (%)</label>
-            <input type="number" className={inputClass} value={form.possession} onChange={(e) => setForm({ ...form, possession: +e.target.value })} min={0} max={100} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
