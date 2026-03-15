@@ -10,7 +10,9 @@ interface Props {
   saveId: string;
 }
 
-type SortKey = "name" | "position" | "age" | "ovr" | "matches" | "goals" | "assists" | "goalContributions" | "salary" | "marketValue";
+type SortKey = "name" | "position" | "age" | "ovr" | "potential" | "matches" | "goals" | "assists" | "goalContributions" | "cleanSheets" | "salary" | "marketValue";
+
+const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
 const positionColor: Record<string, string> = {
   GOL: "bg-warning/20 text-warning",
@@ -49,7 +51,7 @@ const SquadScreen = ({ saveId }: Props) => {
       let valB: any;
 
       // Handle stats fields
-      if (["matches", "goals", "assists", "goalContributions"].includes(sortField)) {
+      if (["matches", "goals", "assists", "goalContributions", "cleanSheets"].includes(sortField)) {
         const statsA = a.currentSeasonStats || a.totalStats;
         const statsB = b.currentSeasonStats || b.totalStats;
         valA = statsA?.[sortField as keyof typeof statsA] ?? 0;
@@ -112,10 +114,12 @@ const SquadScreen = ({ saveId }: Props) => {
     { key: "position", label: "Pos" },
     { key: "age", label: "Idade" },
     { key: "ovr", label: "OVR" },
+    { key: "potential", label: "POT" },
     { key: "matches", label: "Part." },
     { key: "goals", label: "Gols" },
     { key: "assists", label: "Assist." },
     { key: "goalContributions", label: "Partic." },
+    { key: "cleanSheets", label: "CS" },
     { key: "salary", label: "Salário" },
     { key: "marketValue", label: "Valor" },
   ];
@@ -165,7 +169,14 @@ const SquadScreen = ({ saveId }: Props) => {
                 const stats = p.currentSeasonStats || p.totalStats;
                 return (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <span className="flex items-center gap-2">
+                      {p.name}
+                      {p.shirtNumber != null && (
+                        <span className="text-xs text-muted-foreground font-mono">#{p.shirtNumber}</span>
+                      )}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>
                   </td>
@@ -175,10 +186,14 @@ const SquadScreen = ({ saveId }: Props) => {
                       {p.ovr}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.potential ?? "—"}</td>
                   <td className="px-4 py-3 font-display">{stats?.matches ?? 0}</td>
                   <td className="px-4 py-3 font-display font-bold">{stats?.goals ?? 0}</td>
                   <td className="px-4 py-3 font-display">{stats?.assists ?? 0}</td>
                   <td className="px-4 py-3 font-display text-primary">{stats?.goalContributions ?? 0}</td>
+                  <td className="px-4 py-3 font-display text-accent">
+                    {CLEAN_SHEETS_POSITIONS.has(p.position) ? (stats?.cleanSheets ?? 0) : "—"}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{p.salaryFormatted ?? p.salary ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.marketValueFormatted ?? p.marketValue ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
@@ -203,7 +218,7 @@ const SquadScreen = ({ saveId }: Props) => {
                 );
               })}
               {players.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador no elenco.</td></tr>
+                <tr><td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador no elenco.</td></tr>
               )}
             </tbody>
           </table>

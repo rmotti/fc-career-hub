@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Target, ShieldAlert, AlertTriangle, Pencil, Loader2, Trophy, Minus, X, CheckCircle } from "lucide-react";
+import { Target, ShieldAlert, ShieldCheck, Pencil, Loader2, Trophy, Minus, X, CheckCircle } from "lucide-react";
 import StatCard from "./StatCard";
 import StatsModal from "@/components/modals/StatsModal";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -24,13 +24,11 @@ const StatsScreen = ({ saveId }: Props) => {
 
   const topScorers = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 5);
   const topAssists = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 5);
-  const topCards = [...squad].sort((a, b) => {
-    const statsA = a.currentSeasonStats || a.totalStats;
-    const statsB = b.currentSeasonStats || b.totalStats;
-    const cardA = (statsA?.yellowCards ?? 0) + (statsA?.redCards ?? 0) * 3;
-    const cardB = (statsB?.yellowCards ?? 0) + (statsB?.redCards ?? 0) * 3;
-    return cardB - cardA;
-  }).slice(0, 5);
+  const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
+  const topCleanSheets = [...squad]
+    .filter((p) => CLEAN_SHEETS_POSITIONS.has(p.position))
+    .sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.cleanSheets ?? 0) - ((a.currentSeasonStats || a.totalStats)?.cleanSheets ?? 0))
+    .slice(0, 5);
   const topMatches = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.matches ?? 0) - ((a.currentSeasonStats || a.totalStats)?.matches ?? 0)).slice(0, 5);
   const topContributions = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goalContributions ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goalContributions ?? 0)).slice(0, 5);
 
@@ -138,22 +136,19 @@ const StatsScreen = ({ saveId }: Props) => {
 
         <div className="card-gamer p-5">
           <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-warning" /> Cartões
+            <ShieldCheck size={16} className="text-accent" /> Clean Sheets
           </h3>
           <div className="space-y-3">
-            {topCards.map((p, i) => (
+            {topCleanSheets.map((p, i) => (
               <div key={p.id} className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                   <span className="text-sm">{p.name}</span>
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <span className="text-warning font-bold">{(p.currentSeasonStats || p.totalStats)?.yellowCards ?? 0}🟨</span>
-                  {((p.currentSeasonStats || p.totalStats)?.redCards ?? 0) > 0 && <span className="text-destructive font-bold">{(p.currentSeasonStats || p.totalStats)?.redCards}🟥</span>}
-                </div>
+                <span className="font-display font-bold text-accent">{(p.currentSeasonStats || p.totalStats)?.cleanSheets ?? 0}</span>
               </div>
             ))}
-            {topCards.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+            {topCleanSheets.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
           </div>
         </div>
       </div>
