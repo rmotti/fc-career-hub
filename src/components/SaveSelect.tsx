@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2, ClipboardList, BarChart2 } from "lucide-react";
+import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2, ClipboardList, BarChart2, Trash2 } from "lucide-react";
 import type { ApiSave } from "@/services/api";
 import { useClubs } from "@/hooks/useClubs";
+import { useDeleteSave } from "@/hooks/useSaves";
 
 interface Props {
   saves: ApiSave[];
@@ -13,6 +14,7 @@ interface Props {
 
 const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Props) => {
   const [showForm, setShowForm] = useState(false);
+  const deleteSave = useDeleteSave();
   const [newName, setNewName] = useState("");
   const [newClub, setNewClub] = useState("");
   const [newBudget, setNewBudget] = useState("");
@@ -77,25 +79,39 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {saves.map((save) => (
-                <button
-                  key={save.id}
-                  onClick={() => onSelectSave(save)}
-                  className="card-gamer p-6 text-left hover:border-primary/50 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5"
-                >
-                  <h3 className="font-display text-xl font-bold group-hover:text-primary transition-colors mb-4 truncate">
-                    {save.name}
-                  </h3>
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Shield size={16} className="text-primary/80" />
-                      <span className="font-medium truncate">{save.currentClubStint?.club ?? "—"}</span>
+                <div key={save.id} className="relative group/card">
+                  <button
+                    onClick={() => onSelectSave(save)}
+                    className="card-gamer p-6 text-left hover:border-primary/50 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 w-full"
+                  >
+                    <h3 className="font-display text-xl font-bold group-hover:text-primary transition-colors mb-4 truncate pr-8">
+                      {save.name}
+                    </h3>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Shield size={16} className="text-primary/80" />
+                        <span className="font-medium truncate">{save.currentClubStint?.club ?? "—"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar size={16} className="text-muted-foreground/80" />
+                        <span>Temporada {save.currentSeason}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar size={16} className="text-muted-foreground/80" />
-                      <span>Temporada {save.currentSeason}</span>
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Deletar o save "${save.name}"? Esta ação não pode ser desfeita.`)) {
+                        deleteSave.mutate(save.id);
+                      }
+                    }}
+                    disabled={deleteSave.isPending}
+                    className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover/card:opacity-100"
+                    title="Deletar save"
+                  >
+                    {deleteSave.isPending ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                  </button>
+                </div>
               ))}
             </div>
 
