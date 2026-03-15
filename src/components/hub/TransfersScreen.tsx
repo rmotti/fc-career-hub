@@ -18,7 +18,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
-  const [variation, setVariation] = useState<{ amount: string; type: "compra" | "venda" } | null>(null);
+  const [variation, setVariation] = useState<{ amount: string; type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida" } | null>(null);
   const [purchasePlayerId, setPurchasePlayerId] = useState<string | null>(null);
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
 
@@ -34,8 +34,8 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const { data: purchasePlayer } = usePlayer(saveId, purchasePlayerId);
 
   const displayTransfers = tab === "current" ? currentTransfers : allTransfers;
-  const purchases = displayTransfers.filter(t => t.type === "compra");
-  const sales = displayTransfers.filter(t => t.type === "venda");
+  const purchases = displayTransfers.filter(t => t.type === "compra" || t.type === "emprestimo_entrada");
+  const sales = displayTransfers.filter(t => t.type === "venda" || t.type === "emprestimo_saida");
 
   const handleSaveTransfer = async (data: any, transferId?: string) => {
     if (transferId) {
@@ -79,19 +79,19 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const renderTransferRow = (t: ApiTransfer) => (
     <div key={t.id} className="flex items-center justify-between bg-muted/30 rounded-md px-3 py-2 group">
       <div className="flex items-center gap-3">
-        {t.type === "compra" ? <ArrowDownLeft size={14} className="text-primary" /> : <ArrowUpRight size={14} className="text-accent" />}
+        {(t.type === "compra" || t.type === "emprestimo_entrada") ? <ArrowDownLeft size={14} className="text-primary" /> : <ArrowUpRight size={14} className="text-accent" />}
         <div>
           <p className="font-medium text-sm">{t.playerName}</p>
           <p className="text-xs text-muted-foreground">
-            {t.type === "compra" ? `De: ${t.from}` : `Para: ${t.to}`} — {t.season}
+            {(t.type === "compra" || t.type === "emprestimo_entrada") ? `De: ${t.from}` : `Para: ${t.to}`} — {t.season}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className={`font-display font-bold text-sm ${t.type === "compra" ? "text-primary" : "text-accent"}`}>
+        <span className={`font-display font-bold text-sm ${(t.type === "compra" || t.type === "emprestimo_entrada") ? "text-primary" : "text-accent"}`}>
           {t.fee
-            ? t.fee
-            : ((t.type as string) === "emprestimo_saida" || (t.type as string) === "emprestimo_entrada")
+            ? (t.feeFormatted ?? `€${t.fee}M`)
+            : (t.type === "emprestimo_entrada" || t.type === "emprestimo_saida")
               ? "Empréstimo"
               : "Livre"}
         </span>
@@ -160,8 +160,8 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
               <div className="flex items-center gap-3">
                 <p className="text-xl font-display font-bold text-primary">{save?.balanceFormatted ?? save?.balance ?? "—"}</p>
                 {variation && (
-                  <span className={`text-sm font-bold ${variation.type === "venda" ? "text-green-500" : "text-destructive"} animate-in fade-in slide-in-from-left-2`}>
-                    {variation.type === "venda" ? "+" : "-"}€{variation.amount}M
+                  <span className={`text-sm font-bold ${(variation.type === "venda" || variation.type === "emprestimo_saida") ? "text-green-500" : "text-destructive"} animate-in fade-in slide-in-from-left-2`}>
+                    {(variation.type === "venda" || variation.type === "emprestimo_saida") ? "+" : "-"}€{variation.amount}M
                   </span>
                 )}
               </div>

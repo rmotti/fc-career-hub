@@ -18,7 +18,7 @@ export function useCreateTransfer() {
       qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
       if (res.save) {
-        qc.setQueryData(["saves", vars.saveId], res.save);
+        qc.setQueryData(["saves", vars.saveId], (prev: any) => ({ ...prev, ...res.save }));
       } else {
         qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
       }

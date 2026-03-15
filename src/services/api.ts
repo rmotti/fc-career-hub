@@ -59,9 +59,9 @@ export interface ApiSave {
   name: string;
   currentYear: number;
   currentSeason: string;
-  budget: string;
+  budget: number;
   budgetFormatted?: string;
-  balance: string;
+  balance: number;
   balanceFormatted?: string;
   currentClubStint?: ApiClubStint;
   createdAt?: string;
@@ -127,10 +127,11 @@ export interface ApiTransfer {
   id: string;
   saveId: string;
   playerName: string;
-  type: "compra" | "venda";
+  type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida";
   from: string;
   to: string;
-  fee?: string;
+  fee?: number;
+  feeFormatted?: string;
   season: string;
   playerId?: string;
 }
@@ -211,8 +212,8 @@ export const teamStatsApi = {
 export const transfersApi = {
   list: (saveId: string, season?: "current") =>
     request<ApiTransfer[]>(`/saves/${saveId}/transfers${season ? `?season=${season}` : ""}`),
-  create: (saveId: string, data: { playerName: string; type: string; from: string; to: string; season: string; fee?: string; playerId?: string }) =>
-    request<{ transfer: ApiTransfer; save: ApiSave }>(`/saves/${saveId}/transfers`, { method: "POST", body: JSON.stringify(data) }),
+  create: (saveId: string, data: { playerName: string; type: string; from: string; to: string; season: string; fee?: number; playerId?: string }) =>
+    request<{ transfer: ApiTransfer; playerId: string | null; save: ApiSave }>(`/saves/${saveId}/transfers`, { method: "POST", body: JSON.stringify(data) }),
   update: (saveId: string, transferId: string, data: { playerName?: string; type?: string; from?: string; to?: string; fee?: string; season?: string }) =>
     request<ApiTransfer>(`/saves/${saveId}/transfers/${transferId}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (saveId: string, transferId: string) =>
