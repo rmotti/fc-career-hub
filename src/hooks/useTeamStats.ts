@@ -14,7 +14,13 @@ export function useUpdateTeamStats() {
   return useMutation({
     mutationFn: ({ saveId, statsId, data }: { saveId: string; statsId: string; data: Parameters<typeof teamStatsApi.update>[2] }) =>
       teamStatsApi.update(saveId, statsId, data),
-    onSuccess: (_res, vars) => {
+    onSuccess: (res, vars) => {
+      qc.setQueryData(["teamStats", vars.saveId, { season: "current" }], (old: any) => {
+        if (!old || old.length === 0) return [res];
+        return old.map((stats: any) =>
+          stats.id === res.id ? res : stats
+        );
+      });
       return Promise.all([
         qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] }),
         qc.invalidateQueries({ queryKey: ["saves", vars.saveId] })

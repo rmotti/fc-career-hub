@@ -23,14 +23,25 @@ const HistoryScreen = ({ saveId }: Props) => {
   const totalLosses = allTeamStats.reduce((s, ts) => s + ts.losses, 0);
   const totalMatches = totalWins + totalDraws + totalLosses;
 
-  // All-time top scorers from totalStats
+  // Top 5 all-time scorers from totalStats
   const validPlayers = players?.filter(p => p && p.totalStats) ?? [];
-  const topScorer = validPlayers.length > 0
-    ? [...validPlayers].sort((a, b) => (b.totalStats?.goals ?? 0) - (a.totalStats?.goals ?? 0))[0]
-    : null;
-  const topAssist = validPlayers.length > 0
-    ? [...validPlayers].sort((a, b) => (b.totalStats?.assists ?? 0) - (a.totalStats?.assists ?? 0))[0]
-    : null;
+  const top5Scorers = validPlayers
+    .map(p => ({
+      name: p.name,
+      total: p.totalStats?.goals ?? 0,
+      clubs: [] as string[]
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  const top5Assisters = validPlayers
+    .map(p => ({
+      name: p.name,
+      total: p.totalStats?.assists ?? 0,
+      clubs: [] as string[]
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
 
   const purchases = transfers.filter(t => t.type === "compra");
   const sales = transfers.filter(t => t.type === "venda");
@@ -136,22 +147,42 @@ const HistoryScreen = ({ saveId }: Props) => {
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
-        <div className="card-gamer p-5">
-          <p className="text-xs text-muted-foreground uppercase mb-1">Top Artilheiro Histórico</p>
-          {topScorer && (topScorer.totalStats?.goals ?? 0) > 0 ? (
-            <>
-              <p className="font-display text-lg font-bold">{topScorer.name}</p>
-              <p className="text-sm text-primary font-bold">{topScorer.totalStats?.goals ?? 0} gols</p>
-            </>
+        <div className="card-gamer p-5 md:col-span-2 lg:col-span-1">
+          <p className="text-xs text-muted-foreground uppercase mb-3">Top Artilheiros Históricos</p>
+          {top5Scorers.length > 0 && top5Scorers[0].total > 0 ? (
+            <div className="space-y-3">
+              {top5Scorers.filter(p => p.total > 0).map((p, i) => (
+                <div key={p.name} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2 rounded-md hover:bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                    <div>
+                      <p className="font-display font-medium text-sm">{p.name}</p>
+                      {p.clubs.length > 0 && <p className="text-[10px] text-muted-foreground">{p.clubs.join(', ')}</p>}
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-primary">{p.total} cols</span>
+                </div>
+              ))}
+            </div>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
-        <div className="card-gamer p-5">
-          <p className="text-xs text-muted-foreground uppercase mb-1">Top Assistente Histórico</p>
-          {topAssist && (topAssist.totalStats?.assists ?? 0) > 0 ? (
-            <>
-              <p className="font-display text-lg font-bold">{topAssist.name}</p>
-              <p className="text-sm text-accent font-bold">{topAssist.totalStats?.assists ?? 0} assistências</p>
-            </>
+        <div className="card-gamer p-5 md:col-span-2 lg:col-span-1 border-t md:border-t-0 md:border-l border-border md:pl-5">
+          <p className="text-xs text-muted-foreground uppercase mb-3">Top Assistentes Históricos</p>
+          {top5Assisters.length > 0 && top5Assisters[0].total > 0 ? (
+            <div className="space-y-3">
+              {top5Assisters.filter(p => p.total > 0).map((p, i) => (
+                <div key={p.name} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2 rounded-md hover:bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                    <div>
+                      <p className="font-display font-medium text-sm">{p.name}</p>
+                      {p.clubs.length > 0 && <p className="text-[10px] text-muted-foreground">{p.clubs.join(', ')}</p>}
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-accent">{p.total} asts</span>
+                </div>
+              ))}
+            </div>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
       </div>

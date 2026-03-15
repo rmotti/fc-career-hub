@@ -19,6 +19,9 @@ const StatsScreen = ({ saveId }: Props) => {
   const updateTeamStats = useUpdateTeamStats();
 
   const teamStats = teamStatsData[0];
+  const displayStats = teamStats ?? {
+    wins: 0, draws: 0, losses: 0, goalsPro: 0, goalsAgainst: 0, leaguePosition: 1, europeanCupResult: "NaoParticipou", nationalCupResult: "NaoParticipou"
+  };
 
   const topScorers = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 5);
   const topAssists = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 5);
@@ -43,6 +46,7 @@ const StatsScreen = ({ saveId }: Props) => {
       data: stats,
     });
     toast.success("Estatísticas atualizadas!", { duration: 3000 });
+    setStatsModalOpen(false);
   };
 
   if (isLoadingPlayers || isLoadingTeamStats) {
@@ -87,11 +91,11 @@ const StatsScreen = ({ saveId }: Props) => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <StatCard label="Vitórias" value={teamStats?.wins ?? 0} icon={CheckCircle} />
-          <StatCard label="Empates" value={teamStats?.draws ?? 0} icon={Minus} />
-          <StatCard label="Derrotas" value={teamStats?.losses ?? 0} icon={X} accent />
-          <StatCard label="Gols Pró" value={teamStats?.goalsPro ?? 0} icon={Target} />
-          <StatCard label="Gols Contra" value={teamStats?.goalsAgainst ?? 0} icon={ShieldAlert} accent />
+          <StatCard label="Vitórias" value={displayStats.wins} icon={CheckCircle} />
+          <StatCard label="Empates" value={displayStats.draws} icon={Minus} />
+          <StatCard label="Derrotas" value={displayStats.losses} icon={X} accent />
+          <StatCard label="Gols Pró" value={displayStats.goalsPro} icon={Target} />
+          <StatCard label="Gols Contra" value={displayStats.goalsAgainst} icon={ShieldAlert} accent />
         </div>
       </div>
 
@@ -197,14 +201,14 @@ const StatsScreen = ({ saveId }: Props) => {
         open={statsModalOpen}
         onOpenChange={setStatsModalOpen}
         stats={{
-          goalsPro: teamStats?.goalsPro ?? 0,
-          goalsAgainst: teamStats?.goalsAgainst ?? 0,
-          wins: teamStats?.wins ?? 0,
-          draws: teamStats?.draws ?? 0,
-          losses: teamStats?.losses ?? 0,
-          leaguePosition: teamStats?.leaguePosition ?? 1,
-          europeanCupResult: teamStats?.europeanCupResult ?? "NaoParticipou",
-          nationalCupResult: teamStats?.nationalCupResult ?? "NaoParticipou",
+          goalsPro: displayStats.goalsPro,
+          goalsAgainst: displayStats.goalsAgainst,
+          wins: displayStats.wins,
+          draws: displayStats.draws,
+          losses: displayStats.losses,
+          leaguePosition: displayStats.leaguePosition,
+          europeanCupResult: displayStats.europeanCupResult,
+          nationalCupResult: displayStats.nationalCupResult,
         }}
         onSave={handleUpdateStats}
       />

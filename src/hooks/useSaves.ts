@@ -13,6 +13,8 @@ export function useSave(saveId: string | null) {
     queryKey: ["saves", saveId],
     queryFn: () => savesApi.get(saveId!),
     enabled: !!saveId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
