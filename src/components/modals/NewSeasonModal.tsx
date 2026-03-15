@@ -25,10 +25,15 @@ interface Props {
   onConfirm: (budget: number) => Promise<boolean>;
 }
 
-function computeNextSeason(current: string): string {
-  const startYear = parseInt(current.split("/")[0]) + 1;
-  const endYear = (startYear + 1).toString().slice(-2);
-  return `${startYear}/${endYear}`;
+function computeNextSeason(current: string | null | undefined): string | null {
+  if (!current || typeof current !== "string") return null;
+  const parts = current.split("/");
+  if (parts.length !== 2) return null;
+  const startYear = parseInt(parts[0], 10);
+  if (isNaN(startYear)) return null;
+  const nextStart = startYear + 1;
+  const nextEnd = (nextStart + 1).toString().slice(-2);
+  return `${nextStart}/${nextEnd}`;
 }
 
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
@@ -47,9 +52,11 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
-  const currentYear = currentSeason ? parseInt(currentSeason.split("/")[0]) || 0 : 0;
+  // Always use the live save data for season calculations to avoid stale props
+  const liveSeason = save?.currentSeason ?? currentSeason;
+  const currentYear = liveSeason ? parseInt(liveSeason.split("/")[0]) || 0 : 0;
   const seasonTrophies = trophies.filter((t) => t.year === currentYear);
-  const nextSeason = currentSeason ? computeNextSeason(currentSeason) : "";
+  const nextSeason = computeNextSeason(liveSeason);
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
@@ -169,7 +176,10 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Temporada</span>
-                  <span className="font-display font-bold text-primary">{nextSeason}</span>
+                  {nextSeason
+                    ? <span className="font-display font-bold text-primary">{nextSeason}</span>
+                    : <span className="text-destructive text-xs">Temporada atual inválida.</span>
+                  }
                 </div>
               </div>
 
@@ -194,7 +204,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
             <div className="flex gap-3 pt-2">
               <button
                 onClick={handleFinish}
-                disabled={!budgetInput}
+                disabled={!budgetInput || !nextSeason}
                 className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>Confirmar</span>

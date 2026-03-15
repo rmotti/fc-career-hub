@@ -46,7 +46,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
       setVariation({ amount: data.fee || "0", type: data.type });
       setTimeout(() => setVariation(null), 5000);
 
-      if (data.type === "compra" && response.transfer?.playerId) {
+      if ((data.type === "compra" || data.type === "emprestimo_entrada") && response.transfer?.playerId) {
         setPurchasePlayerId(response.transfer.playerId);
         setPlayerModalOpen(true);
         toast.success("Jogador adicionado! Complete as informações abaixo.", { duration: 4000 });

@@ -50,7 +50,12 @@ const Index = () => {
 
   const handleNewSeason = async (budget: number): Promise<boolean> => {
     if (!activeSave) return false;
-    const newYear = activeSave.currentYear + 1;
+    const currentYear = parseInt(String(activeSave.currentYear), 10);
+    if (isNaN(currentYear)) {
+      toast.error("Temporada atual inválida. Recarregue a página.", { duration: 5000 });
+      return false;
+    }
+    const newYear = currentYear + 1;
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
 
     try {

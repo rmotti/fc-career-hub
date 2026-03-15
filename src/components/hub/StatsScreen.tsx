@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Target, ShieldAlert, AlertTriangle, Pencil, Loader2, Trophy, Minus, X, CheckCircle } from "lucide-react";
 import StatCard from "./StatCard";
 import StatsModal from "@/components/modals/StatsModal";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/hooks/useTeamStats";
-import { extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
 
 interface Props {
@@ -201,11 +200,14 @@ const StatsScreen = ({ saveId }: Props) => {
         open={statsModalOpen}
         onOpenChange={setStatsModalOpen}
         stats={{
-          goalsPro: displayStats.goalsPro,
-          goalsAgainst: displayStats.goalsAgainst,
-          wins: displayStats.wins,
-          draws: displayStats.draws,
-          losses: displayStats.losses,
+          goalsPro:           displayStats.goalsPro,
+          goalsAgainst:       displayStats.goalsAgainst,
+          wins:               displayStats.wins,
+          draws:              displayStats.draws,
+          losses:             displayStats.losses,
+          leaguePosition:     displayStats.leaguePosition ?? "",
+          europeanCupResult:  displayStats.europeanCupResult ?? "NaoParticipou",
+          nationalCupResult:  displayStats.nationalCupResult ?? "NaoParticipou",
         }}
         onSave={handleUpdateStats}
       />

@@ -160,7 +160,7 @@ const HistoryScreen = ({ saveId }: Props) => {
                       {p.clubs.length > 0 && <p className="text-[10px] text-muted-foreground">{p.clubs.join(', ')}</p>}
                     </div>
                   </div>
-                  <span className="text-sm font-bold text-primary">{p.total} cols</span>
+                  <span className="text-sm font-bold text-primary">{p.total} Gols</span>
                 </div>
               ))}
             </div>
@@ -179,7 +179,7 @@ const HistoryScreen = ({ saveId }: Props) => {
                       {p.clubs.length > 0 && <p className="text-[10px] text-muted-foreground">{p.clubs.join(', ')}</p>}
                     </div>
                   </div>
-                  <span className="text-sm font-bold text-accent">{p.total} asts</span>
+                  <span className="text-sm font-bold text-accent">{p.total} Assistências</span>
                 </div>
               ))}
             </div>
