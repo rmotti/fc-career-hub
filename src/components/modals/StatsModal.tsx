@@ -14,12 +14,12 @@ const CUP_OPTIONS = [
 ] as const;
 
 interface StatsForm {
-  goalsPro: number;
-  goalsAgainst: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  leaguePosition: number;
+  goalsPro: number | "";
+  goalsAgainst: number | "";
+  wins: number | "";
+  draws: number | "";
+  losses: number | "";
+  leaguePosition: number | "";
   europeanCupResult: string;
   nationalCupResult: string;
 }
@@ -40,8 +40,17 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const submissionForm = {
+      ...form,
+      goalsPro: form.goalsPro === "" ? 0 : form.goalsPro,
+      goalsAgainst: form.goalsAgainst === "" ? 0 : form.goalsAgainst,
+      wins: form.wins === "" ? 0 : form.wins,
+      draws: form.draws === "" ? 0 : form.draws,
+      losses: form.losses === "" ? 0 : form.losses,
+      leaguePosition: form.leaguePosition === "" ? 1 : form.leaguePosition,
+    };
     try {
-      await onSave(form);
+      await onSave(submissionForm as any);
       onOpenChange(false);
     } catch (err: any) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
@@ -62,33 +71,32 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Gols Pró</label>
-              <input type="number" className={inputClass} value={form.goalsPro} onChange={(e) => setForm({ ...form, goalsPro: +e.target.value })} min={0} />
+              <input type="number" className={inputClass} value={form.goalsPro} onChange={(e) => setForm({ ...form, goalsPro: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
             <div>
               <label className={labelClass}>Gols Contra</label>
-              <input type="number" className={inputClass} value={form.goalsAgainst} onChange={(e) => setForm({ ...form, goalsAgainst: +e.target.value })} min={0} />
+              <input type="number" className={inputClass} value={form.goalsAgainst} onChange={(e) => setForm({ ...form, goalsAgainst: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Vitórias</label>
-              <input type="number" className={inputClass} value={form.wins} onChange={(e) => setForm({ ...form, wins: +e.target.value })} min={0} />
+              <input type="number" className={inputClass} value={form.wins} onChange={(e) => setForm({ ...form, wins: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
             <div>
               <label className={labelClass}>Empates</label>
-              <input type="number" className={inputClass} value={form.draws} onChange={(e) => setForm({ ...form, draws: +e.target.value })} min={0} />
+              <input type="number" className={inputClass} value={form.draws} onChange={(e) => setForm({ ...form, draws: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
             <div>
               <label className={labelClass}>Derrotas</label>
-              <input type="number" className={inputClass} value={form.losses} onChange={(e) => setForm({ ...form, losses: +e.target.value })} min={0} />
+              <input type="number" className={inputClass} value={form.losses} onChange={(e) => setForm({ ...form, losses: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
           </div>
 
-          {/* New fields */}
           <div className="border-t border-border pt-3 mt-3">
             <div>
               <label className={labelClass}>Posição na Liga</label>
-              <input type="number" className={inputClass} value={form.leaguePosition} onChange={(e) => setForm({ ...form, leaguePosition: +e.target.value })} min={1} placeholder="Ex: 1" />
+              <input type="number" className={inputClass} value={form.leaguePosition} onChange={(e) => setForm({ ...form, leaguePosition: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} placeholder="Ex: 1" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

@@ -21,7 +21,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
   const [form, setForm] = useState({
     playerId: "",
     playerName: "",
-    type: "compra" as "compra" | "venda",
+    type: "compra" as "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida",
     from: "",
     to: "",
     fee: "",
@@ -71,7 +71,8 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
       ...prev,
       playerId: player.id,
       playerName: player.name,
-      from: currentClub
+      from: form.type === "venda" || form.type === "emprestimo_saida" ? currentClub : prev.from,
+      to: form.type === "compra" || form.type === "emprestimo_entrada" ? currentClub : prev.to,
     }));
   };
 
@@ -98,10 +99,10 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className={labelClass}>Jogador</label>
-            {form.type === "venda" ? (
+            {["venda", "emprestimo_saida"].includes(form.type) ? (
               <select className={inputClass} value={form.playerId || ""} onChange={(e) => handlePlayerSelect(e.target.value)} required>
                 <option value="">Selecionar jogador do elenco...</option>
-                {activePlayers.map(p => (
+                {activePlayers.map((p: any) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.position})
                   </option>
@@ -113,9 +114,11 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
           </div>
           <div>
             <label className={labelClass}>Tipo</label>
-            <select className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "compra" | "venda" })}>
+            <select className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as any })}>
               <option value="compra">Compra</option>
               <option value="venda">Venda</option>
+              <option value="emprestimo_entrada">Empréstimo (entrada)</option>
+              <option value="emprestimo_saida">Empréstimo (saída)</option>
             </select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -123,7 +126,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
               <label className={labelClass}>De</label>
               <div className="relative">
                 <input 
-                  className={`${inputClass} ${form.type === "venda" ? "opacity-70 cursor-not-allowed bg-muted/60 pl-9" : ""}`} 
+                  className={`${inputClass} ${["venda", "emprestimo_saida"].includes(form.type) ? "opacity-70 cursor-not-allowed bg-muted/60 pl-9" : ""}`} 
                   value={form.from} 
                   onChange={(e) => setForm({ ...form, from: e.target.value })} 
                   disabled={form.type === "venda"}
@@ -152,9 +155,12 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
             <div>
               <label className={labelClass}>Valor</label>
               <div className="relative">
-                <input type="number" step="0.1" min={0} className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="ex: 45" />
+                <input type="number" step="0.1" min={0} className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="45" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
               </div>
+              {["emprestimo_entrada", "emprestimo_saida"].includes(form.type) && (
+                <p className="text-xs text-muted-foreground mt-1">Empréstimos não afetam o saldo da equipe.</p>
+              )}
             </div>
             <div>
               <label className={labelClass}>Temporada</label>

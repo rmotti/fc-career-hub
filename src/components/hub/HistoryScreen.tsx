@@ -24,11 +24,12 @@ const HistoryScreen = ({ saveId }: Props) => {
   const totalMatches = totalWins + totalDraws + totalLosses;
 
   // All-time top scorers from totalStats
-  const topScorer = players.length > 0
-    ? [...players].sort((a, b) => (b.totalStats?.goals ?? 0) - (a.totalStats?.goals ?? 0))[0]
+  const validPlayers = players?.filter(p => p && p.totalStats) ?? [];
+  const topScorer = validPlayers.length > 0
+    ? [...validPlayers].sort((a, b) => (b.totalStats?.goals ?? 0) - (a.totalStats?.goals ?? 0))[0]
     : null;
-  const topAssist = players.length > 0
-    ? [...players].sort((a, b) => (b.totalStats?.assists ?? 0) - (a.totalStats?.assists ?? 0))[0]
+  const topAssist = validPlayers.length > 0
+    ? [...validPlayers].sort((a, b) => (b.totalStats?.assists ?? 0) - (a.totalStats?.assists ?? 0))[0]
     : null;
 
   const purchases = transfers.filter(t => t.type === "compra");
@@ -137,19 +138,19 @@ const HistoryScreen = ({ saveId }: Props) => {
         </div>
         <div className="card-gamer p-5">
           <p className="text-xs text-muted-foreground uppercase mb-1">Top Artilheiro Histórico</p>
-          {topScorer && topScorer.totalStats?.goals ? (
+          {topScorer && (topScorer.totalStats?.goals ?? 0) > 0 ? (
             <>
               <p className="font-display text-lg font-bold">{topScorer.name}</p>
-              <p className="text-sm text-primary font-bold">{topScorer.totalStats.goals} gols</p>
+              <p className="text-sm text-primary font-bold">{topScorer.totalStats?.goals ?? 0} gols</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
         <div className="card-gamer p-5">
           <p className="text-xs text-muted-foreground uppercase mb-1">Top Assistente Histórico</p>
-          {topAssist && topAssist.totalStats?.assists ? (
+          {topAssist && (topAssist.totalStats?.assists ?? 0) > 0 ? (
             <>
               <p className="font-display text-lg font-bold">{topAssist.name}</p>
-              <p className="text-sm text-accent font-bold">{topAssist.totalStats.assists} assistências</p>
+              <p className="text-sm text-accent font-bold">{topAssist.totalStats?.assists ?? 0} assistências</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>

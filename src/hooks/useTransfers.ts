@@ -14,10 +14,14 @@ export function useCreateTransfer() {
   return useMutation({
     mutationFn: ({ saveId, data }: { saveId: string; data: Parameters<typeof transfersApi.create>[1] }) =>
       transfersApi.create(saveId, data),
-    onSuccess: (_res, vars) => {
+    onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
-      qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
+      if (res.save) {
+        qc.setQueryData(["saves", vars.saveId], res.save);
+      } else {
+        qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
+      }
     },
   });
 }

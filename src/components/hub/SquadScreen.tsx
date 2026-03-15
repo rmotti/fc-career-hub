@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
+import { useSave } from "@/hooks/useSaves";
 import PlayerModal from "@/components/modals/PlayerModal";
 
 interface Props {
@@ -19,39 +20,50 @@ const positionColor: Record<string, string> = {
 };
 
 const SquadScreen = ({ saveId }: Props) => {
-  const [sortKey, setSortKey] = useState<SortKey>("ovr");
-  const [sortAsc, setSortAsc] = useState(false);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<ApiPlayer | null>(null);
 
-  const orderParam = sortAsc ? "asc" : "desc";
-  const { data: players = [], isLoading } = usePlayers(saveId, true, sortKey, orderParam);
+  const { data: save } = useSave(saveId);
+  const { data: players = [], isLoading } = usePlayers(saveId, true);
   const createPlayer = useCreatePlayer();
   const updatePlayer = useUpdatePlayer();
   const releasePlayer = useReleasePlayer();
   const updateStats = useUpdatePlayerStats();
 
-  const getValue = (p: ApiPlayer, key: SortKey): string | number => {
-    const stats = p.currentSeasonStats || p.totalStats;
-    if (key === "matches") return stats?.matches ?? 0;
-    if (key === "goals") return stats?.goals ?? 0;
-    if (key === "assists") return stats?.assists ?? 0;
-    if (key === "goalContributions") return stats?.goalContributions ?? 0;
-    return (p as unknown as Record<string, string | number>)[key] ?? "";
-  };
+  const sortedPlayers = useMemo(() => {
+    if (!sortField) return players;
 
-  const sorted = [...players].sort((a, b) => {
-    const va = getValue(a, sortKey);
-    const vb = getValue(b, sortKey);
-    if (typeof va === "number" && typeof vb === "number") {
-      return sortAsc ? va - vb : vb - va;
+    return [...players].sort((a, b) => {
+      let valA: any;
+      let valB: any;
+
+      // Handle stats fields
+      if (["matches", "goals", "assists", "goalContributions"].includes(sortField)) {
+        const statsA = a.currentSeasonStats || a.totalStats;
+        const statsB = b.currentSeasonStats || b.totalStats;
+        valA = statsA?.[sortField as keyof typeof statsA] ?? 0;
+        valB = statsB?.[sortField as keyof typeof statsB] ?? 0;
+      } else {
+        valA = (a as any)[sortField] ?? 0;
+        valB = (b as any)[sortField] ?? 0;
+      }
+      
+      if (typeof valA === "string" && typeof valB === "string") {
+        return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      return sortOrder === "desc" ? (valB as number) - (valA as number) : (valA as number) - (valB as number);
+    });
+  }, [players, sortField, sortOrder]);
+
+  const handleSort = (key: string) => {
+    if (sortField === key) {
+      setSortOrder(prev => prev === "desc" ? "asc" : "desc");
+    } else {
+      setSortField(key);
+      setSortOrder("desc");
     }
-    return String(va).localeCompare(String(vb)) * (sortAsc ? 1 : -1);
-  });
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) setSortAsc(!sortAsc);
-    else { setSortKey(key); setSortAsc(false); }
   };
 
   const handleSavePlayer = async (data: any, playerId?: string) => {
@@ -133,14 +145,14 @@ const SquadScreen = ({ saveId }: Props) => {
                     onClick={() => handleSort(col.key)}
                     className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors"
                   >
-                    {col.label} {sortKey === col.key && (sortAsc ? "↑" : "↓")}
+                    {col.label} {sortField === col.key && (sortOrder === "asc" ? "↑" : "↓")}
                   </th>
                 ))}
                 <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map((p) => {
+              {sortedPlayers.map((p) => {
                 const stats = p.currentSeasonStats || p.totalStats;
                 return (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">

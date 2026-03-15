@@ -179,11 +179,9 @@ export const clubStintsApi = {
 // ─── Players ────────────────────────────────────────────────────────
 
 export const playersApi = {
-  list: (saveId: string, active?: boolean, sort?: string, order?: string) => {
+  list: (saveId: string, active?: boolean) => {
     const params = new URLSearchParams();
     if (active) params.append("active", "true");
-    if (sort) params.append("sort", sort);
-    if (order) params.append("order", order);
     const qs = params.toString();
     return request<ApiPlayer[]>(`/saves/${saveId}/players${qs ? `?${qs}` : ""}`);
   },
@@ -214,7 +212,7 @@ export const transfersApi = {
   list: (saveId: string, season?: "current") =>
     request<ApiTransfer[]>(`/saves/${saveId}/transfers${season ? `?season=${season}` : ""}`),
   create: (saveId: string, data: { playerName: string; type: string; from: string; to: string; season: string; fee?: string; playerId?: string }) =>
-    request<ApiTransfer>(`/saves/${saveId}/transfers`, { method: "POST", body: JSON.stringify(data) }),
+    request<{ transfer: ApiTransfer; save: ApiSave }>(`/saves/${saveId}/transfers`, { method: "POST", body: JSON.stringify(data) }),
   update: (saveId: string, transferId: string, data: { playerName?: string; type?: string; from?: string; to?: string; fee?: string; season?: string }) =>
     request<ApiTransfer>(`/saves/${saveId}/transfers/${transferId}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (saveId: string, transferId: string) =>
