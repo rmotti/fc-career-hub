@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2, ClipboardList, BarChart2, Trash2 } from "lucide-react";
 import type { ApiSave } from "@/services/api";
-import { useClubs } from "@/hooks/useClubs";
+import { useClubsByLeague } from "@/hooks/useClubs";
 import { useDeleteSave } from "@/hooks/useSaves";
 
 interface Props {
@@ -16,15 +16,14 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
   const [showForm, setShowForm] = useState(false);
   const deleteSave = useDeleteSave();
   const [newName, setNewName] = useState("");
+  const [newLeague, setNewLeague] = useState("");
   const [newClub, setNewClub] = useState("");
   const [newBudget, setNewBudget] = useState("");
   const [budgetError, setBudgetError] = useState("");
-  const { data: clubs = [] } = useClubs();
+  const { data: clubsByLeague = {} } = useClubsByLeague();
 
-  // Set default club when clubs load
-  if (clubs.length > 0 && !newClub) {
-    setNewClub(clubs[0]);
-  }
+  const leagueNames = Object.keys(clubsByLeague);
+  const clubsForLeague: string[] = newLeague ? (clubsByLeague[newLeague] ?? []) : [];
 
   const handleBudgetBlur = () => {
     const num = parseFloat(newBudget);
@@ -48,6 +47,8 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
     onCreateSave(newName.trim(), newClub, num.toString());
     setShowForm(false);
     setNewName("");
+    setNewLeague("");
+    setNewClub("");
     setNewBudget("");
   };
 
@@ -145,29 +146,44 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Time Inicial</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Liga</label>
                   <select
-                    value={newClub}
-                    onChange={(e) => setNewClub(e.target.value)}
+                    value={newLeague}
+                    onChange={(e) => { setNewLeague(e.target.value); setNewClub(""); }}
                     className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none"
                   >
-                    {clubs.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    <option value="">Selecione a liga...</option>
+                    {leagueNames.map((l) => (
+                      <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Orçamento inicial</label>
-                  <input
-                    type="text"
-                    value={newBudget}
-                    onChange={(e) => { setNewBudget(e.target.value); setBudgetError(""); }}
-                    onBlur={handleBudgetBlur}
-                    placeholder="Ex: 85000000"
-                    className={`w-full bg-background border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-shadow ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"}`}
-                  />
-                  {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
+                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Time Inicial</label>
+                  <select
+                    value={newClub}
+                    onChange={(e) => setNewClub(e.target.value)}
+                    disabled={!newLeague}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Selecione o time...</option>
+                    {clubsForLeague.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Orçamento inicial</label>
+                <input
+                  type="text"
+                  value={newBudget}
+                  onChange={(e) => { setNewBudget(e.target.value); setBudgetError(""); }}
+                  onBlur={handleBudgetBlur}
+                  placeholder="Ex: 85000000"
+                  className={`w-full bg-background border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-shadow ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"}`}
+                />
+                {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
               </div>
             </div>
 
@@ -182,7 +198,7 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
                 ) : "Iniciar Carreira"}
               </button>
               <button
-                onClick={() => { setShowForm(false); setBudgetError(""); }}
+                onClick={() => { setShowForm(false); setNewLeague(""); setNewClub(""); setBudgetError(""); }}
                 className="flex-1 bg-muted text-foreground py-3 rounded-lg font-medium text-sm hover:bg-muted/80 transition-colors"
               >
                 Cancelar

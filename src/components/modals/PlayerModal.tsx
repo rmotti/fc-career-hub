@@ -13,10 +13,14 @@ interface Props {
   saveId: string;
 }
 
+const POSITIONS = ["GOL", "LD", "LE", "ZAG", "VOL", "MC", "ME", "MD", "MEI", "PE", "PD", "SA", "ATA"] as const;
+const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
+
 const EMPTY_PLAYER = {
-  name: "", position: "MEI" as string, age: 20 as number | "", status: "Important" as string, ovr: 70 as number | "",
+  name: "", position: "MC" as string, age: 20 as number | "", status: "Important" as string, ovr: 70 as number | "",
   salary: "" as number | "", marketValue: "" as number | "",
-  goals: 0 as number | "", assists: 0 as number | "", yellowCards: 0 as number | "", redCards: 0 as number | "", matches: 0 as number | "",
+  potential: "" as number | "", shirtNumber: "" as number | "",
+  goals: 0 as number | "", assists: 0 as number | "", yellowCards: 0 as number | "", redCards: 0 as number | "", matches: 0 as number | "", cleanSheets: 0 as number | "",
 };
 
 const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
@@ -37,11 +41,14 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           ovr: player.ovr,
           salary: player.salary ?? "",
           marketValue: player.marketValue ?? "",
+          potential: player.potential ?? "",
+          shirtNumber: player.shirtNumber ?? "",
           goals: stats?.goals ?? 0,
           assists: stats?.assists ?? 0,
           yellowCards: stats?.yellowCards ?? 0,
           redCards: stats?.redCards ?? 0,
           matches: stats?.matches ?? 0,
+          cleanSheets: stats?.cleanSheets ?? 0,
         });
       } else {
         setForm(EMPTY_PLAYER);
@@ -61,6 +68,9 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       yellowCards: form.yellowCards === "" ? 0 : form.yellowCards,
       redCards: form.redCards === "" ? 0 : form.redCards,
       matches: form.matches === "" ? 0 : form.matches,
+      cleanSheets: form.cleanSheets === "" ? 0 : form.cleanSheets,
+      potential: form.potential === "" ? undefined : form.potential,
+      shirtNumber: form.shirtNumber === "" ? undefined : form.shirtNumber,
     };
 
     setIsSubmitting(true);
@@ -74,18 +84,20 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           form.assists !== (stats?.assists ?? 0) ||
           form.yellowCards !== (stats?.yellowCards ?? 0) ||
           form.redCards !== (stats?.redCards ?? 0) ||
-          form.matches !== (stats?.matches ?? 0);
-        
+          form.matches !== (stats?.matches ?? 0) ||
+          form.cleanSheets !== (stats?.cleanSheets ?? 0);
+
         if (statsChanged) {
           await updateStats.mutateAsync({
             saveId,
             playerId: player.id,
-            data: { 
-              goals: submissionForm.goals, 
-              assists: submissionForm.assists, 
-              yellowCards: submissionForm.yellowCards, 
-              redCards: submissionForm.redCards, 
-              matches: submissionForm.matches 
+            data: {
+              goals: submissionForm.goals,
+              assists: submissionForm.assists,
+              yellowCards: submissionForm.yellowCards,
+              redCards: submissionForm.redCards,
+              matches: submissionForm.matches,
+              cleanSheets: submissionForm.cleanSheets,
             },
           });
           toast.success("Estatísticas atualizadas!", { duration: 3000 });
@@ -120,10 +132,9 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
             <div>
               <label className={labelClass}>Posição</label>
               <select className={inputClass} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })}>
-                <option value="GOL">GOL</option>
-                <option value="ZAG">ZAG</option>
-                <option value="MEI">MEI</option>
-                <option value="ATA">ATA</option>
+                {POSITIONS.map((pos) => (
+                  <option key={pos} value={pos}>{pos}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -147,9 +158,19 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} />
             </div>
             <div>
+              <label className={labelClass}>Potencial</label>
+              <input type="number" className={inputClass} value={form.potential} onChange={(e) => setForm({ ...form, potential: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} placeholder="—" />
+            </div>
+            <div>
+              <label className={labelClass}>Camisa</label>
+              <input type="number" className={inputClass} value={form.shirtNumber} onChange={(e) => setForm({ ...form, shirtNumber: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} max={99} placeholder="—" />
+            </div>
+            <div>
               <label className={labelClass}>Partidas</label>
               <input type="number" className={inputClass} value={form.matches} onChange={(e) => setForm({ ...form, matches: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className={labelClass}>Gols</label>
               <input type="number" className={inputClass} value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
@@ -158,6 +179,12 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               <label className={labelClass}>Assist.</label>
               <input type="number" className={inputClass} value={form.assists} onChange={(e) => setForm({ ...form, assists: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
+            {CLEAN_SHEETS_POSITIONS.has(form.position) && (
+              <div>
+                <label className={labelClass}>Clean Sheets</label>
+                <input type="number" className={inputClass} value={form.cleanSheets} onChange={(e) => setForm({ ...form, cleanSheets: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

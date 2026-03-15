@@ -18,17 +18,21 @@ export function extractErrorMessage(err: any): string {
   if (err?.isNetworkError || err?.message === "Failed to fetch" || err?.message?.includes("NetworkError")) {
     return "Não foi possível conectar ao servidor. Verifique sua conexão.";
   }
-  
+
+  if (err?.data?.error === "SHIRT_NUMBER_CONFLICT") {
+    return err.data.message;
+  }
+
   const status = err?.status || err?.response?.status;
   const apiError = err?.data?.error || err?.response?.data?.error;
-  
-  if (status === 400 || status === 404) {
+
+  if (status === 400 || status === 404 || status === 409) {
     return apiError || err.message;
   }
   if (status >= 500) {
     return "Erro interno. Tente novamente em instantes.";
   }
-  
+
   return apiError || err?.message || "Erro inesperado. Tente novamente.";
 }
 
@@ -77,12 +81,14 @@ export interface ApiClubStint {
   isCurrent: boolean;
 }
 
+export type PlayerPosition = "GOL" | "LD" | "LE" | "ZAG" | "VOL" | "MC" | "ME" | "MD" | "MEI" | "PE" | "PD" | "SA" | "ATA";
+
 export interface ApiPlayer {
   id: string;
   saveId: string;
   clubStintId: string;
   name: string;
-  position: "GOL" | "ZAG" | "MEI" | "ATA";
+  position: PlayerPosition;
   age: number;
   status: "Crucial" | "Important" | "Role" | "Sporadic" | "Promising";
   ovr: number;
@@ -90,9 +96,12 @@ export interface ApiPlayer {
   salaryFormatted?: string;
   marketValue?: number;
   marketValueFormatted?: string;
+  potential?: number | null;
+  shirtNumber?: number | null;
   isActive: boolean;
   currentSeasonStats?: ApiPlayerSeasonStats;
-  totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; };
+  totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; };
+  history?: Array<{ season: string; goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; }>;
 }
 
 export interface ApiPlayerSeasonStats {
@@ -105,6 +114,7 @@ export interface ApiPlayerSeasonStats {
   redCards: number;
   matches?: number;
   goalContributions?: number;
+  cleanSheets: number;
 }
 
 export interface ApiTeamStats {
@@ -149,6 +159,7 @@ export interface ApiTrophy {
 
 export const clubsApi = {
   list: () => request<string[]>("/clubs"),
+  byLeague: () => request<Record<string, string[]>>("/clubs/by-league"),
 };
 
 // ─── Saves ──────────────────────────────────────────────────────────
@@ -188,11 +199,11 @@ export const playersApi = {
   },
   get: (saveId: string, playerId: string) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`),
-  create: (saveId: string, data: { name: string; position: string; age: number; status: string; ovr: number; salary?: number; marketValue?: number; seasonStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; } }) =>
+  create: (saveId: string, data: { name: string; position: string; age: number; status: string; ovr: number; salary?: number; marketValue?: number; potential?: number; shirtNumber?: number; seasonStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; } }) =>
     request<ApiPlayer>(`/saves/${saveId}/players`, { method: "POST", body: JSON.stringify(data) }),
-  update: (saveId: string, playerId: string, data: { name?: string; position?: string; age?: number; status?: string; ovr?: number; salary?: number; marketValue?: number }) =>
+  update: (saveId: string, playerId: string, data: { name?: string; position?: string; age?: number; status?: string; ovr?: number; salary?: number; marketValue?: number; potential?: number | null; shirtNumber?: number | null }) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`, { method: "PUT", body: JSON.stringify(data) }),
-  updateStats: (saveId: string, playerId: string, data: { goals?: number; assists?: number; yellowCards?: number; redCards?: number; matches?: number; }) =>
+  updateStats: (saveId: string, playerId: string, data: { goals?: number; assists?: number; yellowCards?: number; redCards?: number; matches?: number; cleanSheets?: number; }) =>
     request<ApiPlayerSeasonStats>(`/saves/${saveId}/players/${playerId}/stats`, { method: "PATCH", body: JSON.stringify(data) }),
   release: (saveId: string, playerId: string) =>
     request<void>(`/saves/${saveId}/players/${playerId}/release`, { method: "DELETE" }),

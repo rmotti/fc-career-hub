@@ -14,8 +14,17 @@ type SortKey = "name" | "position" | "age" | "ovr" | "matches" | "goals" | "assi
 
 const positionColor: Record<string, string> = {
   GOL: "bg-warning/20 text-warning",
+  LD: "bg-accent/20 text-accent",
+  LE: "bg-accent/20 text-accent",
   ZAG: "bg-accent/20 text-accent",
+  VOL: "bg-accent/20 text-accent",
+  MC: "bg-primary/20 text-primary",
+  ME: "bg-primary/20 text-primary",
+  MD: "bg-primary/20 text-primary",
   MEI: "bg-primary/20 text-primary",
+  PE: "bg-destructive/20 text-destructive",
+  PD: "bg-destructive/20 text-destructive",
+  SA: "bg-destructive/20 text-destructive",
   ATA: "bg-destructive/20 text-destructive",
 };
 
@@ -67,22 +76,22 @@ const SquadScreen = ({ saveId }: Props) => {
   };
 
   const handleSavePlayer = async (data: any, playerId?: string) => {
-    const { goals, assists, yellowCards, redCards, matches, ...playerData } = data;
+    const { goals, assists, yellowCards, redCards, matches, cleanSheets, ...playerData } = data;
     if (playerId) {
       await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
       toast.success("Jogador atualizado!", { duration: 3000 });
     } else {
-      const newPlayer = await createPlayer.mutateAsync({ 
-        saveId, 
+      const newPlayer = await createPlayer.mutateAsync({
+        saveId,
         data: playerData
       });
-      
-      const hasStats = goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || matches > 0;
+
+      const hasStats = goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || matches > 0 || cleanSheets > 0;
       if (hasStats && newPlayer?.id) {
         await updateStats.mutateAsync({
           saveId,
           playerId: newPlayer.id,
-          data: { goals, assists, yellowCards, redCards, matches }
+          data: { goals, assists, yellowCards, redCards, matches, cleanSheets }
         });
       }
       
