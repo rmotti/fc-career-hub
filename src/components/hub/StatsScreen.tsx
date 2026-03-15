@@ -33,7 +33,10 @@ const StatsScreen = ({ saveId }: Props) => {
   const topContributions = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goalContributions ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goalContributions ?? 0)).slice(0, 5);
 
   const handleUpdateStats = async (stats: any) => {
-    if (!teamStats) return;
+    if (!teamStats) {
+      toast.error("Nenhuma estatística ativa encontrada para editar.");
+      return;
+    }
     await updateTeamStats.mutateAsync({
       saveId,
       statsId: teamStats.id,
@@ -71,7 +74,11 @@ const StatsScreen = ({ saveId }: Props) => {
             Desempenho do Time
           </h2>
           <button
-            onClick={() => setStatsModalOpen(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setStatsModalOpen(true);
+            }}
             className="btn-gamer-secondary px-3 py-1.5 text-sm flex items-center gap-2"
           >
             <Pencil className="w-4 h-4" />
@@ -186,23 +193,21 @@ const StatsScreen = ({ saveId }: Props) => {
         </div>
       </div>
 
-      {teamStats && (
-        <StatsModal
-          open={statsModalOpen}
-          onOpenChange={setStatsModalOpen}
-          stats={{
-            goalsPro: teamStats?.goalsPro ?? 0,
-            goalsAgainst: teamStats?.goalsAgainst ?? 0,
-            wins: teamStats?.wins ?? 0,
-            draws: teamStats?.draws ?? 0,
-            losses: teamStats?.losses ?? 0,
-            leaguePosition: teamStats?.leaguePosition ?? 1,
-            europeanCupResult: teamStats?.europeanCupResult ?? "NaoParticipou",
-            nationalCupResult: teamStats?.nationalCupResult ?? "NaoParticipou",
-          }}
-          onSave={handleUpdateStats}
-        />
-      )}
+      <StatsModal
+        open={statsModalOpen}
+        onOpenChange={setStatsModalOpen}
+        stats={{
+          goalsPro: teamStats?.goalsPro ?? 0,
+          goalsAgainst: teamStats?.goalsAgainst ?? 0,
+          wins: teamStats?.wins ?? 0,
+          draws: teamStats?.draws ?? 0,
+          losses: teamStats?.losses ?? 0,
+          leaguePosition: teamStats?.leaguePosition ?? 1,
+          europeanCupResult: teamStats?.europeanCupResult ?? "NaoParticipou",
+          nationalCupResult: teamStats?.nationalCupResult ?? "NaoParticipou",
+        }}
+        onSave={handleUpdateStats}
+      />
     </div>
   );
 };

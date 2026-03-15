@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2, ClipboardList, BarChart2 } from "lucide-react";
 import type { ApiSave } from "@/services/api";
 import { useClubs } from "@/hooks/useClubs";
-import { normalizeCurrencyInput, isValidCurrencyFormat } from "@/utils/currency";
 
 interface Props {
   saves: ApiSave[];
@@ -26,25 +25,25 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
   }
 
   const handleBudgetBlur = () => {
-    const normalized = normalizeCurrencyInput(newBudget);
-    setNewBudget(normalized);
-    if (normalized && !isValidCurrencyFormat(normalized)) {
-      setBudgetError("Formato inválido. Use €XK ou €XM (ex: €85M)");
+    const num = parseFloat(newBudget);
+    if (isNaN(num) || num < 0) {
+      setBudgetError("Orçamento deve ser um número válido (ex: 85000000)");
     } else {
       setBudgetError("");
     }
   };
 
   const handleCreate = () => {
-    const budget = normalizeCurrencyInput(newBudget);
+    const num = parseFloat(newBudget);
     if (!newName.trim()) return;
     if (!newClub) return;
-    if (!budget || !isValidCurrencyFormat(budget)) {
-      setBudgetError("Orçamento obrigatório no formato €XK ou €XM");
+    if (isNaN(num) || num < 0) {
+      setBudgetError("Orçamento obrigatório e deve ser um número válido");
       return;
     }
     setBudgetError("");
-    onCreateSave(newName.trim(), newClub, budget);
+    // Pass as string to onCreateSave since it expects a string, but it's a valid float string
+    onCreateSave(newName.trim(), newClub, num.toString());
     setShowForm(false);
     setNewName("");
     setNewBudget("");
@@ -148,7 +147,7 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
                     value={newBudget}
                     onChange={(e) => { setNewBudget(e.target.value); setBudgetError(""); }}
                     onBlur={handleBudgetBlur}
-                    placeholder="Ex: €85M"
+                    placeholder="Ex: 85000000"
                     className={`w-full bg-background border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-shadow ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"}`}
                   />
                   {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}

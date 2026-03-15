@@ -4,7 +4,6 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
 import { useSave } from "@/hooks/useSaves";
-import { parseCurrencyToNumber } from "@/utils/currency";
 
 interface Props {
   saveId: string;
@@ -31,8 +30,8 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
     );
   }
 
-  const budgetNum = parseCurrencyToNumber(save.budget || "0");
-  const balanceNum = parseCurrencyToNumber(save.balance || "0");
+  const budgetNum = save.budget ?? 0;
+  const balanceNum = save.balance ?? 0;
   const isLowBalance = budgetNum > 0 && balanceNum < budgetNum * 0.2;
 
   return (

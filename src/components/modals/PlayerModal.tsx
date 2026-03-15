@@ -3,7 +3,6 @@ import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { useUpdatePlayerStats } from "@/hooks/usePlayers";
-import { normalizeCurrencyInput } from "@/utils/currency";
 import { toast } from "sonner";
 
 interface Props {

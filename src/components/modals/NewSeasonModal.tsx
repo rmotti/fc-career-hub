@@ -41,7 +41,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
   // Extract current year from currentSeason (e.g. "2026/27" -> 2026)
-  const currentYear = parseInt(currentSeason.split("/")[0]) || 0;
+  const currentYear = currentSeason ? parseInt(currentSeason.split("/")[0]) || 0 : 0;
   const seasonTrophies = trophies.filter((t) => t.year === currentYear);
 
   const handleClose = (isOpen: boolean) => {

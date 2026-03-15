@@ -34,7 +34,7 @@ const HistoryScreen = ({ saveId }: Props) => {
 
   const purchases = transfers.filter(t => t.type === "compra");
   const sales = transfers.filter(t => t.type === "venda");
-  const feeToNum = (fee?: string) => parseFloat((fee ?? "0").replace(/[^0-9.]/g, "")) || 0;
+  const feeToNum = (fee?: string) => parseFloat(fee ?? "0") || 0;
   const biggestBuy = purchases.length > 0 ? [...purchases].sort((a, b) => feeToNum(b.fee) - feeToNum(a.fee))[0] : null;
   const biggestSale = sales.length > 0 ? [...sales].sort((a, b) => feeToNum(b.fee) - feeToNum(a.fee))[0] : null;
 
@@ -123,7 +123,7 @@ const HistoryScreen = ({ saveId }: Props) => {
           {biggestBuy ? (
             <>
               <p className="font-display text-lg font-bold">{biggestBuy.playerName}</p>
-              <p className="text-sm text-primary font-bold">{biggestBuy.fee || "Livre"}</p>
+              <p className="text-sm text-primary font-bold">{biggestBuy.fee ? `€${biggestBuy.fee}M` : "Livre"}</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
@@ -132,7 +132,7 @@ const HistoryScreen = ({ saveId }: Props) => {
           {biggestSale ? (
             <>
               <p className="font-display text-lg font-bold">{biggestSale.playerName}</p>
-              <p className="text-sm text-accent font-bold">{biggestSale.fee || "Livre"}</p>
+              <p className="text-sm text-accent font-bold">{biggestSale.fee ? `€${biggestSale.fee}M` : "Livre"}</p>
             </>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>

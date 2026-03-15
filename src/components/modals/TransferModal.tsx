@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { type ApiTransfer, extractErrorMessage } from "@/services/api";
-import { normalizeCurrencyInput } from "@/utils/currency";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
