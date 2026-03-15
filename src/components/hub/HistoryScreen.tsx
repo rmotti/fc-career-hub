@@ -46,8 +46,8 @@ const HistoryScreen = ({ saveId }: Props) => {
   const purchases = transfers.filter(t => t.type === "compra");
   const sales = transfers.filter(t => t.type === "venda");
   const feeToNum = (fee?: string) => parseFloat(fee ?? "0") || 0;
-  const biggestBuy = purchases.length > 0 ? [...purchases].sort((a, b) => feeToNum(b.fee) - feeToNum(a.fee))[0] : null;
-  const biggestSale = sales.length > 0 ? [...sales].sort((a, b) => feeToNum(b.fee) - feeToNum(a.fee))[0] : null;
+  const biggestBuy = purchases.length > 0 ? [...purchases].sort((a, b) => feeToNum(String(b.fee)) - feeToNum(String(a.fee)))[0] : null;
+  const biggestSale = sales.length > 0 ? [...sales].sort((a, b) => feeToNum(String(b.fee)) - feeToNum(String(a.fee)))[0] : null;
 
   if (isLoading) {
     return (

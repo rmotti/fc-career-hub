@@ -4,13 +4,13 @@ import { extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
 
 const CUP_OPTIONS = [
-  { value: "NaoParticipou",   label: "Não participou" },
-  { value: "PrimeiraFase",    label: "Primeira fase" },
-  { value: "OitavasDeFinais", label: "Oitavas de final" },
-  { value: "QuartasDeFinais", label: "Quartas de final" },
-  { value: "SemiFinais",      label: "Semifinal" },
-  { value: "ViceCampeao",     label: "Vice-campeão" },
-  { value: "Campeao",         label: "Campeão" },
+  { value: "NaoParticipou",          label: "Não participou" },
+  { value: "Eliminado",              label: "Eliminado" },
+  { value: "OitavasOuFaseDeGrupos",  label: "Oitavas / Fase de grupos" },
+  { value: "Quartas",                label: "Quartas de final" },
+  { value: "Semifinal",              label: "Semifinal" },
+  { value: "Final",                  label: "Final" },
+  { value: "Campeao",                label: "Campeão" },
 ] as const;
 
 interface StatsForm {
