@@ -14,12 +14,14 @@ type SortKey = "name" | "position" | "age" | "ovr" | "potential" | "matches" | "
 
 const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
+const POSITION_ORDER = ["GOL", "LD", "LE", "ZAG", "VOL", "MC", "MEI", "MD", "ME", "PE", "PD", "SA", "ATA"];
+
 const positionColor: Record<string, string> = {
   GOL: "bg-warning/20 text-warning",
   LD: "bg-accent/20 text-accent",
   LE: "bg-accent/20 text-accent",
   ZAG: "bg-accent/20 text-accent",
-  VOL: "bg-accent/20 text-accent",
+  VOL: "bg-primary/20 text-primary",
   MC: "bg-primary/20 text-primary",
   ME: "bg-primary/20 text-primary",
   MD: "bg-primary/20 text-primary",
@@ -62,6 +64,13 @@ const SquadScreen = ({ saveId }: Props) => {
       }
       
       if (typeof valA === "string" && typeof valB === "string") {
+        if (sortField === "position") {
+          const idxA = POSITION_ORDER.indexOf(valA);
+          const idxB = POSITION_ORDER.indexOf(valB);
+          const orderA = idxA === -1 ? 999 : idxA;
+          const orderB = idxB === -1 ? 999 : idxB;
+          return sortOrder === "asc" ? orderA - orderB : orderB - orderA;
+        }
         return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
       }
       return sortOrder === "desc" ? (valB as number) - (valA as number) : (valA as number) - (valB as number);
