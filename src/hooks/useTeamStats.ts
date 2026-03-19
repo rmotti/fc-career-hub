@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamStatsApi } from "@/services/api";
 
-export function useTeamStats(saveId: string | null, season?: "current") {
+export function useTeamStats(saveId: string | null, season?: string) {
   return useQuery({
     queryKey: ["teamStats", saveId, { season }],
     queryFn: () => teamStatsApi.list(saveId!, season),

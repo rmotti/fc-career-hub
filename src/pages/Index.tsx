@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import SaveSelect from "@/components/SaveSelect";
 import HubSidebar, { type HubScreen } from "@/components/hub/HubSidebar";
@@ -17,6 +17,7 @@ const Index = () => {
   const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HubScreen>("dashboard");
   const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<string>("");
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
   });
@@ -29,6 +30,12 @@ const Index = () => {
 
   const { data: saves = [], isLoading: savesLoading } = useSaves();
   const { data: activeSave } = useSave(activeSaveId);
+
+  useEffect(() => {
+    if (activeSave?.currentSeason) {
+      setSelectedSeason(activeSave.currentSeason);
+    }
+  }, [activeSave?.currentSeason]);
   const createSave = useCreateSave();
   const updateSave = useUpdateSave();
 
@@ -96,13 +103,13 @@ const Index = () => {
       case "dashboard":
         return <DashboardScreen saveId={activeSave.id} currentClub={currentClub} />;
       case "squad":
-        return <SquadScreen saveId={activeSave.id} />;
+        return <SquadScreen saveId={activeSave.id} selectedSeason={selectedSeason || activeSave.currentSeason} currentSeason={activeSave.currentSeason} />;
       case "stats":
-        return <StatsScreen saveId={activeSave.id} />;
+        return <StatsScreen saveId={activeSave.id} selectedSeason={selectedSeason || activeSave.currentSeason} currentSeason={activeSave.currentSeason} />;
       case "history":
         return <HistoryScreen saveId={activeSave.id} />;
       case "transfers":
-        return <TransfersScreen saveId={activeSave.id} currentClub={currentClub} currentSeason={activeSave.currentSeason} />;
+        return <TransfersScreen saveId={activeSave.id} currentClub={currentClub} currentSeason={activeSave.currentSeason} selectedSeason={selectedSeason || activeSave.currentSeason} />;
       case "changeClub":
         return <ChangeClubScreen saveId={activeSave.id} currentClub={currentClub} />;
     }
@@ -119,7 +126,14 @@ const Index = () => {
         onToggleCollapse={handleToggleCollapse}
       />
       <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ${collapsed ? "md:ml-16" : "md:ml-60"}`}>
-        <HubHeader saveName={activeSave.name} clubName={currentClub} season={activeSave.currentSeason} />
+        <HubHeader
+          saveName={activeSave.name}
+          clubName={currentClub}
+          season={activeSave.currentSeason}
+          availableSeasons={activeSave.availableSeasons}
+          selectedSeason={selectedSeason || activeSave.currentSeason}
+          onSeasonChange={setSelectedSeason}
+        />
         <main className="flex-1 p-6 overflow-y-auto w-full max-w-full">
           {renderScreen()}
         </main>

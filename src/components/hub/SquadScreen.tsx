@@ -5,9 +5,12 @@ import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
 import { useSave } from "@/hooks/useSaves";
 import PlayerModal from "@/components/modals/PlayerModal";
+import { getBadge, type SquadRole } from "@/lib/playerBadge";
 
 interface Props {
   saveId: string;
+  selectedSeason?: string;
+  currentSeason?: string;
 }
 
 type SortKey = "name" | "position" | "age" | "ovr" | "potential" | "matches" | "goals" | "assists" | "goalContributions" | "cleanSheets" | "salary" | "marketValue";
@@ -32,14 +35,35 @@ const positionColor: Record<string, string> = {
   ATA: "bg-destructive/20 text-destructive",
 };
 
-const SquadScreen = ({ saveId }: Props) => {
+const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<ApiPlayer | null>(null);
 
+  const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
+
   const { data: save } = useSave(saveId);
   const { data: players = [], isLoading } = usePlayers(saveId, true);
+
+  const squadRoles = useMemo(() => {
+    const roles = new Map<string, SquadRole>();
+    if (players.length === 0) return roles;
+
+    const getGoals = (p: typeof players[0]) => (p.currentSeasonStats || p.totalStats)?.goals ?? 0;
+    const getAssists = (p: typeof players[0]) => (p.currentSeasonStats || p.totalStats)?.assists ?? 0;
+    const getMatches = (p: typeof players[0]) => (p.currentSeasonStats || p.totalStats)?.matches ?? 0;
+
+    const topScorer = players.reduce((a, b) => getGoals(a) >= getGoals(b) ? a : b);
+    const topAssister = players.reduce((a, b) => getAssists(a) >= getAssists(b) ? a : b);
+    const topMatches = players.reduce((a, b) => getMatches(a) >= getMatches(b) ? a : b);
+
+    if (getGoals(topScorer) > 0) roles.set(topScorer.id, "artilheiro");
+    if (getAssists(topAssister) > 0 && !roles.has(topAssister.id)) roles.set(topAssister.id, "garçom");
+    if (getMatches(topMatches) > 0 && !roles.has(topMatches.id)) roles.set(topMatches.id, "motor");
+
+    return roles;
+  }, [players]);
   const createPlayer = useCreatePlayer();
   const updatePlayer = useUpdatePlayer();
   const releasePlayer = useReleasePlayer();
@@ -148,13 +172,21 @@ const SquadScreen = ({ saveId }: Props) => {
           <h2 className="text-2xl font-bold font-display">Elenco</h2>
           <p className="text-muted-foreground">Gerencie seus jogadores</p>
         </div>
-        <button
-          onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
-        >
-          <Plus size={16} /> Adicionar Jogador
-        </button>
+        {!isPastSeason && (
+          <button
+            onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+          >
+            <Plus size={16} /> Adicionar Jogador
+          </button>
+        )}
       </div>
+
+      {isPastSeason && (
+        <div className="mb-4 px-4 py-2 rounded-md bg-muted border border-border text-sm text-muted-foreground flex items-center gap-2">
+          📅 Visualizando temporada {selectedSeason} — modo somente leitura
+        </div>
+      )}
 
       <div className="card-gamer overflow-hidden">
         <div className="overflow-x-auto">
@@ -179,21 +211,41 @@ const SquadScreen = ({ saveId }: Props) => {
                 return (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">
-                    <span className="flex items-center gap-2">
-                      {p.name}
-                      {p.shirtNumber != null && (
-                        <span className="text-xs text-muted-foreground font-mono">#{p.shirtNumber}</span>
-                      )}
-                    </span>
+                    <div>
+                      <span className="flex items-center gap-2">
+                        {p.name}
+                        {p.shirtNumber != null && (
+                          <span className="text-xs text-muted-foreground font-mono">#{p.shirtNumber}</span>
+                        )}
+                      </span>
+                      {(() => {
+                        const badge = getBadge(p, squadRoles.get(p.id));
+                        return badge ? (
+                          <span
+                            className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-xs font-semibold"
+                            style={{ backgroundColor: badge.color + "22", color: badge.color, border: `1px solid ${badge.color}44` }}
+                          >
+                            {badge.icon} {badge.label}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{p.age}</td>
                   <td className="px-4 py-3">
-                    <span className={`font-display font-bold ${p.ovr >= 83 ? "text-primary" : p.ovr >= 80 ? "text-accent" : "text-foreground"}`}>
-                      {p.ovr}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`font-display font-bold ${p.ovr >= 83 ? "text-primary" : p.ovr >= 80 ? "text-accent" : "text-foreground"}`}>
+                        {p.ovr}
+                      </span>
+                      {p.ovrDelta != null && (
+                        <span className={`text-xs font-bold ${p.ovrDelta > 0 ? "text-green-500" : p.ovrDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                          {p.ovrDelta > 0 ? `▲${p.ovrDelta}` : p.ovrDelta < 0 ? `▼${Math.abs(p.ovrDelta)}` : "—"}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{p.potential ?? "—"}</td>
                   <td className="px-4 py-3 font-display">{stats?.matches ?? 0}</td>
@@ -204,24 +256,35 @@ const SquadScreen = ({ saveId }: Props) => {
                     {CLEAN_SHEETS_POSITIONS.has(p.position) ? (stats?.cleanSheets ?? 0) : "—"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{p.salaryFormatted ?? p.salary ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.marketValueFormatted ?? p.marketValue ?? "—"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
-                        className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(p)}
-                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        title="Dispensar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span>{p.marketValueFormatted ?? (p.marketValue != null ? `€${p.marketValue}M` : "—")}</span>
+                      {p.marketValueDelta != null && (
+                        <span className={`text-xs font-bold ${p.marketValueDelta > 0 ? "text-green-500" : p.marketValueDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                          {p.marketValueDelta > 0 ? `▲${p.marketValueDelta}M` : p.marketValueDelta < 0 ? `▼${Math.abs(p.marketValueDelta)}M` : "—"}
+                        </span>
+                      )}
                     </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {!isPastSeason && (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
+                          className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(p)}
+                          className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Dispensar"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
                 );

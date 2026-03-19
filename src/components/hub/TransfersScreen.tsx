@@ -12,9 +12,10 @@ interface Props {
   saveId: string;
   currentClub: string;
   currentSeason: string;
+  selectedSeason?: string;
 }
 
-const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
+const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }: Props) => {
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
@@ -32,6 +33,8 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
   const updateStats = useUpdatePlayerStats();
 
   const { data: purchasePlayer } = usePlayer(saveId, purchasePlayerId);
+
+  const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
 
   const displayTransfers = tab === "current" ? currentTransfers : allTransfers;
   const purchases = displayTransfers.filter(t => t.type === "compra" || t.type === "emprestimo_entrada");
@@ -95,20 +98,22 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
               ? "Empréstimo"
               : "Livre"}
         </span>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => { setEditingTransfer(t); setModalOpen(true); }}
-            className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Pencil size={12} />
-          </button>
-          <button
-            onClick={() => handleDelete(t)}
-            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
+        {!isPastSeason && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => { setEditingTransfer(t); setModalOpen(true); }}
+              className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Pencil size={12} />
+            </button>
+            <button
+              onClick={() => handleDelete(t)}
+              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -125,13 +130,20 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason }: Props) => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="font-display text-2xl font-bold">Transferências</h2>
-        <button
-          onClick={() => { setEditingTransfer(null); setModalOpen(true); }}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
-        >
-          <Plus size={16} /> Nova Transferência
-        </button>
+        {!isPastSeason && (
+          <button
+            onClick={() => { setEditingTransfer(null); setModalOpen(true); }}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
+          >
+            <Plus size={16} /> Nova Transferência
+          </button>
+        )}
       </div>
+      {isPastSeason && (
+        <div className="px-4 py-2 rounded-md bg-muted border border-border text-sm text-muted-foreground flex items-center gap-2">
+          📅 Visualizando temporada {selectedSeason} — modo somente leitura
+        </div>
+      )}
 
       <div className="flex gap-2">
         {(["current", "history"] as const).map((t) => (

@@ -4,9 +4,12 @@ interface HubHeaderProps {
   saveName: string;
   clubName: string;
   season: string;
+  availableSeasons?: string[];
+  selectedSeason?: string;
+  onSeasonChange?: (season: string) => void;
 }
 
-const HubHeader = ({ saveName, clubName, season }: HubHeaderProps) => {
+const HubHeader = ({ saveName, clubName, season, availableSeasons, selectedSeason, onSeasonChange }: HubHeaderProps) => {
   return (
     <header className="h-14 bg-card border-b border-border flex items-center justify-between pl-14 md:pl-6 pr-6">
       <div className="flex items-center gap-4">
@@ -19,7 +22,19 @@ const HubHeader = ({ saveName, clubName, season }: HubHeaderProps) => {
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Calendar size={16} />
-        <span>{season}</span>
+        {availableSeasons && availableSeasons.length > 1 && onSeasonChange ? (
+          <select
+            value={selectedSeason ?? season}
+            onChange={e => onSeasonChange(e.target.value)}
+            className="bg-transparent border-none text-sm text-foreground focus:outline-none cursor-pointer"
+          >
+            {availableSeasons.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        ) : (
+          <span>{season}</span>
+        )}
       </div>
     </header>
   );

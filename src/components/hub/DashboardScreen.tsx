@@ -127,6 +127,61 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
           <p className="text-sm text-muted-foreground">Nenhum jogador no elenco.</p>
         )}
       </div>
+
+      {/* Quem mais evoluiu */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card-gamer p-6">
+          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp size={16} className="text-primary" /> Mais evoluídos (OVR)
+          </h3>
+          {(() => {
+            const top = players
+              .filter(p => p.ovrDelta != null && p.ovrDelta > 0)
+              .sort((a, b) => (b.ovrDelta ?? 0) - (a.ovrDelta ?? 0))
+              .slice(0, 5);
+            return top.length > 0 ? (
+              <div className="space-y-3">
+                {top.map((p, i) => (
+                  <div key={p.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{i + 1}</span>
+                      <span className="text-sm font-medium">{p.name}</span>
+                      <span className="text-xs text-muted-foreground">{p.position}</span>
+                    </div>
+                    <span className="font-display font-bold text-green-500">▲{p.ovrDelta}</span>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-sm text-muted-foreground">Nenhuma evolução registrada.</p>;
+          })()}
+        </div>
+
+        <div className="card-gamer p-6">
+          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp size={16} className="text-accent" /> Mais valorizados
+          </h3>
+          {(() => {
+            const top = players
+              .filter(p => p.marketValueDelta != null && p.marketValueDelta > 0)
+              .sort((a, b) => (b.marketValueDelta ?? 0) - (a.marketValueDelta ?? 0))
+              .slice(0, 5);
+            return top.length > 0 ? (
+              <div className="space-y-3">
+                {top.map((p, i) => (
+                  <div key={p.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"}`}>{i + 1}</span>
+                      <span className="text-sm font-medium">{p.name}</span>
+                      <span className="text-xs text-muted-foreground">{p.position}</span>
+                    </div>
+                    <span className="font-display font-bold text-green-500">▲€{p.marketValueDelta}M</span>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-sm text-muted-foreground">Nenhuma valorização registrada.</p>;
+          })()}
+        </div>
+      </div>
     </div>
   );
 };

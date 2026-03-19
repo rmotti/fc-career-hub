@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
-import { useUpdatePlayerStats } from "@/hooks/usePlayers";
+import { useUpdatePlayerStats, usePlayer } from "@/hooks/usePlayers";
 import { toast } from "sonner";
+import { getBadge } from "@/lib/playerBadge";
 
 interface Props {
   open: boolean;
@@ -28,6 +29,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!player;
   const updateStats = useUpdatePlayerStats();
+  const { data: playerDetail } = usePlayer(open && isEdit ? saveId : null, player?.id ?? null);
 
   useEffect(() => {
     if (open) {
@@ -122,6 +124,19 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           <DialogTitle className="font-display text-lg">{isEdit ? "Editar Jogador" : "Adicionar Jogador"}</DialogTitle>
           <DialogDescription>Preencha os dados do jogador.</DialogDescription>
         </DialogHeader>
+        {player && (() => {
+          const badge = getBadge(player);
+          return badge ? (
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="px-2 py-1 rounded text-sm font-semibold"
+                style={{ backgroundColor: badge.color + "22", color: badge.color, border: `1px solid ${badge.color}44` }}
+              >
+                {badge.icon} {badge.label}
+              </span>
+            </div>
+          ) : null;
+        })()}
         <form onSubmit={handleSubmit}>
           <fieldset className="space-y-3" disabled={isSubmitting}>
           <div>
@@ -228,6 +243,25 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               <input type="number" className={inputClass} value={form.redCards} onChange={(e) => setForm({ ...form, redCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
           </div>
+          {playerDetail?.ovrHistory && playerDetail.ovrHistory.length > 0 && (
+            <div>
+              <label className={labelClass}>Evolução de OVR</label>
+              <div className="bg-muted/50 rounded-md border border-border overflow-hidden">
+                <div className="grid grid-cols-3 px-3 py-1.5 text-xs text-muted-foreground uppercase border-b border-border">
+                  <span>Temporada</span>
+                  <span>OVR</span>
+                  <span>Valor</span>
+                </div>
+                {playerDetail.ovrHistory.map((h) => (
+                  <div key={h.season} className="grid grid-cols-3 px-3 py-1.5 text-sm border-b border-border/50 last:border-0">
+                    <span className="text-muted-foreground">{h.season}</span>
+                    <span className="font-display font-bold">{h.ovr}</span>
+                    <span className="text-muted-foreground">{h.marketValue != null ? `€${h.marketValue}M` : "—"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
               {isSubmitting && <Loader2 size={16} className="animate-spin" />}

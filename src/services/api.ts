@@ -70,6 +70,7 @@ export interface ApiSave {
   currentClubStint?: ApiClubStint;
   createdAt?: string;
   updatedAt?: string;
+  availableSeasons?: string[];
 }
 
 export interface ApiClubStint {
@@ -98,6 +99,9 @@ export interface ApiPlayer {
   marketValueFormatted?: string;
   potential?: number | null;
   shirtNumber?: number | null;
+  ovrDelta?: number | null;
+  marketValueDelta?: number | null;
+  ovrHistory?: Array<{ season: string; ovr: number; marketValue?: number }>;
   isActive: boolean;
   currentSeasonStats?: ApiPlayerSeasonStats;
   totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; };
@@ -191,9 +195,10 @@ export const clubStintsApi = {
 // ─── Players ────────────────────────────────────────────────────────
 
 export const playersApi = {
-  list: (saveId: string, active?: boolean) => {
+  list: (saveId: string, active?: boolean, season?: string) => {
     const params = new URLSearchParams();
     if (active) params.append("active", "true");
+    if (season) params.append("season", season);
     const qs = params.toString();
     return request<ApiPlayer[]>(`/saves/${saveId}/players${qs ? `?${qs}` : ""}`);
   },
@@ -212,7 +217,7 @@ export const playersApi = {
 // ─── Team Stats ─────────────────────────────────────────────────────
 
 export const teamStatsApi = {
-  list: (saveId: string, season?: "current") =>
+  list: (saveId: string, season?: string) =>
     request<ApiTeamStats[]>(`/saves/${saveId}/team-stats${season ? `?season=${season}` : ""}`),
   update: (saveId: string, statsId: string, data: { goalsPro?: number; goalsAgainst?: number; wins?: number; draws?: number; losses?: number; leaguePosition?: number; europeanCupResult?: string; nationalCupResult?: string }) =>
     request<ApiTeamStats>(`/saves/${saveId}/team-stats/${statsId}`, { method: "PATCH", body: JSON.stringify(data) }),
