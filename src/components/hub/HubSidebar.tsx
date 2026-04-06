@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
-  ChevronsLeft, ChevronsRight, Menu, X
+  ChevronsLeft, ChevronsRight, Menu, X, Shirt
 } from "lucide-react";
 
 interface HubSidebarProps {
@@ -19,6 +19,7 @@ const navItems: { to: string; label: string; icon: React.ElementType }[] = [
   { to: "/stats", label: "Estatísticas", icon: BarChart3 },
   { to: "/history", label: "História", icon: History },
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
+  { to: "/field", label: "Field", icon: Shirt },
   { to: "/change-club", label: "Mudar de Clube", icon: RefreshCw },
 ];
 

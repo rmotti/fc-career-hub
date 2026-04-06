@@ -11,6 +11,7 @@ import Stats from "./pages/hub/Stats.tsx";
 import History from "./pages/hub/History.tsx";
 import Transfers from "./pages/hub/Transfers.tsx";
 import ChangeClub from "./pages/hub/ChangeClub.tsx";
+import Field from "./pages/hub/Field.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/history" element={<History />} />
             <Route path="/transfers" element={<Transfers />} />
             <Route path="/change-club" element={<ChangeClub />} />
+            <Route path="/field" element={<Field />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
