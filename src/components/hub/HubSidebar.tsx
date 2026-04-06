@@ -1,42 +1,34 @@
 import { useState, useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X
 } from "lucide-react";
 
-export type HubScreen = "dashboard" | "squad" | "stats" | "history" | "transfers" | "changeClub";
-
 interface HubSidebarProps {
-  active: HubScreen;
-  onNavigate: (screen: HubScreen) => void;
   onNewSeason: () => void;
   onExitSave: () => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
 }
 
-const navItems: { id: HubScreen; label: string; icon: React.ElementType }[] = [
-  { id: "dashboard", label: "Visão Geral", icon: LayoutDashboard },
-  { id: "squad", label: "Elenco", icon: Users },
-  { id: "stats", label: "Estatísticas", icon: BarChart3 },
-  { id: "history", label: "História", icon: History },
-  { id: "transfers", label: "Transferências", icon: ArrowLeftRight },
-  { id: "changeClub", label: "Mudar de Clube", icon: RefreshCw },
+const navItems: { to: string; label: string; icon: React.ElementType }[] = [
+  { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
+  { to: "/squad", label: "Elenco", icon: Users },
+  { to: "/stats", label: "Estatísticas", icon: BarChart3 },
+  { to: "/history", label: "História", icon: History },
+  { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
+  { to: "/change-club", label: "Mudar de Clube", icon: RefreshCw },
 ];
 
-const HubSidebar = ({ active, onNavigate, onNewSeason, onExitSave, collapsed, onToggleCollapse }: HubSidebarProps) => {
+const HubSidebar = ({ onNewSeason, onExitSave, collapsed, onToggleCollapse }: HubSidebarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
-  // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
-  }, [active]);
-
-  const handleNavigate = (screen: HubScreen) => {
-    onNavigate(screen);
-    setMobileOpen(false);
-  };
+  }, [location.pathname]);
 
   const handleNewSeason = () => {
     onNewSeason();
@@ -47,6 +39,15 @@ const HubSidebar = ({ active, onNavigate, onNewSeason, onExitSave, collapsed, on
     onExitSave();
     setMobileOpen(false);
   };
+
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `w-full flex items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
+      collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+    } ${
+      isActive
+        ? "bg-primary/10 text-primary border border-primary/20"
+        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    }`;
 
   const sidebarContent = (
     <>
@@ -60,23 +61,16 @@ const HubSidebar = ({ active, onNavigate, onNewSeason, onExitSave, collapsed, on
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = active === item.id;
           return (
-            <button
-              key={item.id}
-              onClick={() => handleNavigate(item.id)}
+            <NavLink
+              key={item.to}
+              to={item.to}
               title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
-                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-              } ${
-                isActive
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              }`}
+              className={navLinkClass}
             >
               <Icon size={18} />
               {!collapsed && <span>{item.label}</span>}
-            </button>
+            </NavLink>
           );
         })}
       </nav>
