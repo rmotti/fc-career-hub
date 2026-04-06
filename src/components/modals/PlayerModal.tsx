@@ -203,6 +203,16 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
+              <label className={labelClass}>Cartões Amarelos</label>
+              <input type="number" className={inputClass} value={form.yellowCards} onChange={(e) => setForm({ ...form, yellowCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+            </div>
+            <div>
+              <label className={labelClass}>Cartões Vermelhos</label>
+              <input type="number" className={inputClass} value={form.redCards} onChange={(e) => setForm({ ...form, redCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
               <label className={labelClass}>Salário</label>
               <div className="relative">
                 <input
@@ -231,16 +241,6 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
               </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Cartões Amarelos</label>
-              <input type="number" className={inputClass} value={form.yellowCards} onChange={(e) => setForm({ ...form, yellowCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-            <div>
-              <label className={labelClass}>Cartões Vermelhos</label>
-              <input type="number" className={inputClass} value={form.redCards} onChange={(e) => setForm({ ...form, redCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
           </div>
           {playerDetail?.ovrHistory && playerDetail.ovrHistory.length > 0 && (

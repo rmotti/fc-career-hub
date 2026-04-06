@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign, Star } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -37,9 +37,8 @@ function computeNextSeason(current: string | null | undefined): string | null {
 }
 
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
-  const [step, setStep] = useState<"confirm" | "overview" | "budget" | "celebration">("confirm");
+  const [step, setStep] = useState<"confirm" | "overview" | "budget">("confirm");
   const [budgetInput, setBudgetInput] = useState("");
-  const previousTrophyCount = useRef<number>(0);
 
   const { data: save } = useSave(saveId);
   const { data: players = [] } = usePlayers(saveId, true);
@@ -52,11 +51,8 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
-  // Always use the live save data for season calculations to avoid stale props
-  const liveSeason = save?.currentSeason ?? currentSeason;
-  const currentYear = liveSeason ? parseInt(liveSeason.split("/")[0]) || 0 : 0;
-  const seasonTrophies = trophies.filter((t) => t.year === currentYear);
-  const nextSeason = computeNextSeason(liveSeason);
+  const nextSeason = computeNextSeason(save?.currentSeason ?? currentSeason);
+  const seasonTrophies = trophies.filter((t) => t.name.endsWith(currentSeason));
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
@@ -71,33 +67,15 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   };
 
   const handleFinish = async () => {
-    previousTrophyCount.current = trophies.length;
     const budget = parseFloat(budgetInput);
     const success = await onConfirm(budget);
 
     if (success) {
-      const willCelebrate = teamStats?.leaguePosition === 1 ||
-        teamStats?.europeanCupResult === "Campeao" ||
-        teamStats?.nationalCupResult === "Campeao";
-
-      if (!willCelebrate) {
-        setStep("confirm");
-        setBudgetInput("");
-        onOpenChange(false);
-      }
+      setStep("confirm");
+      setBudgetInput("");
+      onOpenChange(false);
     }
   };
-
-  // Watch for new trophies after advancing season
-  useEffect(() => {
-    if (step === "budget" && trophies.length > previousTrophyCount.current) {
-      setStep("celebration");
-    }
-  }, [trophies.length, step]);
-
-  const newTrophies = step === "celebration"
-    ? trophies.filter((t) => t.year === currentYear)
-    : [];
 
   const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
   const labelClass = "text-xs text-muted-foreground uppercase mb-1 block";
@@ -215,36 +193,6 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
               >
                 Cancelar
-              </button>
-            </div>
-          </>
-        ) : step === "celebration" ? (
-          <>
-            <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-center">
-                🎉 Parabéns! 🎉
-              </DialogTitle>
-              <DialogDescription className="text-center">
-                Novos troféus conquistados!
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex flex-col items-center gap-4">
-                {newTrophies.map((t) => (
-                  <div key={t.id} className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-6 text-center w-full animate-in fade-in zoom-in duration-500">
-                    <div className="text-4xl mb-2">🏆</div>
-                    <p className="font-display text-xl font-bold text-yellow-500">{t.name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{t.club ?? currentClub} — {t.year}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="pt-2">
-              <button
-                onClick={() => { setStep("confirm"); setBudgetInput(""); onOpenChange(false); }}
-                className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Fechar
               </button>
             </div>
           </>

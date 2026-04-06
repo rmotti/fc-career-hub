@@ -68,16 +68,6 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
           <DialogDescription>Atualize as estatísticas do time na temporada.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label id="label-goalsPro" className={labelClass}>Gols Pró</label>
-              <input id="field-goalsPro" name="goalsPro" type="number" className={inputClass} value={form.goalsPro} onChange={(e) => setForm({ ...form, goalsPro: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-            <div>
-              <label id="label-goalsAgainst" className={labelClass}>Gols Contra</label>
-              <input id="field-goalsAgainst" name="goalsAgainst" type="number" className={inputClass} value={form.goalsAgainst} onChange={(e) => setForm({ ...form, goalsAgainst: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-          </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label id="label-wins" className={labelClass}>Vitórias</label>
@@ -90,6 +80,16 @@ const StatsModal = ({ open, onOpenChange, stats, onSave }: Props) => {
             <div>
               <label id="label-losses" className={labelClass}>Derrotas</label>
               <input id="field-losses" name="losses" type="number" className={inputClass} value={form.losses} onChange={(e) => setForm({ ...form, losses: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label id="label-goalsPro" className={labelClass}>Gols Pró</label>
+              <input id="field-goalsPro" name="goalsPro" type="number" className={inputClass} value={form.goalsPro} onChange={(e) => setForm({ ...form, goalsPro: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+            </div>
+            <div>
+              <label id="label-goalsAgainst" className={labelClass}>Gols Contra</label>
+              <input id="field-goalsAgainst" name="goalsAgainst" type="number" className={inputClass} value={form.goalsAgainst} onChange={(e) => setForm({ ...form, goalsAgainst: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
             </div>
           </div>
 

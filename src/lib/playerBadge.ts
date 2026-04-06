@@ -23,19 +23,16 @@ export function getBadge(player: Pick<ApiPlayer, "ovr" | "potential" | "age" | "
   if (squadRole === "motor")
     return { label: "Motor", icon: "⚙️", color: "#E67E22" };
 
-  if (potential && ovr >= potential - 2 && ovr >= 85)
-    return { label: "Realizado", icon: "✅", color: "#2ECC71" };
-
   if (ovrDelta != null && ovrDelta >= 5)
     return { label: "Em ascensão", icon: "📈", color: "#3498DB" };
 
   if (age <= 21 && potential && potential >= 88 && potential < 90)
     return { label: "Promessa", icon: "🔥", color: "#E74C3C" };
 
-  if (age <= 21 && potential && potential >= 90)
+  if (age <= 21 && potential && potential >= 92)
     return { label: "Diamante", icon: "💎", color: "#9B59B6" };
 
-  if (age >= 34 && ovr >= 82)
+  if (age >= 34 && ovr >= 85)
     return { label: "Veterano", icon: "🧊", color: "#95A5A6" };
 
   return null;
