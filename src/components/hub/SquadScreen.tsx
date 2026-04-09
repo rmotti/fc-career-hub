@@ -6,6 +6,7 @@ import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpda
 import { useSave } from "@/hooks/useSaves";
 import PlayerModal from "@/components/modals/PlayerModal";
 import { getBadge, type SquadRole } from "@/lib/playerBadge";
+import Flag from "react-world-flags";
 
 interface Props {
   saveId: string;
@@ -215,7 +216,12 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                       <span className="flex items-center gap-2">
                         {p.name}
                         {p.shirtNumber != null && (
-                          <span className="text-xs text-muted-foreground font-mono">#{p.shirtNumber}</span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                            #{p.shirtNumber}
+                            {p.nation && (
+                              <Flag code={p.nation} style={{ width: 16, height: 11, borderRadius: 2, objectFit: "cover" }} />
+                            )}
+                          </span>
                         )}
                       </span>
                       {(() => {

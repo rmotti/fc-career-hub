@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { usePlayers } from "@/hooks/usePlayers";
 import { type ApiPlayer } from "@/services/api";
+import Flag from "react-world-flags";
 import {
   Select,
   SelectContent,
@@ -34,23 +35,23 @@ import {
 type FormationDef = { name: string; rows: string[][] };
 
 const FORMATIONS: FormationDef[] = [
-  { name: "4-4-2",          rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["MD","MC","MC","ME"], ["ATA","ATA"]] },
-  { name: "4-4-2 Diamante", rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL"], ["MC","MC"], ["MEI"], ["ATA","ATA"]] },
+  { name: "3-3-3-1",        rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["VOL","MC","VOL"], ["PE","MEI","PD"], ["ATA"]] },
+  { name: "3-4-2-1",        rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["LD","MC","MC","LE"], ["MEI","MEI"], ["ATA"]] },
+  { name: "3-4-3",          rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["LD","MC","MC","LE"], ["PE","ATA","PD"]] },
+  { name: "3-5-2",          rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["LD","VOL","MC","VOL","LE"], ["ATA","ATA"]] },
+  { name: "4-1-2-1-2",      rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL"], ["MC","MC"], ["MEI"], ["ATA","ATA"]] },
+  { name: "4-1-4-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL"], ["ME","MC","MC","MD"], ["ATA"]] },
+  { name: "4-2-3-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL","VOL"], ["ME","MEI","MD"], ["ATA"]] },
+  { name: "4-3-2-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL","MC","MC"], ["MEI","MEI"], ["ATA"]] },
   { name: "4-3-3",          rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL","MC","MC"], ["PE","ATA","PD"]] },
   { name: "4-3-3 Falso 9",  rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL","MC","MC"], ["PE","SA","PD"]] },
-  { name: "4-2-3-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL","VOL"], ["ME","MEI","MD"], ["ATA"]] },
-  { name: "4-1-4-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL"], ["ME","MC","MC","MD"], ["ATA"]] },
-  { name: "4-1-2-1-2",      rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL"], ["MC","MC"], ["MEI"], ["ATA","ATA"]] },
-  { name: "4-3-2-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL","MC","MC"], ["MEI","MEI"], ["ATA"]] },
   { name: "4-4-1-1",        rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["MD","MC","MC","ME"], ["SA"], ["ATA"]] },
+  { name: "4-4-2",          rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["MD","MC","MC","ME"], ["ATA","ATA"]] },
+  { name: "4-4-2 Diamante", rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["VOL"], ["MC","MC"], ["MEI"], ["ATA","ATA"]] },
   { name: "4-5-1",          rows: [["GOL"], ["LD","ZAG","ZAG","LE"], ["MD","VOL","MC","VOL","ME"], ["ATA"]] },
-  { name: "3-5-2",          rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["LD","VOL","MC","VOL","LE"], ["ATA","ATA"]] },
-  { name: "3-4-3",          rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["LD","MC","MC","LE"], ["PE","ATA","PD"]] },
-  { name: "3-4-2-1",        rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["LD","MC","MC","LE"], ["MEI","MEI"], ["ATA"]] },
-  { name: "3-3-3-1",        rows: [["GOL"], ["ZAG","ZAG","ZAG"], ["VOL","MC","VOL"], ["PE","MEI","PD"], ["ATA"]] },
+  { name: "5-2-3",          rows: [["GOL"], ["LE","ZAG","ZAG","ZAG","LD"], ["VOL","MC"], ["PE","ATA","PD"]] },
   { name: "5-3-2",          rows: [["GOL"], ["LE","ZAG","ZAG","ZAG","LD"], ["MC","VOL","MC"], ["ATA","ATA"]] },
   { name: "5-4-1",          rows: [["GOL"], ["LE","ZAG","ZAG","ZAG","LD"], ["MD","MC","MC","ME"], ["ATA"]] },
-  { name: "5-2-3",          rows: [["GOL"], ["LE","ZAG","ZAG","ZAG","LD"], ["VOL","MC"], ["PE","ATA","PD"]] },
 ];
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -133,16 +134,25 @@ const PlayerCard = ({ player, compact = false, overlay = false, isSelected = fal
   const h = compact ? 60 : 72;
   return (
     <div
-      className={`${w} border ${c.border} ${c.bg} ${c.glow} rounded-lg flex flex-col items-center justify-center gap-0.5 backdrop-blur-sm select-none transition-all ${overlay ? "rotate-2 scale-105 opacity-95" : ""} ${isSelected ? "brightness-125 scale-105" : ""}`}
+      className={`${w} border ${c.border} ${c.bg} ${c.glow} rounded-lg flex flex-col items-center justify-center gap-0.5 backdrop-blur-sm select-none transition-all overflow-hidden relative ${overlay ? "rotate-2 scale-105 opacity-95" : ""} ${isSelected ? "brightness-125 scale-105" : ""}`}
       style={{ height: h }}
     >
-      <span className={`text-[8px] font-display font-bold tracking-widest leading-none px-1.5 py-0.5 rounded ${c.badge}`}>
+      {player.nation && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
+          <Flag
+            code={player.nation}
+            style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }}
+          />
+          <div className="absolute inset-0 bg-black/45" />
+        </div>
+      )}
+      <span className={`text-[8px] font-display font-bold tracking-widest leading-none px-1.5 py-0.5 rounded ${c.badge} relative z-10`}>
         {player.position}
       </span>
-      <span className={`font-display font-bold leading-none ${c.text} ${compact ? "text-base" : "text-xl"}`}>
+      <span className={`font-display font-bold leading-none ${c.text} ${compact ? "text-base" : "text-xl"} relative z-10`}>
         {player.ovr}
       </span>
-      <span className="text-[9px] text-white/65 font-medium leading-none max-w-[52px] text-center truncate px-0.5">
+      <span className="text-[9px] text-white/65 font-medium leading-none max-w-[52px] text-center truncate px-0.5 relative z-10">
         {player.name.split(" ").slice(-1)[0]}
       </span>
     </div>

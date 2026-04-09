@@ -5,6 +5,8 @@ import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { useUpdatePlayerStats, usePlayer } from "@/hooks/usePlayers";
 import { toast } from "sonner";
 import { getBadge } from "@/lib/playerBadge";
+import Flag from "react-world-flags";
+import { COUNTRIES } from "@/utils/countries";
 
 interface Props {
   open: boolean;
@@ -148,7 +150,21 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
             </div>
             <div>
               <label className={labelClass}>Nação</label>
-              <input className={inputClass} value={form.nation} onChange={(e) => setForm({ ...form, nation: e.target.value })} placeholder="ex: Brasil" />
+              <div className="relative flex items-center gap-2">
+                {form.nation && (
+                  <Flag code={form.nation} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-sm object-cover pointer-events-none" style={{ width: 20, height: 14 }} />
+                )}
+                <select
+                  className={`${inputClass} ${form.nation ? "pl-10" : ""}`}
+                  value={form.nation}
+                  onChange={(e) => setForm({ ...form, nation: e.target.value })}
+                >
+                  <option value="">— Selecionar —</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
