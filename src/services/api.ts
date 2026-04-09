@@ -89,6 +89,7 @@ export interface ApiPlayer {
   saveId: string;
   clubStintId: string;
   name: string;
+  nation?: string | null;
   position: PlayerPosition;
   age: number;
   status: "Crucial" | "Important" | "Role" | "Sporadic" | "Promising";
@@ -204,9 +205,9 @@ export const playersApi = {
   },
   get: (saveId: string, playerId: string) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`),
-  create: (saveId: string, data: { name: string; position: string; age: number; status: string; ovr: number; salary?: number; marketValue?: number; potential?: number; shirtNumber?: number; seasonStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; } }) =>
+  create: (saveId: string, data: { name: string; nation?: string; position: string; age: number; status: string; ovr: number; salary?: number; marketValue?: number; potential?: number; shirtNumber?: number; seasonStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; } }) =>
     request<ApiPlayer>(`/saves/${saveId}/players`, { method: "POST", body: JSON.stringify(data) }),
-  update: (saveId: string, playerId: string, data: { name?: string; position?: string; age?: number; status?: string; ovr?: number; salary?: number; marketValue?: number; potential?: number | null; shirtNumber?: number | null }) =>
+  update: (saveId: string, playerId: string, data: { name?: string; nation?: string; position?: string; age?: number; status?: string; ovr?: number; salary?: number; marketValue?: number; potential?: number | null; shirtNumber?: number | null }) =>
     request<ApiPlayer>(`/saves/${saveId}/players/${playerId}`, { method: "PUT", body: JSON.stringify(data) }),
   updateStats: (saveId: string, playerId: string, data: { goals?: number; assists?: number; yellowCards?: number; redCards?: number; matches?: number; cleanSheets?: number; }) =>
     request<ApiPlayerSeasonStats>(`/saves/${saveId}/players/${playerId}/stats`, { method: "PATCH", body: JSON.stringify(data) }),

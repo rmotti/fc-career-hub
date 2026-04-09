@@ -18,7 +18,7 @@ const POSITIONS = ["GOL", "LD", "LE", "ZAG", "VOL", "MC", "ME", "MD", "MEI", "PE
 const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
 const EMPTY_PLAYER = {
-  name: "", position: "MC" as string, age: 20 as number | "", status: "Important" as string, ovr: 70 as number | "",
+  name: "", nation: "" as string, position: "MC" as string, age: 20 as number | "", status: "Important" as string, ovr: 70 as number | "",
   salary: "" as number | "", marketValue: "" as number | "",
   potential: "" as number | "", shirtNumber: "" as number | "",
   goals: 0 as number | "", assists: 0 as number | "", yellowCards: 0 as number | "", redCards: 0 as number | "", matches: 0 as number | "", cleanSheets: 0 as number | "",
@@ -37,6 +37,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
         const stats = player.currentSeasonStats || player.totalStats;
         setForm({
           name: player.name,
+          nation: player.nation ?? "",
           position: player.position,
           age: player.age,
           status: player.status,
@@ -63,6 +64,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
     const submissionForm = {
       ...form,
+      nation: form.nation === "" ? undefined : form.nation,
       age: form.age === "" ? 0 : form.age,
       ovr: form.ovr === "" ? 0 : form.ovr,
       goals: form.goals === "" ? 0 : form.goals,
@@ -139,9 +141,15 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
         })()}
         <form onSubmit={handleSubmit}>
           <fieldset className="space-y-3" disabled={isSubmitting}>
-          <div>
-            <label className={labelClass}>Nome</label>
-            <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Nome</label>
+              <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div>
+              <label className={labelClass}>Nação</label>
+              <input className={inputClass} value={form.nation} onChange={(e) => setForm({ ...form, nation: e.target.value })} placeholder="ex: Brasil" />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
