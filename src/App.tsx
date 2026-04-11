@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/AuthGuards";
+import Landing from "./pages/Landing.tsx";
+import Pricing from "./pages/Pricing.tsx";
 import Index from "./pages/Index.tsx";
 import HubLayout from "./pages/HubLayout.tsx";
 import Dashboard from "./pages/hub/Dashboard.tsx";
@@ -28,13 +30,16 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/pricing" element={<Pricing />} />
+
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
             </Route>
 
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Index />} />
+              <Route path="/app" element={<Index />} />
               <Route element={<HubLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/squad" element={<Squad />} />

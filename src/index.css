@@ -87,4 +87,150 @@
   .stat-highlight {
     @apply text-primary font-display font-bold text-glow-primary;
   }
+
+  /* Landing page utilities */
+  .landing-btn-primary {
+    transition: opacity 160ms ease-out, transform 160ms ease-out;
+  }
+  .landing-btn-primary:hover {
+    opacity: 0.92;
+  }
+  .landing-btn-primary:active {
+    transform: scale(0.97);
+  }
+  .landing-btn-secondary {
+    transition: color 160ms ease-out, border-color 160ms ease-out, transform 160ms ease-out;
+  }
+  .landing-btn-secondary:active {
+    transform: scale(0.97);
+  }
+}
+
+/* ─── Landing keyframes ──────────────────────────────────────────────────── */
+
+@keyframes landing-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Mockup gentle float */
+@keyframes mockup-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+/* Scan line that sweeps top-to-bottom on the mockup */
+@keyframes scan-line {
+  0%   { top: -2px; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Floating background orbs */
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(40px, -30px) scale(1.08); }
+  66%       { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(-50px, 25px) scale(1.05); }
+  70%       { transform: translate(25px, -40px) scale(0.92); }
+}
+
+@keyframes orb-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(30px, 30px) scale(1.1); }
+}
+
+/* Marquee scroll */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Hero badge shimmer */
+@keyframes shimmer {
+  0%, 100% { box-shadow: 0 0 0px hsl(142 70% 49% / 0); }
+  50%       { box-shadow: 0 0 16px hsl(142 70% 49% / 0.25); }
+}
+
+/* Headline green text glow breathing */
+@keyframes text-glow-pulse {
+  0%, 100% { text-shadow: 0 0 12px hsl(142 70% 49% / 0.4); }
+  50%       { text-shadow: 0 0 28px hsl(142 70% 49% / 0.75), 0 0 60px hsl(142 70% 49% / 0.2); }
+}
+
+/* Scroll indicator dot */
+@keyframes scroll-dot {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50%       { transform: translateY(8px); opacity: 0.3; }
+}
+
+/* Scroll hint container */
+@keyframes bounce-hint {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.6; }
+  50%       { transform: translateX(-50%) translateY(4px); opacity: 1; }
+}
+
+/* CTA section breathing glow */
+@keyframes cta-breathe {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+.landing-navbar {
+  animation: landing-fade-in 400ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.landing-hero-text {
+  animation: landing-fade-up 600ms cubic-bezier(0.23, 1, 0.32, 1) 100ms both;
+}
+
+.landing-hero-mockup {
+  animation: landing-fade-up 600ms cubic-bezier(0.23, 1, 0.32, 1) 250ms both;
+}
+
+.landing-mockup {
+  animation: landing-fade-up 500ms cubic-bezier(0.23, 1, 0.32, 1) 300ms both;
+}
+
+.landing-feature-card {
+  animation: landing-fade-up 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.auth-page {
+  animation: landing-fade-in 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.auth-form-card {
+  animation: landing-fade-up 400ms cubic-bezier(0.23, 1, 0.32, 1) 80ms both;
+}
+
+.auth-input {
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.pricing-card {
+  animation: landing-fade-up 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-navbar,
+  .landing-hero-text,
+  .landing-hero-mockup,
+  .landing-mockup,
+  .landing-feature-card,
+  .auth-page,
+  .auth-form-card,
+  .pricing-card {
+    animation: none;
+  }
 }

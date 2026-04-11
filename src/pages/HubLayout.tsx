@@ -38,7 +38,7 @@ const HubLayout = () => {
   useEffect(() => {
     if (user && isError && activeSaveId) {
       clearStoredActiveSaveId(user.id);
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       toast.error("Não foi possível abrir esse save. Escolha outro para continuar.", { duration: 5000 });
     }
   }, [activeSaveId, isError, navigate, user]);
@@ -48,7 +48,7 @@ const HubLayout = () => {
   }
 
   if (!activeSaveId) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   if (!activeSave) {
@@ -90,7 +90,7 @@ const HubLayout = () => {
 
   const handleExitSave = () => {
     clearStoredActiveSaveId(user.id);
-    navigate("/");
+    navigate("/app");
   };
 
   const handleSignOut = async () => {
