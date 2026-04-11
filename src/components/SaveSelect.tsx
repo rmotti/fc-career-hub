@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2, ClipboardList, BarChart2, Trash2 } from "lucide-react";
+import { Plus, Gamepad2, Shield, Calendar, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { extractErrorMessage, type ApiSave, type UserPlan } from "@/services/api";
 import { useClubsByLeague } from "@/hooks/useClubs";
@@ -27,7 +27,6 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
 
   const leagueNames = Object.keys(clubsByLeague);
   const clubsForLeague: string[] = newLeague ? (clubsByLeague[newLeague] ?? []) : [];
-
   const handleBudgetBlur = () => {
     const num = parseFloat(newBudget);
     if (isNaN(num) || num < 0) {
@@ -215,54 +214,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
         )}
       </section>
 
-      {/* 3. O que é o FC 26 Hub */}
-      <section className="w-full text-center space-y-8">
-        <h2 className="font-display text-3xl font-bold">O que é o FC 26 Hub?</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <div className="card-gamer p-6 bg-card/50">
-            <div className="text-primary mb-4 bg-primary/10 w-fit p-3 rounded-xl"><ClipboardList size={28} /></div>
-            <h3 className="font-display text-xl font-bold mb-2">Registre sua carreira</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">Acompanhe cada temporada, clube gerenciado e conquistas do seu Modo Carreira ao longo dos anos.</p>
-          </div>
-          <div className="card-gamer p-6 bg-card/50">
-            <div className="text-primary mb-4 bg-primary/10 w-fit p-3 rounded-xl"><BarChart2 size={28} /></div>
-            <h3 className="font-display text-xl font-bold mb-2">Estatísticas completas</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">Gols, assistências, partidas, cartões e muito mais documentados por jogador e consolidados por temporada.</p>
-          </div>
-          <div className="card-gamer p-6 bg-card/50">
-            <div className="text-primary mb-4 bg-primary/10 w-fit p-3 rounded-xl"><Trophy size={28} /></div>
-            <h3 className="font-display text-xl font-bold mb-2">Histórico de troféus</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">Guarde cada título conquistado, com clube e temporada registrados na sua sala de troféus pessoal.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Como funciona (4 steps) */}
-      <section className="w-full bg-card/30 border border-border p-8 sm:p-12 rounded-2xl">
-        <h2 className="font-display text-3xl font-bold text-center mb-10">Como funciona</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
-          {/* Connector line for desktop */}
-          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-0.5 bg-border/60 z-0"></div>
-          
-          {[
-            { tag: "1", title: "Crie um Save", desc: "Dê um nome à sua carreira, escolha seu clube e defina o orçamento." },
-            { tag: "2", title: "Monte seu elenco", desc: "Adicione jogadores com posição, overall, salário e valor de mercado." },
-            { tag: "3", title: "Registre a temporada", desc: "Atualize estatísticas de jogadores e do time ao longo da temporada." },
-            { tag: "4", title: "Avance e conquiste", desc: "Finalize temporadas, registre transferências e conquiste troféus." },
-          ].map((step, idx) => (
-            <div key={idx} className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-card border-2 border-primary text-primary font-display font-bold text-xl flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
-                {step.tag}
-              </div>
-              <h4 className="font-display text-lg font-bold mb-2">{step.title}</h4>
-              <p className="text-sm text-muted-foreground">{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. Footer */}
+      {/* 3. Footer */}
       <footer className="w-full text-center pt-8 border-t border-border/50">
         <p className="text-sm text-muted-foreground/60 font-medium">FC 26 Hub · Feito para jogadores de Modo Carreira</p>
       </footer>

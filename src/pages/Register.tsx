@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import AuthPageLayout from "@/components/AuthPageLayout";
+import AuthHubShowcase from "@/components/AuthHubShowcase";
 import { useAuth } from "@/contexts/AuthContext";
 import { extractErrorMessage } from "@/services/api";
 
@@ -36,6 +37,7 @@ export default function Register() {
       footerText="Já tem conta?"
       footerLinkLabel="Fazer login"
       footerLinkTo="/login"
+      bottomContent={<AuthHubShowcase />}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
