@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import HubSidebar from "@/components/hub/HubSidebar";
 import HubHeader from "@/components/hub/HubHeader";
 import NewSeasonModal from "@/components/modals/NewSeasonModal";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSave, useUpdateSave } from "@/hooks/useSaves";
+import { clearStoredActiveSaveId, getStoredActiveSaveId } from "@/lib/auth-storage";
 import { extractErrorMessage } from "@/services/api";
 
 export type HubOutletContext = {
@@ -15,14 +17,15 @@ export type HubOutletContext = {
 };
 
 const HubLayout = () => {
-  const activeSaveId = localStorage.getItem("active-save-id");
+  const { user, signOut } = useAuth();
+  const activeSaveId = user ? getStoredActiveSaveId(user.id) : null;
   const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string>("");
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
 
-  const { data: activeSave } = useSave(activeSaveId);
+  const { data: activeSave, isError } = useSave(activeSaveId);
   const updateSave = useUpdateSave();
   const navigate = useNavigate();
 
@@ -31,6 +34,18 @@ const HubLayout = () => {
       setSelectedSeason(activeSave.currentSeason);
     }
   }, [activeSave?.currentSeason]);
+
+  useEffect(() => {
+    if (user && isError && activeSaveId) {
+      clearStoredActiveSaveId(user.id);
+      navigate("/", { replace: true });
+      toast.error("Não foi possível abrir esse save. Escolha outro para continuar.", { duration: 5000 });
+    }
+  }, [activeSaveId, isError, navigate, user]);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!activeSaveId) {
     return <Navigate to="/" replace />;
@@ -74,8 +89,14 @@ const HubLayout = () => {
   };
 
   const handleExitSave = () => {
-    localStorage.removeItem("active-save-id");
+    clearStoredActiveSaveId(user.id);
     navigate("/");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+    toast.success("Sessão encerrada.");
   };
 
   const currentClub = activeSave.currentClubStint?.club ?? "—";
@@ -86,12 +107,15 @@ const HubLayout = () => {
       <HubSidebar
         onNewSeason={() => setShowNewSeasonModal(true)}
         onExitSave={handleExitSave}
+        onSignOut={handleSignOut}
         collapsed={collapsed}
         onToggleCollapse={handleToggleCollapse}
       />
       <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ${collapsed ? "md:ml-16" : "md:ml-60"}`}>
         <HubHeader
           saveName={activeSave.name}
+          userName={user.name}
+          userPlan={user.plan}
           clubName={currentClub}
           season={activeSave.currentSeason}
           availableSeasons={activeSave.availableSeasons}

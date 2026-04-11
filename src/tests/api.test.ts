@@ -62,6 +62,16 @@ describe("extractErrorMessage", () => {
       expect(extractErrorMessage(err)).toBe("INVALID_DATA");
     });
 
+    it("retorna apiError para status 401", () => {
+      const err = { status: 401, data: { error: "Não autenticado." }, message: "Unauthorized" };
+      expect(extractErrorMessage(err)).toBe("Não autenticado.");
+    });
+
+    it("retorna apiError para status 403", () => {
+      const err = { status: 403, data: { error: "Acesso negado." }, message: "Forbidden" };
+      expect(extractErrorMessage(err)).toBe("Acesso negado.");
+    });
+
     it("retorna apiError para status 404", () => {
       const err = { status: 404, data: { error: "NOT_FOUND" }, message: "Not Found" };
       expect(extractErrorMessage(err)).toBe("NOT_FOUND");

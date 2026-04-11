@@ -1,0 +1,158 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  authApi,
+  registerUnauthorizedHandler,
+  type ApiSession,
+  type ApiUser,
+} from "@/services/api";
+import {
+  clearStoredActiveSaveId,
+  clearStoredToken,
+  getStoredToken,
+  setStoredToken,
+} from "@/lib/auth-storage";
+
+type AuthContextValue = {
+  user: ApiUser | null;
+  session: ApiSession | null;
+  token: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  signIn: (data: { email: string; password: string }) => Promise<void>;
+  signUp: (data: { name: string; email: string; password: string }) => Promise<void>;
+  signOut: () => Promise<void>;
+  clearSession: () => void;
+};
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [session, setSession] = useState<ApiSession | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const userRef = useRef<ApiUser | null>(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const clearSession = useCallback(() => {
+    const userId = userRef.current?.id;
+
+    clearStoredToken();
+    if (userId) {
+      clearStoredActiveSaveId(userId);
+    }
+
+    setUser(null);
+    setSession(null);
+    setToken(null);
+    queryClient.clear();
+  }, [queryClient]);
+
+  const hydrateSession = useCallback(async () => {
+    const storedToken = getStoredToken();
+
+    if (!storedToken) {
+      setIsLoading(false);
+      return;
+    }
+
+    setToken(storedToken);
+
+    try {
+      const currentSession = await authApi.getSession();
+
+      if (!currentSession) {
+        clearSession();
+        return;
+      }
+
+      setUser(currentSession.user);
+      setSession(currentSession.session);
+    } catch {
+      clearSession();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [clearSession]);
+
+  useEffect(() => {
+    registerUnauthorizedHandler(() => clearSession());
+    void hydrateSession();
+
+    return () => {
+      registerUnauthorizedHandler(null);
+    };
+  }, [clearSession, hydrateSession]);
+
+  const signIn = useCallback(async (data: { email: string; password: string }) => {
+    const authResponse = await authApi.signIn(data);
+    setStoredToken(authResponse.token);
+    setToken(authResponse.token);
+    setUser(authResponse.user);
+
+    const currentSession = await authApi.getSession().catch(() => null);
+    setSession(currentSession?.session ?? null);
+    if (currentSession?.user) {
+      setUser(currentSession.user);
+    }
+  }, []);
+
+  const signUp = useCallback(async (data: { name: string; email: string; password: string }) => {
+    const authResponse = await authApi.signUp(data);
+    setStoredToken(authResponse.token);
+    setToken(authResponse.token);
+    setUser(authResponse.user);
+
+    const currentSession = await authApi.getSession().catch(() => null);
+    setSession(currentSession?.session ?? null);
+    if (currentSession?.user) {
+      setUser(currentSession.user);
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await authApi.signOut();
+    } finally {
+      clearSession();
+    }
+  }, [clearSession]);
+
+  const value = useMemo<AuthContextValue>(() => ({
+    user,
+    session,
+    token,
+    isLoading,
+    isAuthenticated: !!user && !!token,
+    signIn,
+    signUp,
+    signOut,
+    clearSession,
+  }), [clearSession, isLoading, session, signIn, signOut, signUp, token, user]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
+  return context;
+}

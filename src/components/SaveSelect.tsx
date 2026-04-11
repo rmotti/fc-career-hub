@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Plus, Gamepad2, Shield, Calendar, Trophy, Loader2, ClipboardList, BarChart2, Trash2 } from "lucide-react";
-import type { ApiSave } from "@/services/api";
+import { toast } from "sonner";
+import { extractErrorMessage, type ApiSave, type UserPlan } from "@/services/api";
 import { useClubsByLeague } from "@/hooks/useClubs";
 import { useDeleteSave } from "@/hooks/useSaves";
 
 interface Props {
+  userName: string;
+  userPlan: UserPlan;
   saves: ApiSave[];
   loading: boolean;
   onSelectSave: (save: ApiSave) => void;
@@ -12,7 +15,7 @@ interface Props {
   creating: boolean;
 }
 
-const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Props) => {
+const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreateSave, creating }: Props) => {
   const [showForm, setShowForm] = useState(false);
   const deleteSave = useDeleteSave();
   const [newName, setNewName] = useState("");
@@ -52,8 +55,6 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
     setNewBudget("");
   };
 
-  const userName = "Jogador";
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-6 pb-12 w-full max-w-5xl mx-auto space-y-16 py-12">
       
@@ -66,7 +67,9 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
           </h1>
         </div>
         <p className="text-muted-foreground text-lg sm:text-xl font-medium mb-1">Gerencie seus saves do Modo Carreira</p>
-        <p className="text-muted-foreground/60 text-sm">Olá, {userName} 👋</p>
+        <p className="text-muted-foreground/60 text-sm">
+          Olá, {userName} • Plano {userPlan}
+        </p>
       </section>
 
       {/* 2. Action Buttons & Form */}
@@ -103,7 +106,11 @@ const SaveSelect = ({ saves, loading, onSelectSave, onCreateSave, creating }: Pr
                     onClick={(e) => {
                       e.stopPropagation();
                       if (confirm(`Deletar o save "${save.name}"? Esta ação não pode ser desfeita.`)) {
-                        deleteSave.mutate(save.id);
+                        deleteSave.mutate(save.id, {
+                          onError: (error) => {
+                            toast.error(extractErrorMessage(error), { duration: 5000 });
+                          },
+                        });
                       }
                     }}
                     disabled={deleteSave.isPending}

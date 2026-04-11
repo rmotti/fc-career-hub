@@ -1,4 +1,25 @@
-const BASE_URL = "https://career-hub-api.vercel.app/api";
+const DEFAULT_API_URL = "https://career-hub-api.vercel.app";
+
+function resolveBaseUrl() {
+  const env = import.meta.env as ImportMetaEnv & {
+    NEXT_PUBLIC_API_URL?: string;
+    VITE_API_URL?: string;
+  };
+  const configuredBaseUrl = env.NEXT_PUBLIC_API_URL || env.VITE_API_URL || DEFAULT_API_URL;
+  const normalizedBaseUrl = configuredBaseUrl.replace(/\/$/, "");
+
+  return normalizedBaseUrl.endsWith("/api")
+    ? normalizedBaseUrl
+    : `${normalizedBaseUrl}/api`;
+}
+
+const BASE_URL = resolveBaseUrl();
+
+let unauthorizedHandler: (() => void) | null = null;
+
+export function registerUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
 
 export class ApiError extends Error {
   status?: number;
@@ -14,6 +35,37 @@ export class ApiError extends Error {
   }
 }
 
+export type UserRole = "ADMIN" | "USER";
+export type UserPlan = "FREE" | "PRO" | "PREMIUM";
+
+export interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  role: UserRole;
+  plan: UserPlan;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiSession {
+  id: string;
+  expiresAt: string;
+  userId: string;
+}
+
+export interface AuthSuccessResponse {
+  token: string;
+  user: ApiUser;
+}
+
+export interface SessionResponse {
+  session: ApiSession;
+  user: ApiUser;
+}
+
 export function extractErrorMessage(err: any): string {
   if (err?.isNetworkError || err?.message === "Failed to fetch" || err?.message?.includes("NetworkError")) {
     return "Não foi possível conectar ao servidor. Verifique sua conexão.";
@@ -26,7 +78,7 @@ export function extractErrorMessage(err: any): string {
   const status = err?.status || err?.response?.status;
   const apiError = err?.data?.error || err?.response?.data?.error;
 
-  if (status === 400 || status === 404 || status === 409) {
+  if (status === 400 || status === 401 || status === 403 || status === 404 || status === 409) {
     return apiError || err.message;
   }
   if (status >= 500) {
@@ -37,11 +89,19 @@ export function extractErrorMessage(err: any): string {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = typeof window !== "undefined"
+    ? window.localStorage.getItem("session_token")
+    : null;
+
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json" },
       ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
     });
   } catch (err: any) {
     // throw network error
@@ -50,11 +110,39 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+    if (
+      res.status === 401 &&
+      !path.startsWith("/auth/sign-in") &&
+      !path.startsWith("/auth/sign-up")
+    ) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(err.error || `HTTP ${res.status}`, res.status, err);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
 }
+
+// ─── Auth ───────────────────────────────────────────────────────────
+
+export const authApi = {
+  signUp: (data: { name: string; email: string; password: string }) =>
+    request<AuthSuccessResponse>("/auth/sign-up/email", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  signIn: (data: { email: string; password: string }) =>
+    request<AuthSuccessResponse>("/auth/sign-in/email", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getSession: () =>
+    request<SessionResponse | null>("/auth/session"),
+  signOut: () =>
+    request<{ success: true }>("/auth/sign-out", {
+      method: "POST",
+    }),
+};
 
 // ─── Types (API response shapes) ────────────────────────────────────
 

@@ -9,6 +9,7 @@ import {
 interface HubSidebarProps {
   onNewSeason: () => void;
   onExitSave: () => void;
+  onSignOut: () => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -23,7 +24,7 @@ const navItems: { to: string; label: string; icon: React.ElementType }[] = [
   { to: "/change-club", label: "Mudar de Clube", icon: RefreshCw },
 ];
 
-const HubSidebar = ({ onNewSeason, onExitSave, collapsed, onToggleCollapse }: HubSidebarProps) => {
+const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCollapse }: HubSidebarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
@@ -38,6 +39,11 @@ const HubSidebar = ({ onNewSeason, onExitSave, collapsed, onToggleCollapse }: Hu
 
   const handleExitSave = () => {
     onExitSave();
+    setMobileOpen(false);
+  };
+
+  const handleSignOut = () => {
+    onSignOut();
     setMobileOpen(false);
   };
 
@@ -89,13 +95,23 @@ const HubSidebar = ({ onNewSeason, onExitSave, collapsed, onToggleCollapse }: Hu
         </button>
         <button
           onClick={handleExitSave}
-          title={collapsed ? "Sair do Save" : undefined}
+          title={collapsed ? "Trocar save" : undefined}
+          className={`w-full flex items-center gap-3 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all min-h-[44px] ${
+            collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+          }`}
+        >
+          <ArrowLeftRight size={18} />
+          {!collapsed && <span>Trocar Save</span>}
+        </button>
+        <button
+          onClick={handleSignOut}
+          title={collapsed ? "Sair da conta" : undefined}
           className={`w-full flex items-center gap-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all min-h-[44px] ${
             collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
           }`}
         >
           <LogOut size={18} />
-          {!collapsed && <span>Sair do Save</span>}
+          {!collapsed && <span>Sair da Conta</span>}
         </button>
 
         {/* Collapse toggle - desktop only */}
