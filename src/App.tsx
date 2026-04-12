@@ -18,6 +18,7 @@ import ChangeClub from "./pages/hub/ChangeClub.tsx";
 import Field from "./pages/hub/Field.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
+import Unauthorized from "./pages/Unauthorized.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<Login />} />

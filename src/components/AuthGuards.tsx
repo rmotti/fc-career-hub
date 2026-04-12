@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 function FullScreenLoader({ message }: { message: string }) {
@@ -11,13 +11,14 @@ function FullScreenLoader({ message }: { message: string }) {
 
 export function ProtectedRoute() {
   const { isLoading, isAuthenticated } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <FullScreenLoader message="Validando sessão..." />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
   }
 
   return <Outlet />;

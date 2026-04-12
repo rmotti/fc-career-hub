@@ -192,6 +192,20 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* Error / 401 / 404 page entrance */
+@keyframes unauth-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Compass needle gentle rotation */
+@keyframes compass-spin {
+  0%, 100% { transform: rotate(-15deg); }
+  25%       { transform: rotate(20deg); }
+  50%       { transform: rotate(-8deg); }
+  75%       { transform: rotate(12deg); }
+}
+
 .landing-navbar {
   animation: landing-fade-in 400ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
