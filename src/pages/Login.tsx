@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Shield, Trophy, ArrowLeft, BarChart2, Calendar } from "lucide-react";
+import { Loader2, Trophy, ArrowLeft, BarChart2, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { LogoMark } from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { extractErrorMessage } from "@/services/api";
 
@@ -33,9 +34,7 @@ function LeftPanel() {
 
       {/* Logo */}
       <div className="relative flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-          <Shield size={16} />
-        </div>
+        <LogoMark size={32} />
         <span className="font-display text-lg font-bold tracking-tight">FC 26 Hub</span>
       </div>
 
@@ -132,9 +131,7 @@ export default function Login() {
         {/* Mobile logo */}
         <div className="mb-10 flex w-full max-w-sm items-center justify-between lg:hidden">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Shield size={14} />
-            </div>
+            <LogoMark size={28} />
             <span className="font-display text-base font-bold">FC 26 Hub</span>
           </div>
           <Link to="/" className="flex items-center gap-1 font-body text-xs text-muted-foreground transition-colors hover:text-foreground">

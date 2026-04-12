@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { LogoMark } from "@/components/Logo";
 import {
   Trophy, BarChart2, ClipboardList, ArrowRight, Shield, Users,
   TrendingUp, Repeat2, LayoutDashboard, Star, Check, Zap, Infinity,
@@ -165,9 +166,7 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-            <Shield size={16} />
-          </div>
+          <LogoMark size={32} />
           <span className="font-display text-lg font-bold tracking-tight">FC 26 Hub</span>
         </div>
 
@@ -195,61 +194,139 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
   );
 }
 
-// ─── Hero Mockup ─────────────────────────────────────────────────────────────
+// ─── Hero Mockup — Top Scorers ───────────────────────────────────────────────
+
+const topScorers = [
+  {
+    rank: 1,
+    name: "Vinicius Jr.",
+    pos: "EA",
+    goals: 184,
+    matches: 231,
+    clubs: ["Real Madrid", "Al-Hilal"],
+    seasons: 6,
+  },
+  {
+    rank: 2,
+    name: "Mbappé",
+    pos: "PD",
+    goals: 156,
+    matches: 198,
+    clubs: ["Real Madrid"],
+    seasons: 5,
+  },
+  {
+    rank: 3,
+    name: "Bellingham",
+    pos: "MC",
+    goals: 97,
+    matches: 244,
+    clubs: ["Real Madrid", "Man City"],
+    seasons: 7,
+  },
+  {
+    rank: 4,
+    name: "Salah",
+    pos: "PD",
+    goals: 74,
+    matches: 112,
+    clubs: ["Liverpool"],
+    seasons: 3,
+  },
+];
+
+const rankColors = ["text-gold", "text-muted-foreground", "text-warning/70", "text-muted-foreground/50"];
+const rankBg = ["bg-gold/10", "bg-muted/20", "bg-warning/8", "bg-muted/10"];
 
 function HeroDashboardMockup() {
   return (
     <div className="landing-mockup relative mx-auto w-full max-w-sm" style={{ animation: "mockup-float 4s ease-in-out infinite" }}>
-      <div className="absolute -inset-6 rounded-3xl bg-primary/6 blur-3xl" />
+      {/* Outer glow layers */}
+      <div className="absolute -inset-8 rounded-3xl bg-primary/5 blur-3xl" />
       <div className="absolute -inset-2 rounded-2xl bg-primary/4 blur-xl" />
 
       <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
         {/* Scan line */}
         <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-2xl">
-          <div style={{ animation: "scan-line 3s linear infinite" }} className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          <div style={{ animation: "scan-line 4s linear infinite" }} className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         </div>
 
-        {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-border/50 bg-card/80 px-5 py-3">
-          <div className="flex items-center gap-2.5">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border/50 bg-card/80 px-4 py-3">
+          <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-destructive opacity-70" />
             <div className="h-2 w-2 rounded-full bg-warning opacity-70" />
             <div className="h-2 w-2 rounded-full bg-primary opacity-70" style={{ animation: "pulse-glow 2s ease-in-out infinite" }} />
           </div>
-          <span className="font-display text-xs font-semibold text-muted-foreground">Real Madrid · 26/27</span>
+          <div className="flex items-center gap-1.5">
+            <BarChart2 size={10} className="text-primary" />
+            <span className="font-display text-xs font-semibold text-muted-foreground">Artilheiros · Carreira completa</span>
+          </div>
           <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
             <Shield size={10} className="text-primary" />
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 divide-x divide-border/50 bg-background/40">
-          {[{ label: "Gols", value: "87" }, { label: "Vitórias", value: "29" }, { label: "Títulos", value: "4" }].map(({ label, value }) => (
-            <div key={label} className="flex flex-col items-center py-4">
-              <span className="stat-highlight text-2xl">{value}</span>
-              <span className="mt-0.5 font-body text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
-            </div>
-          ))}
+        {/* Column labels */}
+        <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem] items-center gap-x-2 border-b border-border/30 bg-background/30 px-4 py-2">
+          <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">#</span>
+          <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Jogador</span>
+          <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Gols</span>
+          <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">JG</span>
         </div>
 
-        {/* Player list */}
-        <div className="space-y-1 p-4">
-          {[{ name: "Vinicius Jr.", pos: "EA", ovr: 91 }, { name: "Bellingham", pos: "MC", ovr: 89 }, { name: "Mbappé", pos: "PD", ovr: 91 }].map((p) => (
-            <div key={p.name} className="flex items-center justify-between rounded-xl bg-background/50 px-3 py-2.5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 font-display text-xs font-bold text-primary">{p.pos}</div>
-                <span className="font-body text-sm font-medium">{p.name}</span>
+        {/* Scorer rows */}
+        <div className="space-y-0.5 p-2">
+          {topScorers.map((p, i) => (
+            <div
+              key={p.name}
+              className="group grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem] items-center gap-x-2 rounded-xl px-2 py-2.5 transition-colors hover:bg-background/50"
+              style={{
+                animation: `mockup-row-in 350ms cubic-bezier(0.23,1,0.32,1) ${i * 80 + 200}ms both`,
+              }}
+            >
+              {/* Rank */}
+              <div className={`flex h-5 w-5 items-center justify-center rounded-md font-display text-[10px] font-bold ${rankBg[i]} ${rankColors[i]}`}>
+                {p.rank}
               </div>
-              <span className="font-display text-sm font-bold text-primary">{p.ovr}</span>
+
+              {/* Player info */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-display text-sm font-bold leading-none truncate">{p.name}</span>
+                  <span className="shrink-0 rounded px-1 py-0.5 font-display text-[9px] font-bold leading-none text-muted-foreground/60 bg-muted/30">{p.pos}</span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-1 overflow-hidden">
+                  {p.clubs.map((club, ci) => (
+                    <span key={club} className="flex items-center gap-1">
+                      {ci > 0 && <span className="text-muted-foreground/30 text-[8px]">→</span>}
+                      <span className="font-body text-[10px] leading-none text-muted-foreground/60 truncate">{club}</span>
+                    </span>
+                  ))}
+                  <span className="ml-1 shrink-0 font-body text-[10px] leading-none text-muted-foreground/40">· {p.seasons}T</span>
+                </div>
+              </div>
+
+              {/* Goals */}
+              <div className="text-center">
+                <span className="font-display text-sm font-bold text-primary">{p.goals}</span>
+              </div>
+
+              {/* Matches */}
+              <div className="text-center">
+                <span className="font-display text-xs font-semibold text-muted-foreground">{p.matches}</span>
+              </div>
             </div>
           ))}
-          <div className="pt-1 text-center font-body text-[11px] text-muted-foreground/60">+ 22 jogadores</div>
         </div>
 
-        {/* Trophy bar */}
-        <div className="flex items-center gap-2 border-t border-border/50 bg-background/30 px-4 py-3">
-          <Trophy size={12} className="text-gold" />
-          <span className="font-display text-xs font-semibold text-muted-foreground">La Liga · UCL · Copa del Rey · Supercopa</span>
+        {/* Footer summary */}
+        <div className="flex items-center justify-between border-t border-border/40 bg-background/30 px-4 py-2.5">
+          <div className="flex items-center gap-1.5">
+            <Trophy size={11} className="text-gold" />
+            <span className="font-display text-[10px] font-semibold text-muted-foreground/70">7 temporadas · 3 clubes</span>
+          </div>
+          <span className="font-body text-[10px] text-muted-foreground/40">+18 jogadores</span>
         </div>
       </div>
     </div>
@@ -721,7 +798,7 @@ export default function Landing() {
       <footer className="border-t border-border/40 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-primary"><Shield size={12} /></div>
+            <LogoMark size={22} />
             <span className="font-display text-sm font-semibold text-muted-foreground">FC 26 Career Hub</span>
           </div>
           <p className="font-body text-xs text-muted-foreground/60">Não afiliado à EA Sports. Feito para fãs de Modo Carreira.</p>

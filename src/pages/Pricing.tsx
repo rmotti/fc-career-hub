@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { LogoMark } from "@/components/Logo";
 import {
   Shield,
   Check,
@@ -138,9 +139,7 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
     <header className="landing-navbar fixed left-0 right-0 top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-            <Shield size={16} />
-          </div>
+          <LogoMark size={32} />
           <span className="font-display text-lg font-bold tracking-tight">FC 26 Hub</span>
         </Link>
 
@@ -426,9 +425,7 @@ export default function Pricing() {
       <footer className="border-t border-border/40 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-primary">
-              <Shield size={12} />
-            </div>
+            <LogoMark size={22} />
             <span className="font-display text-sm font-semibold text-muted-foreground">FC 26 Career Hub</span>
           </Link>
           <p className="font-body text-xs text-muted-foreground/60">

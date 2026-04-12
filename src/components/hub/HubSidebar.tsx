@@ -5,6 +5,7 @@ import {
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt
 } from "lucide-react";
+import { LogoMark } from "@/components/Logo";
 
 interface HubSidebarProps {
   onNewSeason: () => void;
@@ -58,11 +59,14 @@ const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCol
 
   const sidebarContent = (
     <>
-      <div className={`border-b border-sidebar-border ${collapsed ? "p-3" : "p-5"}`}>
-        <h2 className={`font-display font-bold text-primary tracking-wider ${collapsed ? "text-center text-sm" : "text-xl"}`}>
-          {collapsed ? "FC" : "FC 26"}
-        </h2>
-        {!collapsed && <p className="text-xs text-muted-foreground mt-1">MODO CARREIRA</p>}
+      <div className={`border-b border-sidebar-border ${collapsed ? "flex justify-center p-3" : "flex items-center gap-2.5 p-4"}`}>
+        <LogoMark size={collapsed ? 30 : 28} />
+        {!collapsed && (
+          <div>
+            <p className="font-display text-sm font-bold leading-none text-foreground">FC 26 Hub</p>
+            <p className="mt-0.5 font-body text-[10px] uppercase tracking-widest text-muted-foreground">Modo Carreira</p>
+          </div>
+        )}
       </div>
 
       <nav className="flex-1 p-3 space-y-1">
