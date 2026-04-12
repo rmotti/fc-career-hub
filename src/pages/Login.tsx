@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Trophy, ArrowLeft, BarChart2, Calendar } from "lucide-react";
+import { Loader2, Trophy, ArrowLeft, BarChart2, Calendar, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
