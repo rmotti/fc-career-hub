@@ -130,10 +130,9 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
           data: { goals, assists, yellowCards, redCards, matches, cleanSheets }
         });
       }
-      
+
       toast.success("Jogador adicionado ao elenco!", { duration: 3000 });
     }
-    setEditingPlayer(null); // Will not throw an unmounted error because modal parent still exists (SquadScreen)
   };
 
   const handleDelete = (player: ApiPlayer) => {
@@ -305,7 +304,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
       <PlayerModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={(open) => { setModalOpen(open); if (!open) setEditingPlayer(null); }}
         player={editingPlayer}
         onSave={handleSavePlayer}
         saveId={saveId}

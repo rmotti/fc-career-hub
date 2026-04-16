@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
-import { useUpdatePlayerStats, usePlayer } from "@/hooks/usePlayers";
+import { useUpdatePlayerStats } from "@/hooks/usePlayers";
 import { toast } from "sonner";
 import { getBadge } from "@/lib/playerBadge";
 import Flag from "react-world-flags";
@@ -31,7 +31,6 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!player;
   const updateStats = useUpdatePlayerStats();
-  const { data: playerDetail } = usePlayer(open && isEdit ? saveId : null, player?.id ?? null);
 
   useEffect(() => {
     if (open) {
@@ -79,35 +78,51 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       shirtNumber: form.shirtNumber === "" ? undefined : form.shirtNumber,
     };
 
+    const statsChanged = player ? (() => {
+      const stats = player.currentSeasonStats || player.totalStats;
+      return (
+        form.goals !== (stats?.goals ?? 0) ||
+        form.assists !== (stats?.assists ?? 0) ||
+        form.yellowCards !== (stats?.yellowCards ?? 0) ||
+        form.redCards !== (stats?.redCards ?? 0) ||
+        form.matches !== (stats?.matches ?? 0) ||
+        form.cleanSheets !== (stats?.cleanSheets ?? 0)
+      );
+    })() : false;
+
+    const playerDataChanged = player ? (
+      form.name !== player.name ||
+      form.nation !== (player.nation ?? "") ||
+      form.position !== player.position ||
+      form.age !== player.age ||
+      form.status !== player.status ||
+      form.ovr !== player.ovr ||
+      form.salary !== (player.salary ?? "") ||
+      form.marketValue !== (player.marketValue ?? "") ||
+      form.potential !== (player.potential ?? "") ||
+      form.shirtNumber !== (player.shirtNumber ?? "")
+    ) : true;
+
     setIsSubmitting(true);
     try {
-      await onSave(submissionForm, player?.id);
+      if (!player || playerDataChanged) {
+        await onSave(submissionForm, player?.id);
+      }
 
-      if (player) {
-        const stats = player.currentSeasonStats || player.totalStats;
-        const statsChanged =
-          form.goals !== (stats?.goals ?? 0) ||
-          form.assists !== (stats?.assists ?? 0) ||
-          form.yellowCards !== (stats?.yellowCards ?? 0) ||
-          form.redCards !== (stats?.redCards ?? 0) ||
-          form.matches !== (stats?.matches ?? 0) ||
-          form.cleanSheets !== (stats?.cleanSheets ?? 0);
-
-        if (statsChanged) {
-          await updateStats.mutateAsync({
-            saveId,
-            playerId: player.id,
-            data: {
-              goals: submissionForm.goals,
-              assists: submissionForm.assists,
-              yellowCards: submissionForm.yellowCards,
-              redCards: submissionForm.redCards,
-              matches: submissionForm.matches,
-              cleanSheets: submissionForm.cleanSheets,
-            },
-          });
-          toast.success("Estatísticas atualizadas!", { duration: 3000 });
-        }
+      if (player && statsChanged) {
+        await updateStats.mutateAsync({
+          saveId,
+          playerId: player.id,
+          data: {
+            goals: submissionForm.goals,
+            assists: submissionForm.assists,
+            yellowCards: submissionForm.yellowCards,
+            redCards: submissionForm.redCards,
+            matches: submissionForm.matches,
+            cleanSheets: submissionForm.cleanSheets,
+          },
+        });
+        toast.success("Estatísticas atualizadas!", { duration: 3000 });
       }
       setForm(EMPTY_PLAYER);
       onOpenChange(false);
@@ -142,7 +157,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           ) : null;
         })()}
         <form onSubmit={handleSubmit}>
-          <fieldset className="space-y-3" disabled={isSubmitting}>
+          <fieldset className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Nome</label>
@@ -267,27 +282,8 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               </div>
             </div>
           </div>
-          {playerDetail?.ovrHistory && playerDetail.ovrHistory.length > 0 && (
-            <div>
-              <label className={labelClass}>Evolução de OVR</label>
-              <div className="bg-muted/50 rounded-md border border-border overflow-hidden">
-                <div className="grid grid-cols-3 px-3 py-1.5 text-xs text-muted-foreground uppercase border-b border-border">
-                  <span>Temporada</span>
-                  <span>OVR</span>
-                  <span>Valor</span>
-                </div>
-                {playerDetail.ovrHistory.map((h) => (
-                  <div key={h.season} className="grid grid-cols-3 px-3 py-1.5 text-sm border-b border-border/50 last:border-0">
-                    <span className="text-muted-foreground">{h.season}</span>
-                    <span className="font-display font-bold">{h.ovr}</span>
-                    <span className="text-muted-foreground">{h.marketValue != null ? `€${h.marketValue}M` : "—"}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+<div className="flex gap-3 pt-2">
+            <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-70">
               {isSubmitting && <Loader2 size={16} className="animate-spin" />}
               {isEdit ? "Salvar" : "Adicionar"}
             </button>
