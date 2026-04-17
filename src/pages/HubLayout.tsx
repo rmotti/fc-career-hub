@@ -65,7 +65,7 @@ const HubLayout = () => {
     localStorage.setItem("sidebar-collapsed", String(next));
   };
 
-  const handleNewSeason = async (budget: number): Promise<boolean> => {
+  const handleNewSeason = async (budget: number, europeanCompetitionId: string | null): Promise<boolean> => {
     const currentYear = parseInt(String(activeSave.currentYear), 10);
     if (isNaN(currentYear)) {
       toast.error("Temporada atual inválida. Recarregue a página.", { duration: 5000 });
@@ -77,7 +77,7 @@ const HubLayout = () => {
     try {
       await updateSave.mutateAsync({
         saveId: activeSave.id,
-        data: { currentYear: newYear, currentSeason: newSeason, budget: String(budget) },
+        data: { currentYear: newYear, currentSeason: newSeason, budget: String(budget), europeanCompetitionId },
       });
       navigate("/dashboard");
       toast.success("Nova temporada iniciada!", { duration: 3000 });
@@ -94,9 +94,14 @@ const HubLayout = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/login", { replace: true });
-    toast.success("Sessão encerrada.");
+    navigate("/", { replace: true });
+
+    try {
+      await signOut();
+      toast.success("Sessão encerrada.");
+    } catch {
+      toast.error("Não foi possível encerrar a sessão.");
+    }
   };
 
   const currentClub = activeSave.currentClubStint?.club ?? "—";

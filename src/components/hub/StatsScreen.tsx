@@ -5,6 +5,8 @@ import StatsModal from "@/components/modals/StatsModal";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/hooks/useTeamStats";
 import { toast } from "sonner";
+import type { ApiTeamStats } from "@/services/api";
+import { CUP_LABELS, getLeagueStats, groupTeamStatsBySeason } from "@/utils/competitions";
 
 interface Props {
   saveId: string;
@@ -14,16 +16,19 @@ interface Props {
 
 const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [selectedStat, setSelectedStat] = useState<ApiTeamStats | null>(null);
 
   const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
+  const statsSeason = selectedSeason || currentSeason;
 
-  const { data: squad = [], isLoading: isLoadingPlayers } = usePlayers(saveId, true);
-  const { data: teamStatsData = [], isLoading: isLoadingTeamStats } = useTeamStats(saveId, "current");
+  const { data: squad = [], isLoading: isLoadingPlayers } = usePlayers(saveId, true, statsSeason);
+  const { data: teamStatsData = [], isLoading: isLoadingTeamStats } = useTeamStats(saveId, statsSeason);
   const updateTeamStats = useUpdateTeamStats();
 
-  const teamStats = teamStatsData[0];
+  const teamStats = getLeagueStats(teamStatsData);
+  const groupedStats = groupTeamStatsBySeason(teamStatsData);
   const displayStats = teamStats ?? {
-    wins: 0, draws: 0, losses: 0, goalsPro: 0, goalsAgainst: 0, leaguePosition: 1, europeanCupResult: "NaoParticipou", nationalCupResult: "NaoParticipou"
+    wins: 0, draws: 0, losses: 0, goalsPro: 0, goalsAgainst: 0, leaguePosition: 1
   };
 
   const topScorers = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 5);
@@ -37,17 +42,34 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const topContributions = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goalContributions ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goalContributions ?? 0)).slice(0, 5);
 
   const handleUpdateStats = async (stats: any) => {
-    if (!teamStats) {
+    if (!selectedStat) {
       toast.error("Nenhuma estatística ativa encontrada para editar.");
       return;
     }
     await updateTeamStats.mutateAsync({
       saveId,
-      statsId: teamStats.id,
-      data: stats,
+      statsId: selectedStat.id,
+      data: selectedStat.competition.type === "League"
+        ? {
+            goalsPro: stats.goalsPro,
+            goalsAgainst: stats.goalsAgainst,
+            wins: stats.wins,
+            draws: stats.draws,
+            losses: stats.losses,
+            leaguePosition: stats.leaguePosition,
+          }
+        : {
+            goalsPro: stats.goalsPro,
+            goalsAgainst: stats.goalsAgainst,
+            wins: stats.wins,
+            draws: stats.draws,
+            losses: stats.losses,
+            cupResult: stats.cupResult,
+          },
     });
     toast.success("Estatísticas atualizadas!", { duration: 3000 });
     setStatsModalOpen(false);
+    setSelectedStat(null);
   };
 
   if (isLoadingPlayers || isLoadingTeamStats) {
@@ -83,17 +105,9 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
             <Trophy className="w-5 h-5 text-primary" />
             Desempenho do Time
           </h2>
-          {!isPastSeason && <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setStatsModalOpen(true);
-            }}
-            className="btn-gamer-secondary px-3 py-1.5 text-sm flex items-center gap-2"
-          >
-            <Pencil className="w-4 h-4" />
-            <span className="hidden sm:inline">Editar</span>
-          </button>}
+          <span className="text-sm text-muted-foreground">
+            {statsSeason ? `Temporada ${statsSeason}` : "Sem temporada selecionada"}
+          </span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -103,6 +117,68 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
           <StatCard label="Gols Pró" value={displayStats.goalsPro} icon={Target} />
           <StatCard label="Gols Contra" value={displayStats.goalsAgainst} icon={ShieldAlert} accent />
         </div>
+      </div>
+
+      <div className="space-y-4">
+        {groupedStats.map((group) => (
+          <div key={group.season} className="card-gamer p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="font-display text-lg font-bold">Competições de {group.season}</h3>
+                <p className="text-sm text-muted-foreground">Uma linha por competição cadastrada na temporada.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {group.stats.map((stat) => {
+                const isLeague = stat.competition.type === "League";
+                const matches = stat.wins + stat.draws + stat.losses;
+
+                return (
+                  <div key={stat.id} className="rounded-xl border border-border bg-muted/25 p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-display text-base font-bold">{stat.competition.name}</p>
+                          <span className="rounded-full border border-border px-2 py-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {stat.competition.type}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isLeague
+                            ? `Posição: ${stat.leaguePosition ? `${stat.leaguePosition}º lugar` : "não informada"}`
+                            : `Resultado: ${stat.cupResult ? (CUP_LABELS[stat.cupResult] ?? stat.cupResult) : "não informado"}`}
+                        </p>
+                      </div>
+
+                      {!isPastSeason && (
+                        <button
+                          onClick={() => {
+                            setSelectedStat(stat);
+                            setStatsModalOpen(true);
+                          }}
+                          className="btn-gamer-secondary px-3 py-1.5 text-sm flex items-center gap-2 self-start"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span>Editar</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-6">
+                      <StatCard label="Vitórias" value={stat.wins} icon={CheckCircle} />
+                      <StatCard label="Empates" value={stat.draws} icon={Minus} />
+                      <StatCard label="Derrotas" value={stat.losses} icon={X} accent />
+                      <StatCard label="Gols Pró" value={stat.goalsPro} icon={Target} />
+                      <StatCard label="Gols Contra" value={stat.goalsAgainst} icon={ShieldAlert} accent />
+                      <StatCard label="Jogos" value={matches} icon={Trophy} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Rankings */}
@@ -203,16 +279,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       <StatsModal
         open={statsModalOpen}
         onOpenChange={setStatsModalOpen}
-        stats={{
-          goalsPro:           displayStats.goalsPro,
-          goalsAgainst:       displayStats.goalsAgainst,
-          wins:               displayStats.wins,
-          draws:              displayStats.draws,
-          losses:             displayStats.losses,
-          leaguePosition:     displayStats.leaguePosition ?? "",
-          europeanCupResult:  displayStats.europeanCupResult ?? "NaoParticipou",
-          nationalCupResult:  displayStats.nationalCupResult ?? "NaoParticipou",
-        }}
+        stat={selectedStat}
         onSave={handleUpdateStats}
       />
     </div>

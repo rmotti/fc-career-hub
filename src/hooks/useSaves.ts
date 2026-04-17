@@ -21,7 +21,7 @@ export function useSave(saveId: string | null) {
 export function useCreateSave() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; club: string; budget: string }) => savesApi.create(data),
+    mutationFn: (data: { name: string; club: string; budget: string; europeanCompetitionId?: string | null }) => savesApi.create(data),
     onSuccess: () => {
       return qc.invalidateQueries({ queryKey: ["saves"] });
     },

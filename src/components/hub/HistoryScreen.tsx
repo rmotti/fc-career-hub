@@ -6,6 +6,7 @@ import { useTrophies } from "@/hooks/useTrophies";
 import { useTransfers } from "@/hooks/useTransfers";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
+import { formatTrophyLabel, getCompetitionAccent } from "@/utils/competitions";
 import {
   Dialog,
   DialogContent,
@@ -29,9 +30,10 @@ const HistoryScreen = ({ saveId }: Props) => {
   const [openModal, setOpenModal] = useState<ModalType>(null);
 
   // Aggregate team stats across all seasons
-  const totalWins = allTeamStats.reduce((s, ts) => s + ts.wins, 0);
-  const totalDraws = allTeamStats.reduce((s, ts) => s + ts.draws, 0);
-  const totalLosses = allTeamStats.reduce((s, ts) => s + ts.losses, 0);
+  const allLeagueStats = allTeamStats.filter((ts) => ts.competition?.type === "League");
+  const totalWins = allLeagueStats.reduce((s, ts) => s + ts.wins, 0);
+  const totalDraws = allLeagueStats.reduce((s, ts) => s + ts.draws, 0);
+  const totalLosses = allLeagueStats.reduce((s, ts) => s + ts.losses, 0);
   const totalMatches = totalWins + totalDraws + totalLosses;
 
   // Top all-time scorers from totalStats
@@ -119,30 +121,14 @@ const HistoryScreen = ({ saveId }: Props) => {
         {trophies.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {trophies.map((t) => {
-              const isLeague = /league|liga|serie|ligue|bundesliga|premier|laliga|eredivisie/i.test(t.name);
-              const isCup = /cup|copa|coppa|pokal|taça|coupe/i.test(t.name);
-              const isChampions = /champions|europa league|conference/i.test(t.name);
-
-              let borderClass = "border-border";
-              let bgClass = "bg-muted/50";
-              if (isLeague) {
-                borderClass = "border-yellow-500/30";
-                bgClass = "bg-yellow-500/5";
-              } else if (isChampions) {
-                borderClass = "border-primary/30";
-                bgClass = "bg-primary/5";
-              } else if (isCup) {
-                borderClass = "border-accent/30";
-                bgClass = "bg-accent/5";
-              }
+              const { borderClass, bgClass } = getCompetitionAccent(t.competition);
 
               return (
                 <div key={t.id} className={`${bgClass} rounded-md p-3 border ${borderClass}`}>
                   <p className="font-display font-bold text-gold flex items-center gap-1.5">
-                    🏆 {t.name}
+                    🏆 {t.competition.name}
                   </p>
-                  <p className="text-sm text-foreground mt-1">{t.club ?? "—"}</p>
-                  <p className="text-xs text-muted-foreground">{t.year}</p>
+                  <p className="text-sm text-foreground mt-1">{formatTrophyLabel(t)}</p>
                 </div>
               );
             })}

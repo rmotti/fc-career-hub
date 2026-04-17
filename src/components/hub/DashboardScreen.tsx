@@ -1,22 +1,23 @@
-import { Swords, Target, DollarSign, Trophy, TrendingUp, Loader2, AlertTriangle } from "lucide-react";
+import { Target, DollarSign, Trophy, TrendingUp, Loader2, AlertTriangle } from "lucide-react";
 import StatCard from "./StatCard";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
 import { useSave } from "@/hooks/useSaves";
+import { getLeagueStats } from "@/utils/competitions";
+import { formatCurrency } from "@/utils/currency";
 
 interface Props {
   saveId: string;
-  currentClub: string;
 }
 
-const DashboardScreen = ({ saveId, currentClub }: Props) => {
+const DashboardScreen = ({ saveId }: Props) => {
   const { data: save } = useSave(saveId);
   const { data: players = [], isLoading: playersLoading } = usePlayers(saveId, true);
   const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
   const { data: trophies = [] } = useTrophies(saveId);
 
-  const teamStats = teamStatsArr[0];
+  const teamStats = getLeagueStats(teamStatsArr);
 
   const topScorer = players.length > 0
     ? [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0))[0]
@@ -33,9 +34,11 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
   const budgetNum = save.budget ?? 0;
   const balanceNum = save.balance ?? 0;
   const isLowBalance = budgetNum > 0 && balanceNum < budgetNum * 0.2;
+  const displayBudget = typeof save.budget === "number" ? formatCurrency(save.budget) : save.budgetFormatted ?? "—";
+  const displayBalance = typeof save.balance === "number" ? formatCurrency(save.balance) : save.balanceFormatted ?? "—";
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       <div>
         <h2 className="font-display text-2xl font-bold break-words text-wrap">Visão Geral</h2>
         <p className="text-muted-foreground">{save.name} - Temporada {save.currentSeason}</p>
@@ -49,7 +52,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
           </div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground uppercase">Orçamento</p>
-            <p className="text-xl font-display font-bold text-foreground">{save.budgetFormatted ?? save.budget ?? "—"}</p>
+            <p className="text-xl font-display font-bold text-foreground">{displayBudget}</p>
           </div>
         </div>
         <div className={`card-gamer p-5 flex items-center gap-4 ${isLowBalance ? "border-destructive/40" : ""}`}>
@@ -59,7 +62,7 @@ const DashboardScreen = ({ saveId, currentClub }: Props) => {
           <div className="flex-1">
             <p className="text-xs text-muted-foreground uppercase">Saldo disponível</p>
             <p className={`text-xl font-display font-bold ${isLowBalance ? "text-destructive" : "text-primary"}`}>
-              {save.balanceFormatted ?? save.balance ?? "—"}
+              {displayBalance}
             </p>
           </div>
           {isLowBalance && (

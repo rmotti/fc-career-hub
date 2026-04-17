@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, BarChart3, History,
+  LayoutDashboard, Users, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt
 } from "lucide-react";
@@ -18,11 +18,9 @@ interface HubSidebarProps {
 const navItems: { to: string; label: string; icon: React.ElementType }[] = [
   { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { to: "/squad", label: "Elenco", icon: Users },
-  { to: "/stats", label: "Estatísticas", icon: BarChart3 },
-  { to: "/history", label: "História", icon: History },
+  { to: "/field", label: "Escalação", icon: Shirt },
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
-  { to: "/field", label: "Field", icon: Shirt },
-  { to: "/change-club", label: "Mudar de Clube", icon: RefreshCw },
+  { to: "/history", label: "História", icon: History },
 ];
 
 const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCollapse }: HubSidebarProps) => {
@@ -107,6 +105,14 @@ const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCol
           <ArrowLeftRight size={18} />
           {!collapsed && <span>Trocar Save</span>}
         </button>
+        <NavLink
+          to="/change-club"
+          title={collapsed ? "Mudar de Clube" : undefined}
+          className={navLinkClass}
+        >
+          <RefreshCw size={18} />
+          {!collapsed && <span>Mudar de Clube</span>}
+        </NavLink>
         <button
           onClick={handleSignOut}
           title={collapsed ? "Sair da conta" : undefined}

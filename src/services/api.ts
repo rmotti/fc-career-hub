@@ -151,6 +151,7 @@ export interface ApiSave {
   name: string;
   currentYear: number;
   currentSeason: string;
+  europeanCompetitionId?: string | null;
   budget: number;
   budgetFormatted?: string;
   balance: number;
@@ -210,20 +211,33 @@ export interface ApiPlayerSeasonStats {
   cleanSheets: number;
 }
 
+export type CompetitionType = "League" | "NationalCup" | "SuperCup" | "EuropeanCup";
+
+export interface ApiCompetition {
+  id: string;
+  name: string;
+  type: CompetitionType;
+  country: string | null;
+}
+
 export interface ApiTeamStats {
   id: string;
   saveId: string;
   clubStintId: string;
+  competitionId: string;
+  competition: ApiCompetition;
   season: string;
-  club: string;
   goalsPro: number;
   goalsAgainst: number;
   wins: number;
   draws: number;
   losses: number;
-  leaguePosition?: number;
-  europeanCupResult?: string;
-  nationalCupResult?: string;
+  leaguePosition?: number | null;
+  cupResult?: string | null;
+  europeanCupResult?: string | null;
+  nationalCupResult?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ApiTransfer {
@@ -243,9 +257,10 @@ export interface ApiTrophy {
   id: string;
   saveId: string;
   clubStintId: string;
-  name: string;
+  competition: Pick<ApiCompetition, "id" | "name" | "type">;
   year: number;
   club?: string;
+  createdAt?: string;
 }
 
 // ─── Clubs ──────────────────────────────────────────────────────────
@@ -255,14 +270,21 @@ export const clubsApi = {
   byLeague: () => request<Record<string, string[]>>("/clubs/by-league"),
 };
 
+// ─── Competitions ───────────────────────────────────────────────────
+
+export const competitionsApi = {
+  list: () => request<ApiCompetition[]>("/competitions"),
+  european: () => request<ApiCompetition[]>("/competitions/european"),
+};
+
 // ─── Saves ──────────────────────────────────────────────────────────
 
 export const savesApi = {
   list: () => request<ApiSave[]>("/saves"),
   get: (saveId: string) => request<ApiSave>(`/saves/${saveId}`),
-  create: (data: { name: string; club: string; budget: string }) =>
+  create: (data: { name: string; club: string; budget: string; europeanCompetitionId?: string | null }) =>
     request<ApiSave>("/saves", { method: "POST", body: JSON.stringify(data) }),
-  update: (saveId: string, data: { currentYear?: number; currentSeason?: string; budget?: string; balance?: string }) =>
+  update: (saveId: string, data: { currentYear?: number; currentSeason?: string; budget?: string; balance?: string; europeanCompetitionId?: string | null }) =>
     request<ApiSave>(`/saves/${saveId}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (saveId: string) =>
     request<void>(`/saves/${saveId}`, { method: "DELETE" }),
@@ -308,7 +330,7 @@ export const playersApi = {
 export const teamStatsApi = {
   list: (saveId: string, season?: string) =>
     request<ApiTeamStats[]>(`/saves/${saveId}/team-stats${season ? `?season=${season}` : ""}`),
-  update: (saveId: string, statsId: string, data: { goalsPro?: number; goalsAgainst?: number; wins?: number; draws?: number; losses?: number; leaguePosition?: number; europeanCupResult?: string; nationalCupResult?: string }) =>
+  update: (saveId: string, statsId: string, data: { goalsPro?: number; goalsAgainst?: number; wins?: number; draws?: number; losses?: number; leaguePosition?: number | null; cupResult?: string | null }) =>
     request<ApiTeamStats>(`/saves/${saveId}/team-stats/${statsId}`, { method: "PATCH", body: JSON.stringify(data) }),
 };
 
@@ -330,7 +352,7 @@ export const transfersApi = {
 export const trophiesApi = {
   list: (saveId: string) =>
     request<ApiTrophy[]>(`/saves/${saveId}/trophies`),
-  create: (saveId: string, data: { name: string; year: number }) =>
+  create: (saveId: string, data: { competitionId: string; year: number }) =>
     request<ApiTrophy>(`/saves/${saveId}/trophies`, { method: "POST", body: JSON.stringify(data) }),
   delete: (saveId: string, trophyId: string) =>
     request<void>(`/saves/${saveId}/trophies/${trophyId}`, { method: "DELETE" }),

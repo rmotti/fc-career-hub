@@ -12,7 +12,7 @@ export function useTrophies(saveId: string | null) {
 export function useCreateTrophy() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ saveId, data }: { saveId: string; data: { name: string; year: number } }) =>
+    mutationFn: ({ saveId, data }: { saveId: string; data: { competitionId: string; year: number } }) =>
       trophiesApi.create(saveId, data),
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ["trophies", vars.saveId] });

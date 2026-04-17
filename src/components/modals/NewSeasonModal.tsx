@@ -1,20 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign, Star } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
 import { useSave } from "@/hooks/useSaves";
-
-const CUP_LABELS: Record<string, string> = {
-  NaoParticipou: "Não participou",
-  Eliminado: "Fase de grupos / 1ª fase",
-  OitavasOuFaseDeGrupos: "Oitavas de final",
-  Quartas: "Quartas de final",
-  Semifinal: "Semifinal",
-  Final: "Final",
-  Campeao: "🏆 Campeão",
-};
+import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
+import { CUP_LABELS, formatTrophyLabel, getLeagueStats } from "@/utils/competitions";
+import { formatCurrency } from "@/utils/currency";
 
 interface Props {
   open: boolean;
@@ -22,7 +15,7 @@ interface Props {
   saveId: string;
   currentSeason: string;
   currentClub: string;
-  onConfirm: (budget: number) => Promise<boolean>;
+  onConfirm: (budget: number, europeanCompetitionId: string | null) => Promise<boolean>;
 }
 
 function computeNextSeason(current: string | null | undefined): string | null {
@@ -39,25 +32,37 @@ function computeNextSeason(current: string | null | undefined): string | null {
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
   const [step, setStep] = useState<"confirm" | "overview" | "budget">("confirm");
   const [budgetInput, setBudgetInput] = useState("");
+  const [nextEuropeanCompetitionId, setNextEuropeanCompetitionId] = useState<string>("none");
 
   const { data: save } = useSave(saveId);
   const { data: players = [] } = usePlayers(saveId, true);
   const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
   const { data: trophies = [] } = useTrophies(saveId);
+  const { data: europeanCompetitions = [] } = useEuropeanCompetitions();
 
-  const teamStats = teamStatsArr[0];
+  const teamStats = getLeagueStats(teamStatsArr);
+  const cupStats = teamStatsArr.filter((item) => item.competition.type !== "League");
 
   const topScorers = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 3);
   const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
   const nextSeason = computeNextSeason(save?.currentSeason ?? currentSeason);
-  const seasonTrophies = trophies.filter((t) => t.name.endsWith(currentSeason));
+  const seasonTrophies = trophies.filter((t) => `${t.year}/${String(t.year + 1).slice(-2)}` === currentSeason);
+  const displayBudget = save && typeof save.budget === "number" ? formatCurrency(save.budget) : save?.budgetFormatted ?? "—";
+  const displayBalance = save && typeof save.balance === "number" ? formatCurrency(save.balance) : save?.balanceFormatted ?? "—";
+
+  useEffect(() => {
+    if (open) {
+      setNextEuropeanCompetitionId(save?.europeanCompetitionId ?? "none");
+    }
+  }, [open, save?.europeanCompetitionId]);
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
       setStep("confirm");
       setBudgetInput("");
+      setNextEuropeanCompetitionId("none");
     }
     onOpenChange(isOpen);
   };
@@ -68,11 +73,15 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   const handleFinish = async () => {
     const budget = parseFloat(budgetInput);
-    const success = await onConfirm(budget);
+    const success = await onConfirm(
+      budget,
+      nextEuropeanCompetitionId === "none" ? null : nextEuropeanCompetitionId
+    );
 
     if (success) {
       setStep("confirm");
       setBudgetInput("");
+      setNextEuropeanCompetitionId("none");
       onOpenChange(false);
     }
   };
@@ -102,22 +111,18 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                       <span className="font-display font-bold text-primary">{teamStats.leaguePosition}º</span>
                     </div>
                   )}
-                  {teamStats.europeanCupResult && teamStats.europeanCupResult !== "NaoParticipou" && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Copa Europeia</span>
-                      <span className="font-display font-semibold">{CUP_LABELS[teamStats.europeanCupResult] ?? teamStats.europeanCupResult}</span>
-                    </div>
-                  )}
-                  {teamStats.nationalCupResult && teamStats.nationalCupResult !== "NaoParticipou" && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Copa Nacional</span>
-                      <span className="font-display font-semibold">{CUP_LABELS[teamStats.nationalCupResult] ?? teamStats.nationalCupResult}</span>
-                    </div>
-                  )}
+                  {cupStats
+                    .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
+                    .map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{item.competition.name}</span>
+                        <span className="font-display font-semibold">{CUP_LABELS[item.cupResult!] ?? item.cupResult}</span>
+                      </div>
+                    ))}
                   {save?.balance && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Saldo final</span>
-                      <span className="font-display font-bold">{save.balance}</span>
+                      <span className="font-display font-bold">{displayBalance}</span>
                     </div>
                   )}
                 </div>
@@ -176,6 +181,19 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
                 </div>
+              </div>
+              <div>
+                <label className={labelClass}>Competição europeia</label>
+                <select
+                  className={inputClass}
+                  value={nextEuropeanCompetitionId}
+                  onChange={(e) => setNextEuropeanCompetitionId(e.target.value)}
+                >
+                  <option value="none">Nenhuma</option>
+                  {europeanCompetitions.map((competition) => (
+                    <option key={competition.id} value={competition.id}>{competition.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -244,29 +262,23 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
 
               {/* Cup results */}
-              {teamStats && (teamStats.europeanCupResult !== "NaoParticipou" || teamStats.nationalCupResult !== "NaoParticipou") && (
+              {cupStats.some((item) => item.cupResult && item.cupResult !== "NaoParticipou") && (
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Star size={16} className="text-primary" />
                     <span className="font-display font-semibold text-sm">Competições de Copa</span>
                   </div>
                   <div className="space-y-2">
-                    {teamStats.europeanCupResult && teamStats.europeanCupResult !== "NaoParticipou" && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Copa Europeia</span>
-                        <span className={`font-display font-semibold ${teamStats.europeanCupResult === "Campeao" ? "text-yellow-500" : ""}`}>
-                          {CUP_LABELS[teamStats.europeanCupResult] ?? teamStats.europeanCupResult}
-                        </span>
-                      </div>
-                    )}
-                    {teamStats.nationalCupResult && teamStats.nationalCupResult !== "NaoParticipou" && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Copa Nacional</span>
-                        <span className={`font-display font-semibold ${teamStats.nationalCupResult === "Campeao" ? "text-yellow-500" : ""}`}>
-                          {CUP_LABELS[teamStats.nationalCupResult] ?? teamStats.nationalCupResult}
-                        </span>
-                      </div>
-                    )}
+                    {cupStats
+                      .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
+                      .map((item) => (
+                        <div key={item.id} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{item.competition.name}</span>
+                          <span className={`font-display font-semibold ${item.cupResult === "Campeao" ? "text-yellow-500" : ""}`}>
+                            {CUP_LABELS[item.cupResult!] ?? item.cupResult}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
@@ -280,11 +292,11 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   </div>
                   <div className="flex justify-around text-center">
                     <div>
-                      <p className="text-lg font-display font-bold text-foreground">{save.budget}</p>
+                      <p className="text-lg font-display font-bold text-foreground">{displayBudget}</p>
                       <p className="text-xs text-muted-foreground">Orçamento</p>
                     </div>
                     <div>
-                      <p className="text-lg font-display font-bold text-primary">{save.balance}</p>
+                      <p className="text-lg font-display font-bold text-primary">{displayBalance}</p>
                       <p className="text-xs text-muted-foreground">Saldo final</p>
                     </div>
                   </div>
@@ -331,7 +343,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                         key={t.id}
                         className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded-full text-xs font-semibold"
                       >
-                        🏆 {t.name}
+                        🏆 {formatTrophyLabel(t)}
                       </span>
                     ))}
                   </div>

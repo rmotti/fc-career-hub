@@ -7,6 +7,7 @@ import { useSave } from "@/hooks/useSaves";
 import { usePlayer, useUpdatePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
 import TransferModal from "@/components/modals/TransferModal";
 import PlayerModal from "@/components/modals/PlayerModal";
+import { formatCurrency } from "@/utils/currency";
 
 interface Props {
   saveId: string;
@@ -35,6 +36,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   const { data: purchasePlayer } = usePlayer(saveId, purchasePlayerId);
 
   const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
+  const displayBalance = typeof save?.balance === "number" ? formatCurrency(save.balance) : save?.balanceFormatted ?? "—";
 
   const displayTransfers = tab === "current" ? currentTransfers : allTransfers;
   const purchases = displayTransfers.filter(t => t.type === "compra" || t.type === "emprestimo_entrada");
@@ -170,7 +172,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
             <div>
               <p className="text-xs text-muted-foreground uppercase">Orçamento Disponível</p>
               <div className="flex items-center gap-3">
-                <p className="text-xl font-display font-bold text-primary">{save?.balanceFormatted ?? save?.balance ?? "—"}</p>
+                <p className="text-xl font-display font-bold text-primary">{displayBalance}</p>
                 {variation && (
                   <span className={`text-sm font-bold ${(variation.type === "venda" || variation.type === "emprestimo_saida") ? "text-green-500" : "text-destructive"} animate-in fade-in slide-in-from-left-2`}>
                     {(variation.type === "venda" || variation.type === "emprestimo_saida") ? "+" : "-"}€{variation.amount}M

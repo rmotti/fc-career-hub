@@ -3,8 +3,8 @@ import DashboardScreen from "@/components/hub/DashboardScreen";
 import { type HubOutletContext } from "../HubLayout";
 
 const Dashboard = () => {
-  const { saveId, currentClub } = useOutletContext<HubOutletContext>();
-  return <DashboardScreen saveId={saveId} currentClub={currentClub} />;
+  const { saveId } = useOutletContext<HubOutletContext>();
+  return <DashboardScreen saveId={saveId} />;
 };
 
 export default Dashboard;

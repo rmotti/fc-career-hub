@@ -3,6 +3,7 @@ import { Plus, Gamepad2, Shield, Calendar, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner";
 import { extractErrorMessage, type ApiSave, type UserPlan } from "@/services/api";
 import { useClubsByLeague } from "@/hooks/useClubs";
+import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { useDeleteSave } from "@/hooks/useSaves";
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
   saves: ApiSave[];
   loading: boolean;
   onSelectSave: (save: ApiSave) => void;
-  onCreateSave: (name: string, club: string, budget: string) => void;
+  onCreateSave: (name: string, club: string, budget: string, europeanCompetitionId: string | null) => Promise<void>;
   creating: boolean;
 }
 
@@ -22,40 +23,75 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
   const [newLeague, setNewLeague] = useState("");
   const [newClub, setNewClub] = useState("");
   const [newBudget, setNewBudget] = useState("");
+  const [newEuropeanCompetitionId, setNewEuropeanCompetitionId] = useState<string>("none");
   const [budgetError, setBudgetError] = useState("");
   const { data: clubsByLeague = {} } = useClubsByLeague();
+  const { data: europeanCompetitions = [] } = useEuropeanCompetitions();
 
   const leagueNames = Object.keys(clubsByLeague);
   const clubsForLeague: string[] = newLeague ? (clubsByLeague[newLeague] ?? []) : [];
+
+  const parseBudgetInMillions = (value: string) => {
+    const normalizedValue = value.replace(",", ".").trim();
+    const millions = parseFloat(normalizedValue);
+
+    if (isNaN(millions) || millions < 0) {
+      return null;
+    }
+
+    return millions * 1_000_000;
+  };
+
   const handleBudgetBlur = () => {
-    const num = parseFloat(newBudget);
-    if (isNaN(num) || num < 0) {
-      setBudgetError("Orçamento deve ser um número válido (ex: 85000000)");
+    const num = parseBudgetInMillions(newBudget);
+    if (num === null) {
+      setBudgetError("Orçamento deve ser um número válido em milhões (ex: 100 para 100M)");
     } else {
       setBudgetError("");
     }
   };
 
-  const handleCreate = () => {
-    const num = parseFloat(newBudget);
+  const handleCreate = async () => {
+    const num = parseBudgetInMillions(newBudget);
     if (!newName.trim()) return;
     if (!newClub) return;
-    if (isNaN(num) || num < 0) {
-      setBudgetError("Orçamento obrigatório e deve ser um número válido");
+    if (num === null) {
+      setBudgetError("Orçamento obrigatório e deve ser um número válido em milhões");
       return;
     }
     setBudgetError("");
-    // Pass as string to onCreateSave since it expects a string, but it's a valid float string
-    onCreateSave(newName.trim(), newClub, num.toString());
-    setShowForm(false);
-    setNewName("");
-    setNewLeague("");
-    setNewClub("");
-    setNewBudget("");
+
+    try {
+      await onCreateSave(
+        newName.trim(),
+        newClub,
+        String(num),
+        newEuropeanCompetitionId === "none" ? null : newEuropeanCompetitionId
+      );
+      setShowForm(false);
+      setNewName("");
+      setNewLeague("");
+      setNewClub("");
+      setNewBudget("");
+      setNewEuropeanCompetitionId("none");
+    } catch {
+      // A mensagem de erro ja e exibida no fluxo de criacao.
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-6 pb-12 w-full max-w-5xl mx-auto space-y-16 py-12">
+      {creating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+          <div className="card-gamer flex min-w-[280px] flex-col items-center gap-4 p-8 text-center">
+            <Loader2 size={28} className="animate-spin text-primary" />
+            <div className="space-y-1">
+              <p className="font-display text-lg font-bold text-foreground">Preparando seu save</p>
+              <p className="text-sm text-muted-foreground">Estamos criando a carreira e redirecionando para o dashboard...</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* 1. Header / Hero */}
       <section className="text-center w-full mt-8">
@@ -186,10 +222,25 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
                   value={newBudget}
                   onChange={(e) => { setNewBudget(e.target.value); setBudgetError(""); }}
                   onBlur={handleBudgetBlur}
-                  placeholder="Ex: 85000000"
+                  placeholder="Ex: 100"
                   className={`w-full bg-background border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-shadow ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"}`}
                 />
+                <p className="text-xs text-muted-foreground mt-1.5">Digite o valor em milhões. Ex.: `100` = `100M`.</p>
                 {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Competição Europeia Inicial</label>
+                <select
+                  value={newEuropeanCompetitionId}
+                  onChange={(e) => setNewEuropeanCompetitionId(e.target.value)}
+                  className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none"
+                >
+                  <option value="none">Nenhuma</option>
+                  {europeanCompetitions.map((competition) => (
+                    <option key={competition.id} value={competition.id}>{competition.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1.5">Opcional para a 1ª temporada.</p>
               </div>
             </div>
 
@@ -204,7 +255,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
                 ) : "Iniciar Carreira"}
               </button>
               <button
-                onClick={() => { setShowForm(false); setNewLeague(""); setNewClub(""); setBudgetError(""); }}
+                onClick={() => { setShowForm(false); setNewLeague(""); setNewClub(""); setBudgetError(""); setNewEuropeanCompetitionId("none"); }}
                 className="flex-1 bg-muted text-foreground py-3 rounded-lg font-medium text-sm hover:bg-muted/80 transition-colors"
               >
                 Cancelar

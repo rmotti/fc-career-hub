@@ -557,7 +557,7 @@ const FieldScreen = ({ saveId }: Props) => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Field</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Escalação</h1>
             <p className="text-sm text-muted-foreground">
               {filledStarters}/11 titulares · {filledBench}/11 banco
             </p>
