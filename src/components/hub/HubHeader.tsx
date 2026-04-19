@@ -1,4 +1,5 @@
 import { Shield, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 interface HubHeaderProps {
   saveName: string;
   clubName: string;
@@ -6,9 +7,10 @@ interface HubHeaderProps {
   availableSeasons?: string[];
   selectedSeason?: string;
   onSeasonChange?: (season: string) => void;
+  showSeasonSelector?: boolean;
 }
 
-const HubHeader = ({ saveName, clubName, season, availableSeasons, selectedSeason, onSeasonChange }: HubHeaderProps) => {
+const HubHeader = ({ saveName, clubName, season, availableSeasons, selectedSeason, onSeasonChange, showSeasonSelector = false }: HubHeaderProps) => {
   return (
     <header className="h-14 bg-card border-b border-border flex items-center justify-between pl-14 md:pl-6 pr-6">
       <div className="flex items-center gap-4">
@@ -19,24 +21,31 @@ const HubHeader = ({ saveName, clubName, season, availableSeasons, selectedSeaso
           <span className="text-foreground font-medium">{clubName}</span>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
+      {showSeasonSelector && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar size={16} />
           {availableSeasons && availableSeasons.length > 1 && onSeasonChange ? (
-            <select
-              value={selectedSeason ?? season}
-              onChange={e => onSeasonChange(e.target.value)}
-              className="bg-transparent border-none text-sm text-foreground focus:outline-none cursor-pointer"
-            >
-              {availableSeasons.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+            <Select value={selectedSeason ?? season} onValueChange={onSeasonChange}>
+              <SelectTrigger className="h-9 w-[132px] border-border bg-card font-display text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 focus:ring-primary/20">
+                <SelectValue placeholder={season} />
+              </SelectTrigger>
+              <SelectContent className="border-border bg-card text-foreground">
+                {availableSeasons.map((availableSeason) => (
+                  <SelectItem
+                    key={availableSeason}
+                    value={availableSeason}
+                    className="font-display text-sm font-semibold focus:bg-primary focus:text-primary-foreground"
+                  >
+                    {availableSeason}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
-            <span>{season}</span>
+            <span className="font-display text-sm font-semibold text-foreground">{season}</span>
           )}
         </div>
-      </div>
+      )}
     </header>
   );
 };

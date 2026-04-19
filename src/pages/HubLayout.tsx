@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate, Navigate } from "react-router-dom";
+import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import HubSidebar from "@/components/hub/HubSidebar";
 import HubHeader from "@/components/hub/HubHeader";
@@ -28,6 +28,7 @@ const HubLayout = () => {
   const { data: activeSave, isError } = useSave(activeSaveId);
   const updateSave = useUpdateSave();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (activeSave?.currentSeason) {
@@ -105,7 +106,9 @@ const HubLayout = () => {
   };
 
   const currentClub = activeSave.currentClubStint?.club ?? "—";
-  const resolvedSeason = selectedSeason || activeSave.currentSeason;
+  const statsSeason = selectedSeason || activeSave.currentSeason;
+  const isStatsRoute = location.pathname.startsWith("/stats");
+  const outletSeason = isStatsRoute ? statsSeason : activeSave.currentSeason;
 
   return (
     <div className="relative flex h-screen w-full overflow-hidden">
@@ -124,15 +127,16 @@ const HubLayout = () => {
           clubName={currentClub}
           season={activeSave.currentSeason}
           availableSeasons={activeSave.availableSeasons}
-          selectedSeason={resolvedSeason}
+          selectedSeason={statsSeason}
           onSeasonChange={setSelectedSeason}
+          showSeasonSelector={isStatsRoute}
         />
         <main className="min-h-0 flex-1 overflow-y-auto p-6 w-full max-w-full">
           <Outlet
             context={{
               saveId: activeSave.id,
               currentClub,
-              selectedSeason: resolvedSeason,
+              selectedSeason: outletSeason,
               currentSeason: activeSave.currentSeason,
             } satisfies HubOutletContext}
           />

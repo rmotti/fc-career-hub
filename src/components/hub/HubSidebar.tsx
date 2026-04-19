@@ -26,6 +26,12 @@ const navItems: { to: string; label: string; icon: React.ElementType }[] = [
   { to: "/history", label: "História", icon: History },
 ];
 
+const adminItems: { type: "button" | "link"; label: string; icon: React.ElementType; to?: string; onClick?: "newSeason" | "exitSave" }[] = [
+  { type: "button", label: "Nova Temporada", icon: CalendarPlus, onClick: "newSeason" },
+  { type: "button", label: "Mudar Save", icon: ArrowLeftRight, onClick: "exitSave" },
+  { type: "link", label: "Mudar de Clube", icon: RefreshCw, to: "/change-club" },
+];
+
 const HubSidebar = ({
   userName,
   userPlan,
@@ -36,12 +42,23 @@ const HubSidebar = ({
   onToggleCollapse,
 }: HubSidebarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapseAnimating, setIsCollapseAnimating] = useState(false);
   const location = useLocation();
   const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isCollapseAnimating) return;
+
+    const timer = window.setTimeout(() => {
+      setIsCollapseAnimating(false);
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [isCollapseAnimating]);
 
   const handleNewSeason = () => {
     onNewSeason();
@@ -58,14 +75,28 @@ const HubSidebar = ({
     setMobileOpen(false);
   };
 
+  const handleToggleSidebar = () => {
+    setIsCollapseAnimating(true);
+    onToggleCollapse();
+  };
+
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `w-full flex items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
+    `flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
       collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
     } ${
       isActive
         ? "bg-primary/10 text-primary border border-primary/20"
         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     }`;
+
+  const actionButtonClass =
+    `flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
+      collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+    } text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`;
+
+  const sectionTitleClass = collapsed
+    ? "sr-only"
+    : "px-3 text-[11px] font-body font-semibold uppercase tracking-[0.2em] text-muted-foreground/70";
 
   const sidebarContent = (
     <>
@@ -101,72 +132,90 @@ const HubSidebar = ({
         )}
       </div>
 
-      <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              title={collapsed ? item.label : undefined}
-              className={navLinkClass}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className={`min-h-0 flex-1 overflow-x-hidden px-3 py-4 ${isCollapseAnimating ? "overflow-y-hidden" : "overflow-y-auto"}`}>
+          <section className="space-y-2 overflow-x-hidden">
+            <p className={sectionTitleClass}>Principal</p>
+            <nav className="space-y-1 overflow-x-hidden">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    title={collapsed ? item.label : undefined}
+                    className={navLinkClass}
+                  >
+                    <Icon size={18} />
+                      {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                    </NavLink>
+                  );
+              })}
+            </nav>
+          </section>
+
+          <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
+            <p className={sectionTitleClass}>Administração</p>
+            <div className="space-y-1 overflow-x-hidden">
+              {adminItems.map((item) => {
+                const Icon = item.icon;
+
+                if (item.type === "link" && item.to) {
+                  return (
+                    <NavLink
+                      key={item.label}
+                      to={item.to}
+                      title={collapsed ? item.label : undefined}
+                      className={navLinkClass}
+                    >
+                      <Icon size={18} />
+                      {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                    </NavLink>
+                  );
+                }
+
+                const onClick = item.onClick === "newSeason" ? handleNewSeason : handleExitSave;
+
+                return (
+                  <button
+                    key={item.label}
+                    onClick={onClick}
+                    title={collapsed ? item.label : undefined}
+                    className={actionButtonClass}
+                  >
+                    <Icon size={18} />
+                    {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <div className="overflow-x-hidden border-t border-sidebar-border p-3">
+          <section className="space-y-2 overflow-x-hidden">
+            <p className={sectionTitleClass}>Conta</p>
+            <button
+              onClick={handleSignOut}
+              title={collapsed ? "Sair da conta" : undefined}
+              className={`flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all min-h-[44px] ${
+                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+              }`}
             >
-              <Icon size={18} />
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
-          );
-        })}
-      </nav>
+              <LogOut size={18} />
+              {!collapsed && <span className="min-w-0 truncate">Sair da Conta</span>}
+            </button>
 
-      <div className="p-3 border-t border-sidebar-border space-y-1">
-        <button
-          onClick={handleNewSeason}
-          title={collapsed ? "Nova Temporada" : undefined}
-          className={`w-full flex items-center gap-3 rounded-md text-sm font-medium text-primary hover:bg-primary/10 transition-all min-h-[44px] ${
-            collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-          }`}
-        >
-          <CalendarPlus size={18} />
-          {!collapsed && <span>Nova Temporada</span>}
-        </button>
-        <button
-          onClick={handleExitSave}
-          title={collapsed ? "Trocar save" : undefined}
-          className={`w-full flex items-center gap-3 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all min-h-[44px] ${
-            collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-          }`}
-        >
-          <ArrowLeftRight size={18} />
-          {!collapsed && <span>Trocar Save</span>}
-        </button>
-        <NavLink
-          to="/change-club"
-          title={collapsed ? "Mudar de Clube" : undefined}
-          className={navLinkClass}
-        >
-          <RefreshCw size={18} />
-          {!collapsed && <span>Mudar de Clube</span>}
-        </NavLink>
-        <button
-          onClick={handleSignOut}
-          title={collapsed ? "Sair da conta" : undefined}
-          className={`w-full flex items-center gap-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all min-h-[44px] ${
-            collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-          }`}
-        >
-          <LogOut size={18} />
-          {!collapsed && <span>Sair da Conta</span>}
-        </button>
-
-        {/* Collapse toggle - desktop only */}
-        <button
-          onClick={onToggleCollapse}
-          title={collapsed ? "Expandir menu" : "Recolher menu"}
-          className="hidden md:flex w-full items-center gap-3 rounded-md text-sm font-medium text-muted-foreground hover:text-primary hover:bg-sidebar-accent transition-all min-h-[44px] justify-center px-2 py-2.5 mt-2"
-        >
-          {collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
-          {!collapsed && <span className="flex-1 text-left">Recolher</span>}
-        </button>
+            <button
+              onClick={handleToggleSidebar}
+              title={collapsed ? "Expandir menu" : "Recolher menu"}
+              className="hidden md:flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-muted-foreground hover:text-primary hover:bg-sidebar-accent transition-all min-h-[44px] justify-center overflow-x-hidden px-2 py-2.5"
+            >
+              {collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+              {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Recolher</span>}
+            </button>
+          </section>
+        </div>
       </div>
     </>
   );
