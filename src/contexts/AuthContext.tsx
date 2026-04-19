@@ -18,8 +18,11 @@ import {
 import {
   clearStoredActiveSaveId,
   clearStoredToken,
+  clearStoredUser,
   getStoredToken,
+  getStoredUser,
   setStoredToken,
+  setStoredUser,
 } from "@/lib/auth-storage";
 
 type AuthContextValue = {
@@ -48,10 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userRef.current = user;
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      setStoredUser(user);
+    }
+  }, [user]);
+
   const clearSession = useCallback(() => {
     const userId = userRef.current?.id;
 
     clearStoredToken();
+    clearStoredUser();
     if (userId) {
       clearStoredActiveSaveId(userId);
     }
@@ -64,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrateSession = useCallback(async () => {
     const storedToken = getStoredToken();
+    const storedUser = getStoredUser<ApiUser>();
 
     if (!storedToken) {
       setIsLoading(false);
@@ -71,6 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setToken(storedToken);
+    if (storedUser) {
+      setUser(storedUser);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const currentSession = await authApi.getSession();
@@ -82,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(currentSession.user);
       setSession(currentSession.session);
+      setStoredUser(currentSession.user);
     } catch {
       clearSession();
     } finally {
@@ -101,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (data: { email: string; password: string }) => {
     const authResponse = await authApi.signIn(data);
     setStoredToken(authResponse.token);
+    setStoredUser(authResponse.user);
     setToken(authResponse.token);
     setUser(authResponse.user);
 
@@ -108,12 +126,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(currentSession?.session ?? null);
     if (currentSession?.user) {
       setUser(currentSession.user);
+      setStoredUser(currentSession.user);
     }
   }, []);
 
   const signUp = useCallback(async (data: { name: string; email: string; password: string }) => {
     const authResponse = await authApi.signUp(data);
     setStoredToken(authResponse.token);
+    setStoredUser(authResponse.user);
     setToken(authResponse.token);
     setUser(authResponse.user);
 
@@ -121,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(currentSession?.session ?? null);
     if (currentSession?.user) {
       setUser(currentSession.user);
+      setStoredUser(currentSession.user);
     }
   }, []);
 

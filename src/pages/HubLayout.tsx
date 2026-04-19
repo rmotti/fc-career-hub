@@ -108,26 +108,26 @@ const HubLayout = () => {
   const resolvedSeason = selectedSeason || activeSave.currentSeason;
 
   return (
-    <div className="flex min-h-screen w-full relative">
+    <div className="relative flex h-screen w-full overflow-hidden">
       <HubSidebar
+        userName={user.name}
+        userPlan={user.plan}
         onNewSeason={() => setShowNewSeasonModal(true)}
         onExitSave={handleExitSave}
         onSignOut={handleSignOut}
         collapsed={collapsed}
         onToggleCollapse={handleToggleCollapse}
       />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <HubHeader
           saveName={activeSave.name}
-          userName={user.name}
-          userPlan={user.plan}
           clubName={currentClub}
           season={activeSave.currentSeason}
           availableSeasons={activeSave.availableSeasons}
           selectedSeason={resolvedSeason}
           onSeasonChange={setSelectedSeason}
         />
-        <main className="flex-1 p-6 overflow-y-auto w-full max-w-full">
+        <main className="min-h-0 flex-1 overflow-y-auto p-6 w-full max-w-full">
           <Outlet
             context={{
               saveId: activeSave.id,

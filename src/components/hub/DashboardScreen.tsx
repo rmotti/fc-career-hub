@@ -3,7 +3,7 @@ import StatCard from "./StatCard";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
-import { useSave } from "@/hooks/useSaves";
+import { useFinancialSnapshot } from "@/hooks/useFinancialSnapshot";
 import { getLeagueStats } from "@/utils/competitions";
 import { formatCurrency } from "@/utils/currency";
 
@@ -12,7 +12,7 @@ interface Props {
 }
 
 const DashboardScreen = ({ saveId }: Props) => {
-  const { data: save } = useSave(saveId);
+  const { data: save } = useFinancialSnapshot(saveId);
   const { data: players = [], isLoading: playersLoading } = usePlayers(saveId, true);
   const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
   const { data: trophies = [] } = useTrophies(saveId);

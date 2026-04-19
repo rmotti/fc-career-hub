@@ -40,6 +40,23 @@ export function getLeagueStats(stats: ApiTeamStats[]) {
   return stats.find((item) => item.competition?.type === "League") ?? stats[0] ?? null;
 }
 
+export function getAggregateTeamStats(stats: ApiTeamStats[]) {
+  if (stats.length === 0) {
+    return null;
+  }
+
+  return stats.reduce(
+    (acc, stat) => ({
+      wins: acc.wins + stat.wins,
+      draws: acc.draws + stat.draws,
+      losses: acc.losses + stat.losses,
+      goalsPro: acc.goalsPro + stat.goalsPro,
+      goalsAgainst: acc.goalsAgainst + stat.goalsAgainst,
+    }),
+    { wins: 0, draws: 0, losses: 0, goalsPro: 0, goalsAgainst: 0 }
+  );
+}
+
 export function groupTeamStatsBySeason(stats: ApiTeamStats[]) {
   return Object.entries(
     stats.reduce<Record<string, ApiTeamStats[]>>((acc, stat) => {

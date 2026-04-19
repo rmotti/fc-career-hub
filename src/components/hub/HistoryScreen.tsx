@@ -18,7 +18,7 @@ interface Props {
   saveId: string;
 }
 
-type ModalType = "scorers" | "assisters" | "matches" | "buys" | "sales" | null;
+type ModalType = "scorers" | "assisters" | "matches" | "contributions" | "buys" | "sales" | null;
 
 const HistoryScreen = ({ saveId }: Props) => {
   const { data: clubStints = [], isLoading } = useClubStints(saveId);
@@ -70,9 +70,22 @@ const HistoryScreen = ({ saveId }: Props) => {
     .filter(p => p.total > 0)
     .sort((a, b) => b.total - a.total);
 
+  const allByGoalContributions = validPlayers
+    .map(p => ({
+      name: p.name,
+      total: p.totalStats?.goalContributions ?? ((p.totalStats?.goals ?? 0) + (p.totalStats?.assists ?? 0)),
+      goals: p.totalStats?.goals ?? 0,
+      assists: p.totalStats?.assists ?? 0,
+      matches: p.totalStats?.matches ?? 0,
+      clubs: [...new Set(((p as any).history ?? []).map((h: any) => h.club))] as string[]
+    }))
+    .filter(p => p.total > 0)
+    .sort((a, b) => b.total - a.total);
+
   const top5Scorers = allScorers.slice(0, 5);
   const top5Assisters = allAssisters.slice(0, 5);
   const top5ByMatches = allByMatches.slice(0, 5);
+  const top5ByGoalContributions = allByGoalContributions.slice(0, 5);
 
   const purchases = transfers.filter(t => t.type === "compra");
   const sales = transfers.filter(t => t.type === "venda");
@@ -159,64 +172,6 @@ const HistoryScreen = ({ saveId }: Props) => {
       {/* Records */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        {/* Maior Compra — top 5 */}
-        <div className="card-gamer p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-muted-foreground uppercase">Maior Compra</p>
-            <button
-              onClick={() => setOpenModal("buys")}
-              className="w-6 h-6 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Plus size={12} />
-            </button>
-          </div>
-          {top5Buys.length > 0 ? (
-            <div className="space-y-2">
-              {top5Buys.map((t, i) => (
-                <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                    <div>
-                      <p className="font-display font-medium text-sm">{t.playerName}</p>
-                      <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
-                    </div>
-                  </div>
-                  <span className="text-sm font-bold text-primary">{t.fee ? `€${t.fee}M` : "Livre"}</span>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-muted-foreground text-sm">—</p>}
-        </div>
-
-        {/* Maior Venda — top 5 */}
-        <div className="card-gamer p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-muted-foreground uppercase">Maior Venda</p>
-            <button
-              onClick={() => setOpenModal("sales")}
-              className="w-6 h-6 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Plus size={12} />
-            </button>
-          </div>
-          {top5Sales.length > 0 ? (
-            <div className="space-y-2">
-              {top5Sales.map((t, i) => (
-                <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                    <div>
-                      <p className="font-display font-medium text-sm">{t.playerName}</p>
-                      <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
-                    </div>
-                  </div>
-                  <span className="text-sm font-bold text-accent">{t.fee ? `€${t.fee}M` : "Livre"}</span>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-muted-foreground text-sm">—</p>}
-        </div>
-
         {/* Top Artilheiros */}
         <div className="card-gamer p-5 md:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between mb-3">
@@ -282,7 +237,7 @@ const HistoryScreen = ({ saveId }: Props) => {
         </div>
 
         {/* Mais Partidas */}
-        <div className="card-gamer p-5 md:col-span-2">
+        <div className="card-gamer p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs text-muted-foreground uppercase">Mais Partidas Históricas</p>
             <button
@@ -293,7 +248,7 @@ const HistoryScreen = ({ saveId }: Props) => {
             </button>
           </div>
           {top5ByMatches.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-2">
               {top5ByMatches.map((p, i) => (
                 <div key={p.name} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
                   <div className="flex items-center gap-2">
@@ -312,6 +267,96 @@ const HistoryScreen = ({ saveId }: Props) => {
             </div>
           ) : <p className="text-muted-foreground text-sm">—</p>}
         </div>
+
+        {/* Mais Participações em Gol */}
+        <div className="card-gamer p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-muted-foreground uppercase">Mais Participações em Gol</p>
+            <button
+              onClick={() => setOpenModal("contributions")}
+              className="w-6 h-6 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+          {top5ByGoalContributions.length > 0 ? (
+            <div className="space-y-2">
+              {top5ByGoalContributions.map((p, i) => (
+                <div key={p.name} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                    <div>
+                      <p className="font-display font-medium text-sm">{p.name}</p>
+                      {p.clubs.length > 0 && <p className="text-[10px] text-muted-foreground">{p.clubs.join(', ')}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-muted-foreground">{p.goals}G {p.assists}A</span>
+                    <span className="text-sm font-bold text-primary">{p.total} Part.</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-muted-foreground text-sm">—</p>}
+        </div>
+
+        {/* Maior Compra — top 5 */}
+        <div className="card-gamer p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-muted-foreground uppercase">Maior Compra</p>
+            <button
+              onClick={() => setOpenModal("buys")}
+              className="w-6 h-6 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+          {top5Buys.length > 0 ? (
+            <div className="space-y-2">
+              {top5Buys.map((t, i) => (
+                <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                    <div>
+                      <p className="font-display font-medium text-sm">{t.playerName}</p>
+                      <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-primary">{t.fee ? `€${t.fee}M` : "Livre"}</span>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-muted-foreground text-sm">—</p>}
+        </div>
+
+        {/* Maior Venda — top 5 */}
+        <div className="card-gamer p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-muted-foreground uppercase">Maior Venda</p>
+            <button
+              onClick={() => setOpenModal("sales")}
+              className="w-6 h-6 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+          {top5Sales.length > 0 ? (
+            <div className="space-y-2">
+              {top5Sales.map((t, i) => (
+                <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                    <div>
+                      <p className="font-display font-medium text-sm">{t.playerName}</p>
+                      <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-accent">{t.fee ? `€${t.fee}M` : "Livre"}</span>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-muted-foreground text-sm">—</p>}
+        </div>
       </div>
 
       {/* Top 20 Modal */}
@@ -322,6 +367,7 @@ const HistoryScreen = ({ saveId }: Props) => {
               {openModal === "scorers" && "Top 20 Artilheiros Históricos"}
               {openModal === "assisters" && "Top 20 Assistentes Históricos"}
               {openModal === "matches" && "Top 20 — Mais Partidas"}
+              {openModal === "contributions" && "Top 20 — Mais Participações em Gol"}
               {openModal === "buys" && "Top 20 Maiores Compras"}
               {openModal === "sales" && "Top 20 Maiores Vendas"}
             </DialogTitle>
@@ -372,6 +418,23 @@ const HistoryScreen = ({ saveId }: Props) => {
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-xs text-muted-foreground">{p.goals}G {p.assists}A</span>
                   <span className="text-sm font-bold text-yellow-400">{p.total} Jogos</span>
+                </div>
+              </div>
+            ))}
+
+            {openModal === "contributions" && allByGoalContributions.slice(0, 20).map((p, i) => (
+              <div key={p.name} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
+                  <div>
+                    <p className="font-display font-medium text-sm">{p.name}</p>
+                    {p.clubs.length > 0 && <p className="text-[10px] text-muted-foreground">{p.clubs.join(', ')}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {p.matches > 0 && <span className="text-xs text-muted-foreground">{p.matches} jogos</span>}
+                  <span className="text-xs text-muted-foreground">{p.goals}G {p.assists}A</span>
+                  <span className="text-sm font-bold text-primary">{p.total} Part.</span>
                 </div>
               </div>
             ))}

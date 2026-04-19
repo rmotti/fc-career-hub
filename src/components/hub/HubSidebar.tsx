@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, History,
+  LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 
 interface HubSidebarProps {
+  userName: string;
+  userPlan: string;
   onNewSeason: () => void;
   onExitSave: () => void;
   onSignOut: () => void;
@@ -19,13 +21,23 @@ const navItems: { to: string; label: string; icon: React.ElementType }[] = [
   { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { to: "/squad", label: "Elenco", icon: Users },
   { to: "/field", label: "Escalação", icon: Shirt },
+  { to: "/stats", label: "Estatísticas", icon: BarChart3 },
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
   { to: "/history", label: "História", icon: History },
 ];
 
-const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCollapse }: HubSidebarProps) => {
+const HubSidebar = ({
+  userName,
+  userPlan,
+  onNewSeason,
+  onExitSave,
+  onSignOut,
+  collapsed,
+  onToggleCollapse,
+}: HubSidebarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
 
   useEffect(() => {
     setMobileOpen(false);
@@ -67,7 +79,29 @@ const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCol
         )}
       </div>
 
-      <nav className="flex-1 p-3 space-y-1">
+      <div className={`border-b border-sidebar-border ${collapsed ? "px-2 py-3" : "px-4 py-4"}`}>
+        {collapsed ? (
+          <div className="flex justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
+              {userInitial}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
+              {userInitial}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-display text-sm font-bold text-foreground">{userName}</p>
+              <p className="mt-0.5 text-[11px] font-body uppercase tracking-[0.18em] text-muted-foreground">
+                Plano {userPlan}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -174,7 +208,7 @@ const HubSidebar = ({ onNewSeason, onExitSave, onSignOut, collapsed, onToggleCol
 
       {/* Desktop sidebar */}
       <aside
-        className={`hidden md:flex flex-col min-h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ${
+        className={`hidden md:flex md:sticky md:top-0 h-screen shrink-0 overflow-hidden flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${
           collapsed ? "w-16" : "w-60"
         }`}
       >

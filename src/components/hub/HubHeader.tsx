@@ -1,10 +1,6 @@
 import { Shield, Calendar } from "lucide-react";
-import type { UserPlan } from "@/services/api";
-
 interface HubHeaderProps {
   saveName: string;
-  userName: string;
-  userPlan: UserPlan;
   clubName: string;
   season: string;
   availableSeasons?: string[];
@@ -12,7 +8,7 @@ interface HubHeaderProps {
   onSeasonChange?: (season: string) => void;
 }
 
-const HubHeader = ({ saveName, userName, userPlan, clubName, season, availableSeasons, selectedSeason, onSeasonChange }: HubHeaderProps) => {
+const HubHeader = ({ saveName, clubName, season, availableSeasons, selectedSeason, onSeasonChange }: HubHeaderProps) => {
   return (
     <header className="h-14 bg-card border-b border-border flex items-center justify-between pl-14 md:pl-6 pr-6">
       <div className="flex items-center gap-4">
@@ -24,10 +20,6 @@ const HubHeader = ({ saveName, userName, userPlan, clubName, season, availableSe
         </div>
       </div>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-        <div className="hidden text-right sm:block">
-          <p className="font-medium text-foreground">{userName}</p>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Plano {userPlan}</p>
-        </div>
         <div className="flex items-center gap-2">
           <Calendar size={16} />
           {availableSeasons && availableSeasons.length > 1 && onSeasonChange ? (

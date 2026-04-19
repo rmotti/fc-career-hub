@@ -4,7 +4,7 @@ import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
-import { useSave } from "@/hooks/useSaves";
+import { useFinancialSnapshot } from "@/hooks/useFinancialSnapshot";
 import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { CUP_LABELS, formatTrophyLabel, getLeagueStats } from "@/utils/competitions";
 import { formatCurrency } from "@/utils/currency";
@@ -34,7 +34,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const [budgetInput, setBudgetInput] = useState("");
   const [nextEuropeanCompetitionId, setNextEuropeanCompetitionId] = useState<string>("none");
 
-  const { data: save } = useSave(saveId);
+  const { data: save } = useFinancialSnapshot(saveId);
   const { data: players = [] } = usePlayers(saveId, true);
   const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
   const { data: trophies = [] } = useTrophies(saveId);

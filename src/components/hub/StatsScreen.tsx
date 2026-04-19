@@ -1,12 +1,19 @@
-import { useState } from "react";
-import { Target, ShieldAlert, ShieldCheck, Pencil, Loader2, Trophy, Minus, X, CheckCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Target, ShieldAlert, ShieldCheck, Pencil, Loader2, Trophy, Minus, X, CheckCircle, Plus, Users } from "lucide-react";
 import StatCard from "./StatCard";
 import StatsModal from "@/components/modals/StatsModal";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/hooks/useTeamStats";
 import { toast } from "sonner";
-import type { ApiTeamStats } from "@/services/api";
-import { CUP_LABELS, getLeagueStats, groupTeamStatsBySeason } from "@/utils/competitions";
+import type { ApiPlayer, ApiTeamStats } from "@/services/api";
+import { CUP_LABELS, getAggregateTeamStats, groupTeamStatsBySeason } from "@/utils/competitions";
+import Flag from "react-world-flags";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Props {
   saveId: string;
@@ -14,9 +21,74 @@ interface Props {
   currentSeason?: string;
 }
 
+type PlayerStatModalKey = "goals" | "assists" | "cleanSheets" | "matches" | "goalContributions" | null;
+
+interface PlayerRankingCardProps {
+  title: string;
+  colorClass: string;
+  icon: typeof Target;
+  players: ApiPlayer[];
+  onOpenAll: () => void;
+  getValue: (player: ApiPlayer) => number;
+  formatValue?: (value: number) => string;
+  emptyLabel?: string;
+}
+
+const PlayerRankingCard = ({
+  title,
+  colorClass,
+  icon: Icon,
+  players,
+  onOpenAll,
+  getValue,
+  formatValue = (value) => String(value),
+  emptyLabel = "—",
+}: PlayerRankingCardProps) => {
+  const visiblePlayers = players.slice(0, 5);
+
+  return (
+    <div className="card-gamer p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-display text-base font-semibold flex items-center gap-2">
+            <Icon size={16} className={colorClass} /> {title}
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {players.length > 0 ? `${players.length} jogador${players.length === 1 ? "" : "es"} com estatística registrada` : emptyLabel}
+          </p>
+        </div>
+        {players.length > 0 && (
+          <button
+            type="button"
+            onClick={onOpenAll}
+            className="w-6 h-6 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            title="Mostrar todos"
+          >
+            <Plus size={12} />
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {visiblePlayers.map((p, i) => (
+          <div key={p.id} className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+              <span className="text-sm">{p.name}</span>
+            </div>
+            <span className={`font-display font-bold ${colorClass}`}>{formatValue(getValue(p))}</span>
+          </div>
+        ))}
+        {players.length === 0 && <p className="text-sm text-muted-foreground">{emptyLabel}</p>}
+      </div>
+    </div>
+  );
+};
+
 const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [selectedStat, setSelectedStat] = useState<ApiTeamStats | null>(null);
+  const [playerStatModal, setPlayerStatModal] = useState<PlayerStatModalKey>(null);
 
   const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
   const statsSeason = selectedSeason || currentSeason;
@@ -25,21 +97,71 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const { data: teamStatsData = [], isLoading: isLoadingTeamStats } = useTeamStats(saveId, statsSeason);
   const updateTeamStats = useUpdateTeamStats();
 
-  const teamStats = getLeagueStats(teamStatsData);
+  const teamStats = getAggregateTeamStats(teamStatsData);
   const groupedStats = groupTeamStatsBySeason(teamStatsData);
   const displayStats = teamStats ?? {
-    wins: 0, draws: 0, losses: 0, goalsPro: 0, goalsAgainst: 0, leaguePosition: 1
+    wins: 0, draws: 0, losses: 0, goalsPro: 0, goalsAgainst: 0
   };
 
-  const topScorers = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 5);
-  const topAssists = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 5);
   const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
-  const topCleanSheets = [...squad]
-    .filter((p) => CLEAN_SHEETS_POSITIONS.has(p.position))
-    .sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.cleanSheets ?? 0) - ((a.currentSeasonStats || a.totalStats)?.cleanSheets ?? 0))
-    .slice(0, 5);
-  const topMatches = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.matches ?? 0) - ((a.currentSeasonStats || a.totalStats)?.matches ?? 0)).slice(0, 5);
-  const topContributions = [...squad].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goalContributions ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goalContributions ?? 0)).slice(0, 5);
+  const getStatValue = (player: ApiPlayer, stat: "goals" | "assists" | "cleanSheets" | "matches" | "goalContributions") =>
+    (player.currentSeasonStats || player.totalStats)?.[stat] ?? 0;
+
+  const positiveStatPlayers = useMemo(() => ({
+    goals: [...squad]
+      .filter((player) => getStatValue(player, "goals") > 0)
+      .sort((a, b) => getStatValue(b, "goals") - getStatValue(a, "goals")),
+    assists: [...squad]
+      .filter((player) => getStatValue(player, "assists") > 0)
+      .sort((a, b) => getStatValue(b, "assists") - getStatValue(a, "assists")),
+    cleanSheets: [...squad]
+      .filter((player) => CLEAN_SHEETS_POSITIONS.has(player.position) && getStatValue(player, "cleanSheets") > 0)
+      .sort((a, b) => getStatValue(b, "cleanSheets") - getStatValue(a, "cleanSheets")),
+    matches: [...squad]
+      .filter((player) => getStatValue(player, "matches") > 0)
+      .sort((a, b) => getStatValue(b, "matches") - getStatValue(a, "matches")),
+    goalContributions: [...squad]
+      .filter((player) => getStatValue(player, "goalContributions") > 0)
+      .sort((a, b) => getStatValue(b, "goalContributions") - getStatValue(a, "goalContributions")),
+  }), [squad]);
+
+  const playerStatModalMeta: Record<Exclude<PlayerStatModalKey, null>, { title: string; players: ApiPlayer[]; colorClass: string; getValue: (player: ApiPlayer) => number; formatValue?: (value: number) => string; }> = {
+    goals: {
+      title: "Todos os Artilheiros",
+      players: positiveStatPlayers.goals,
+      colorClass: "text-primary",
+      getValue: (player) => getStatValue(player, "goals"),
+      formatValue: (value) => `${value} gols`,
+    },
+    assists: {
+      title: "Todos os Assistentes",
+      players: positiveStatPlayers.assists,
+      colorClass: "text-accent",
+      getValue: (player) => getStatValue(player, "assists"),
+      formatValue: (value) => `${value} assist.`,
+    },
+    cleanSheets: {
+      title: "Todos os Clean Sheets",
+      players: positiveStatPlayers.cleanSheets,
+      colorClass: "text-accent",
+      getValue: (player) => getStatValue(player, "cleanSheets"),
+      formatValue: (value) => `${value} CS`,
+    },
+    matches: {
+      title: "Todos com Partidas",
+      players: positiveStatPlayers.matches,
+      colorClass: "text-primary",
+      getValue: (player) => getStatValue(player, "matches"),
+      formatValue: (value) => `${value} partidas`,
+    },
+    goalContributions: {
+      title: "Todas as Participações em Gol",
+      players: positiveStatPlayers.goalContributions,
+      colorClass: "text-accent",
+      getValue: (player) => getStatValue(player, "goalContributions"),
+      formatValue: (value) => `${value} part.`,
+    },
+  };
 
   const handleUpdateStats = async (stats: any) => {
     if (!selectedStat) {
@@ -181,99 +303,66 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         ))}
       </div>
 
-      {/* Rankings */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="card-gamer p-5">
-          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
-            <Target size={16} className="text-primary" /> Artilheiros
-          </h3>
-          <div className="space-y-3">
-            {topScorers.map((p, i) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                  <span className="text-sm">{p.name}</span>
-                </div>
-                <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals ?? 0}</span>
-              </div>
-            ))}
-            {topScorers.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-primary/8 via-background to-accent/8 px-5 py-4">
+        <div className="absolute inset-y-0 left-0 w-1 rounded-full bg-primary/70" />
+        <div className="ml-3 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Users size={18} />
           </div>
-        </div>
-
-        <div className="card-gamer p-5">
-          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
-            <Target size={16} className="text-accent" /> Assistentes
-          </h3>
-          <div className="space-y-3">
-            {topAssists.map((p, i) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                  <span className="text-sm">{p.name}</span>
-                </div>
-                <span className="font-display font-bold text-accent">{(p.currentSeasonStats || p.totalStats)?.assists ?? 0}</span>
-              </div>
-            ))}
-            {topAssists.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
-          </div>
-        </div>
-
-        <div className="card-gamer p-5">
-          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
-            <ShieldCheck size={16} className="text-accent" /> Clean Sheets
-          </h3>
-          <div className="space-y-3">
-            {topCleanSheets.map((p, i) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                  <span className="text-sm">{p.name}</span>
-                </div>
-                <span className="font-display font-bold text-accent">{(p.currentSeasonStats || p.totalStats)?.cleanSheets ?? 0}</span>
-              </div>
-            ))}
-            {topCleanSheets.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+          <div>
+            <h2 className="font-display text-xl font-bold">Estatísticas dos Jogadores</h2>
+            <p className="text-sm text-muted-foreground">Rankings individuais da temporada. Use o botão <strong>+</strong> para expandir e ver todos com valor acima de 0.</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-gamer p-5">
-          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
-            <Target size={16} className="text-primary" /> Mais Partidas
-          </h3>
-          <div className="space-y-3">
-            {topMatches.map((p, i) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                  <span className="text-sm">{p.name}</span>
-                </div>
-                <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.matches ?? 0}</span>
-              </div>
-            ))}
-            {topMatches.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <PlayerRankingCard
+          title="Artilheiros"
+          colorClass="text-primary"
+          icon={Target}
+          players={positiveStatPlayers.goals}
+          onOpenAll={() => setPlayerStatModal("goals")}
+          getValue={(player) => getStatValue(player, "goals")}
+        />
 
-        <div className="card-gamer p-5">
-          <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
-            <Target size={16} className="text-accent" /> Part. em Gols
-          </h3>
-          <div className="space-y-3">
-            {topContributions.map((p, i) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
-                  <span className="text-sm">{p.name}</span>
-                </div>
-                <span className="font-display font-bold text-accent">{(p.currentSeasonStats || p.totalStats)?.goalContributions ?? 0}</span>
-              </div>
-            ))}
-            {topContributions.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
-          </div>
-        </div>
+        <PlayerRankingCard
+          title="Assistentes"
+          colorClass="text-accent"
+          icon={Target}
+          players={positiveStatPlayers.assists}
+          onOpenAll={() => setPlayerStatModal("assists")}
+          getValue={(player) => getStatValue(player, "assists")}
+        />
+
+        <PlayerRankingCard
+          title="Clean Sheets"
+          colorClass="text-accent"
+          icon={ShieldCheck}
+          players={positiveStatPlayers.cleanSheets}
+          onOpenAll={() => setPlayerStatModal("cleanSheets")}
+          getValue={(player) => getStatValue(player, "cleanSheets")}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PlayerRankingCard
+          title="Mais Partidas"
+          colorClass="text-primary"
+          icon={Target}
+          players={positiveStatPlayers.matches}
+          onOpenAll={() => setPlayerStatModal("matches")}
+          getValue={(player) => getStatValue(player, "matches")}
+        />
+
+        <PlayerRankingCard
+          title="Part. em Gols"
+          colorClass="text-accent"
+          icon={Target}
+          players={positiveStatPlayers.goalContributions}
+          onOpenAll={() => setPlayerStatModal("goalContributions")}
+          getValue={(player) => getStatValue(player, "goalContributions")}
+        />
       </div>
 
       <StatsModal
@@ -282,6 +371,54 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         stat={selectedStat}
         onSave={handleUpdateStats}
       />
+
+      <Dialog open={playerStatModal !== null} onOpenChange={(open) => { if (!open) setPlayerStatModal(null); }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {playerStatModal ? playerStatModalMeta[playerStatModal].title : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-1 mt-2">
+            {playerStatModal && playerStatModalMeta[playerStatModal].players.map((player, index) => (
+              <div key={player.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-6">{index + 1}.</span>
+                  <div>
+                    <p className="font-display font-medium text-sm">{player.name}</p>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span>{player.position}</span>
+                        {player.nation && (
+                          <Flag
+                            code={player.nation}
+                            style={{ width: 14, height: 10, borderRadius: 2, objectFit: "cover" }}
+                          />
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {playerStatModal !== "matches" && (
+                    <span className="text-xs text-muted-foreground">{getStatValue(player, "matches")} partidas</span>
+                  )}
+                  <span className={`text-sm font-bold ${playerStatModalMeta[playerStatModal].colorClass}`}>
+                    {playerStatModalMeta[playerStatModal].formatValue
+                      ? playerStatModalMeta[playerStatModal].formatValue!(playerStatModalMeta[playerStatModal].getValue(player))
+                      : playerStatModalMeta[playerStatModal].getValue(player)}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {playerStatModal && playerStatModalMeta[playerStatModal].players.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhum jogador com estatística registrada.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

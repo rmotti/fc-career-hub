@@ -1,4 +1,5 @@
 const SESSION_TOKEN_KEY = "session_token";
+const SESSION_USER_KEY = "session_user";
 const ACTIVE_SAVE_KEY_PREFIX = "active-save-id:";
 
 export function getStoredToken() {
@@ -11,6 +12,29 @@ export function setStoredToken(token: string) {
 
 export function clearStoredToken() {
   window.localStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
+export function getStoredUser<T>() {
+  const rawUser = window.localStorage.getItem(SESSION_USER_KEY);
+
+  if (!rawUser) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawUser) as T;
+  } catch {
+    window.localStorage.removeItem(SESSION_USER_KEY);
+    return null;
+  }
+}
+
+export function setStoredUser(user: unknown) {
+  window.localStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
+}
+
+export function clearStoredUser() {
+  window.localStorage.removeItem(SESSION_USER_KEY);
 }
 
 function getActiveSaveStorageKey(userId: string) {
