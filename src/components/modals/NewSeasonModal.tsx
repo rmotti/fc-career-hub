@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign, Star } from "lucide-react";
+import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign, Star, Loader2 } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
@@ -31,6 +31,7 @@ function computeNextSeason(current: string | null | undefined): string | null {
 
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
   const [step, setStep] = useState<"confirm" | "overview" | "budget">("confirm");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [nextEuropeanCompetitionId, setNextEuropeanCompetitionId] = useState<string>("none");
 
@@ -73,16 +74,21 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   const handleFinish = async () => {
     const budget = parseFloat(budgetInput);
-    const success = await onConfirm(
-      budget,
-      nextEuropeanCompetitionId === "none" ? null : nextEuropeanCompetitionId
-    );
+    setIsSubmitting(true);
+    try {
+      const success = await onConfirm(
+        budget,
+        nextEuropeanCompetitionId === "none" ? null : nextEuropeanCompetitionId
+      );
 
-    if (success) {
-      setStep("confirm");
-      setBudgetInput("");
-      setNextEuropeanCompetitionId("none");
-      onOpenChange(false);
+      if (success) {
+        setStep("confirm");
+        setBudgetInput("");
+        setNextEuropeanCompetitionId("none");
+        onOpenChange(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -200,15 +206,15 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
             <div className="flex gap-3 pt-2">
               <button
                 onClick={handleFinish}
-                disabled={!budgetInput || !nextSeason}
+                disabled={!budgetInput || !nextSeason || isSubmitting}
                 className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <span>Confirmar</span>
-                <ChevronRight size={16} />
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <><span>Confirmar</span><ChevronRight size={16} /></>}
               </button>
               <button
                 onClick={() => handleClose(false)}
-                className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
+                disabled={isSubmitting}
+                className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>

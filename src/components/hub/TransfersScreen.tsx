@@ -92,6 +92,9 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
         setPurchasePlayerId(response.transfer.playerId);
         setPlayerModalOpen(true);
         toast.success("Jogador adicionado! Complete as informações abaixo.", { duration: 4000 });
+      } else if (data.type === "emprestimo_saida" && response.transfer?.playerId) {
+        await updatePlayer.mutateAsync({ saveId, playerId: response.transfer.playerId, data: { isActive: false } });
+        toast.success("Jogador enviado por empréstimo e removido do elenco.", { duration: 3000 });
       } else {
         toast.success("Transferência registrada com sucesso!", { duration: 3000 });
       }

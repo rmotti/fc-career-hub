@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { extractErrorMessage, type ApiTeamStats } from "@/services/api";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ interface Props {
 }
 
 const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<StatsForm>({
     goalsPro: "",
     goalsAgainst: "",
@@ -57,11 +59,14 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
       leaguePosition: form.leaguePosition === "" ? null : form.leaguePosition,
     };
 
+    setIsSubmitting(true);
     try {
       await onSave(submissionForm);
       onOpenChange(false);
     } catch (err: any) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -95,11 +100,11 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label id="label-goalsPro" className={labelClass}>Gols Pró</label>
+              <label id="label-goalsPro" className={labelClass}>Gols Marcados</label>
               <input id="field-goalsPro" name="goalsPro" type="number" className={inputClass} value={form.goalsPro} onChange={(e) => setForm({ ...form, goalsPro: e.target.value === "" ? "" : parseInt(e.target.value, 10) })} min={0} />
             </div>
             <div>
-              <label id="label-goalsAgainst" className={labelClass}>Gols Contra</label>
+              <label id="label-goalsAgainst" className={labelClass}>Gols Sofridos</label>
               <input id="field-goalsAgainst" name="goalsAgainst" type="number" className={inputClass} value={form.goalsAgainst} onChange={(e) => setForm({ ...form, goalsAgainst: e.target.value === "" ? "" : parseInt(e.target.value, 10) })} min={0} />
             </div>
           </div>
@@ -137,10 +142,11 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
           )}
 
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity">
+            <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-70">
+              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
               Salvar
             </button>
-            <button type="button" onClick={() => onOpenChange(false)} className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors">
+            <button type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50">
               Cancelar
             </button>
           </div>

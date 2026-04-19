@@ -232,12 +232,13 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <StatCard label="Jogos" value={displayStats.wins + displayStats.draws + displayStats.losses} icon={Trophy} />
           <StatCard label="Vitórias" value={displayStats.wins} icon={CheckCircle} />
           <StatCard label="Empates" value={displayStats.draws} icon={Minus} />
           <StatCard label="Derrotas" value={displayStats.losses} icon={X} accent />
-          <StatCard label="Gols Pró" value={displayStats.goalsPro} icon={Target} />
-          <StatCard label="Gols Contra" value={displayStats.goalsAgainst} icon={ShieldAlert} accent />
+          <StatCard label="Gols Marcados" value={displayStats.goalsPro} icon={Target} />
+          <StatCard label="Gols Sofridos" value={displayStats.goalsAgainst} icon={ShieldAlert} accent />
         </div>
       </div>
 
@@ -288,12 +289,12 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-6">
+                      <StatCard label="Jogos" value={matches} icon={Trophy} />
                       <StatCard label="Vitórias" value={stat.wins} icon={CheckCircle} />
                       <StatCard label="Empates" value={stat.draws} icon={Minus} />
                       <StatCard label="Derrotas" value={stat.losses} icon={X} accent />
-                      <StatCard label="Gols Pró" value={stat.goalsPro} icon={Target} />
-                      <StatCard label="Gols Contra" value={stat.goalsAgainst} icon={ShieldAlert} accent />
-                      <StatCard label="Jogos" value={matches} icon={Trophy} />
+                      <StatCard label="Gols Marcados" value={stat.goalsPro} icon={Target} />
+                      <StatCard label="Gols Sofridos" value={stat.goalsAgainst} icon={ShieldAlert} accent />
                     </div>
                   </div>
                 );

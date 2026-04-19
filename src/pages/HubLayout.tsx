@@ -4,10 +4,11 @@ import { toast } from "sonner";
 import HubSidebar from "@/components/hub/HubSidebar";
 import HubHeader from "@/components/hub/HubHeader";
 import NewSeasonModal from "@/components/modals/NewSeasonModal";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSave, useUpdateSave } from "@/hooks/useSaves";
 import { clearStoredActiveSaveId, getStoredActiveSaveId } from "@/lib/auth-storage";
-import { extractErrorMessage } from "@/services/api";
+import { extractErrorMessage, playersApi } from "@/services/api";
 
 export type HubOutletContext = {
   saveId: string;
@@ -27,6 +28,7 @@ const HubLayout = () => {
 
   const { data: activeSave, isError } = useSave(activeSaveId);
   const updateSave = useUpdateSave();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,6 +78,13 @@ const HubLayout = () => {
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
 
     try {
+      const allPlayers = await playersApi.list(activeSave.id);
+      const loanedOut = allPlayers.filter(p => !p.isActive);
+      if (loanedOut.length > 0) {
+        await Promise.all(loanedOut.map(p => playersApi.update(activeSave.id, p.id, { isActive: true })));
+        await queryClient.invalidateQueries({ queryKey: ["players", activeSave.id] });
+      }
+
       await updateSave.mutateAsync({
         saveId: activeSave.id,
         data: { currentYear: newYear, currentSeason: newSeason, budget: String(budget), europeanCompetitionId },

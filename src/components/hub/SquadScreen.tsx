@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
 import { useSave } from "@/hooks/useSaves";
 import PlayerModal from "@/components/modals/PlayerModal";
+import PlayerViewModal from "@/components/modals/PlayerViewModal";
 import { getBadge, type SquadRole } from "@/lib/playerBadge";
 import Flag from "react-world-flags";
 
@@ -41,6 +42,8 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<ApiPlayer | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewingPlayer, setViewingPlayer] = useState<ApiPlayer | null>(null);
 
   const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
 
@@ -272,24 +275,33 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {!isPastSeason && (
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
-                          className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(p)}
-                          className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                          title="Dispensar"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => { setViewingPlayer(p); setViewModalOpen(true); }}
+                        className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        title="Ver detalhes"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      {!isPastSeason && (
+                        <>
+                          <button
+                            onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
+                            className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p)}
+                            className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Dispensar"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 );
@@ -308,6 +320,13 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         player={editingPlayer}
         onSave={handleSavePlayer}
         saveId={saveId}
+      />
+
+      <PlayerViewModal
+        open={viewModalOpen}
+        onOpenChange={(open) => { setViewModalOpen(open); if (!open) setViewingPlayer(null); }}
+        player={viewingPlayer}
+        onEdit={() => { setEditingPlayer(viewingPlayer); setModalOpen(true); setViewingPlayer(null); }}
       />
     </div>
   );

@@ -89,8 +89,9 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
         <button
           onClick={handleConfirm}
           disabled={changeClub.isPending}
-          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity animate-pulse-glow disabled:opacity-50"
+          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity animate-pulse-glow disabled:opacity-50 flex items-center gap-2"
         >
+          {changeClub.isPending && <Loader2 size={16} className="animate-spin" />}
           {changeClub.isPending ? "Transferindo..." : `Assinar com ${selected}`}
         </button>
       )}
