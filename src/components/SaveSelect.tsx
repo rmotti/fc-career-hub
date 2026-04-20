@@ -5,6 +5,7 @@ import { extractErrorMessage, type ApiSave, type UserPlan } from "@/services/api
 import { useClubsByLeague } from "@/hooks/useClubs";
 import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { useDeleteSave } from "@/hooks/useSaves";
+import { parseBudgetInMillionsInput } from "@/utils/currency";
 
 interface Props {
   userName: string;
@@ -31,19 +32,8 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
   const leagueNames = Object.keys(clubsByLeague);
   const clubsForLeague: string[] = newLeague ? (clubsByLeague[newLeague] ?? []) : [];
 
-  const parseBudgetInMillions = (value: string) => {
-    const normalizedValue = value.replace(",", ".").trim();
-    const millions = parseFloat(normalizedValue);
-
-    if (isNaN(millions) || millions < 0) {
-      return null;
-    }
-
-    return millions * 1_000_000;
-  };
-
   const handleBudgetBlur = () => {
-    const num = parseBudgetInMillions(newBudget);
+    const num = parseBudgetInMillionsInput(newBudget);
     if (num === null) {
       setBudgetError("Orçamento deve ser um número válido em milhões (ex: 100 para 100M)");
     } else {
@@ -52,7 +42,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
   };
 
   const handleCreate = async () => {
-    const num = parseBudgetInMillions(newBudget);
+    const num = parseBudgetInMillionsInput(newBudget);
     if (!newName.trim()) return;
     if (!newClub) return;
     if (num === null) {

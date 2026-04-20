@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCurrency } from "@/utils/currency";
+import { formatCurrency, normalizeStoredBudget, parseBudgetInMillionsInput } from "@/utils/currency";
 
 describe("formatCurrency", () => {
   describe("zero", () => {
@@ -52,5 +52,35 @@ describe("formatCurrency", () => {
       expect(formatCurrency(-750_000)).toBe("-€750K");
       expect(formatCurrency(-500)).toBe("-€500");
     });
+  });
+});
+
+describe("parseBudgetInMillionsInput", () => {
+  it("converte valores inteiros em milhões para euros", () => {
+    expect(parseBudgetInMillionsInput("150")).toBe(150_000_000);
+    expect(parseBudgetInMillionsInput("0")).toBe(0);
+  });
+
+  it("aceita vírgula decimal", () => {
+    expect(parseBudgetInMillionsInput("2,5")).toBe(2_500_000);
+  });
+
+  it("retorna null para entradas inválidas", () => {
+    expect(parseBudgetInMillionsInput("")).toBeNull();
+    expect(parseBudgetInMillionsInput("-5")).toBeNull();
+    expect(parseBudgetInMillionsInput("abc")).toBeNull();
+  });
+});
+
+describe("normalizeStoredBudget", () => {
+  it("zera orçamentos legados corrompidos abaixo de 1M", () => {
+    expect(normalizeStoredBudget(150)).toBe(0);
+    expect(normalizeStoredBudget(999_999)).toBe(0);
+  });
+
+  it("preserva valores válidos", () => {
+    expect(normalizeStoredBudget(0)).toBe(0);
+    expect(normalizeStoredBudget(1_000_000)).toBe(1_000_000);
+    expect(normalizeStoredBudget(150_000_000)).toBe(150_000_000);
   });
 });

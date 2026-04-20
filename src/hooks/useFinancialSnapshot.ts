@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSave } from "@/hooks/useSaves";
 import { useTransfers } from "@/hooks/useTransfers";
-import { formatCurrency } from "@/utils/currency";
+import { formatCurrency, normalizeStoredBudget } from "@/utils/currency";
 import { calculateBalanceFromTransfers } from "@/utils/finance";
 
 export function useFinancialSnapshot(saveId: string | null) {
@@ -12,11 +12,14 @@ export function useFinancialSnapshot(saveId: string | null) {
     const save = saveQuery.data;
     if (!save) return save;
 
+    const normalizedBudget = normalizeStoredBudget(save.budget);
     const currentTransfers = transfersQuery.data ?? [];
-    const computedBalance = calculateBalanceFromTransfers(save.budget ?? 0, currentTransfers);
+    const computedBalance = calculateBalanceFromTransfers(normalizedBudget, currentTransfers);
 
     return {
       ...save,
+      budget: normalizedBudget,
+      budgetFormatted: formatCurrency(normalizedBudget),
       balance: computedBalance,
       balanceFormatted: formatCurrency(computedBalance),
     };

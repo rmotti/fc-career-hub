@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import HubSidebar from "@/components/hub/HubSidebar";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSave, useUpdateSave } from "@/hooks/useSaves";
 import { clearStoredActiveSaveId, getStoredActiveSaveId } from "@/lib/auth-storage";
 import { extractErrorMessage, playersApi } from "@/services/api";
+import { normalizeStoredBudget } from "@/utils/currency";
 
 export type HubOutletContext = {
   saveId: string;
@@ -25,6 +26,7 @@ const HubLayout = () => {
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
+  const normalizedBudgetPatchRef = useRef<Set<string>>(new Set());
 
   const { data: activeSave, isError } = useSave(activeSaveId);
   const updateSave = useUpdateSave();
@@ -37,6 +39,31 @@ const HubLayout = () => {
       setSelectedSeason(activeSave.currentSeason);
     }
   }, [activeSave?.currentSeason]);
+
+  useEffect(() => {
+    if (!activeSave) return;
+
+    const normalizedBudget = normalizeStoredBudget(activeSave.budget);
+    const needsLegacyBudgetFix = normalizedBudget !== activeSave.budget;
+
+    if (!needsLegacyBudgetFix || normalizedBudgetPatchRef.current.has(activeSave.id)) {
+      return;
+    }
+
+    normalizedBudgetPatchRef.current.add(activeSave.id);
+
+    updateSave.mutate(
+      {
+        saveId: activeSave.id,
+        data: { budget: String(normalizedBudget) },
+      },
+      {
+        onError: () => {
+          normalizedBudgetPatchRef.current.delete(activeSave.id);
+        },
+      }
+    );
+  }, [activeSave, updateSave]);
 
   useEffect(() => {
     if (user && isError && activeSaveId) {

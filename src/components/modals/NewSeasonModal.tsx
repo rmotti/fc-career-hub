@@ -7,7 +7,7 @@ import { useTrophies } from "@/hooks/useTrophies";
 import { useFinancialSnapshot } from "@/hooks/useFinancialSnapshot";
 import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { CUP_LABELS, formatTrophyLabel, getLeagueStats } from "@/utils/competitions";
-import { formatCurrency } from "@/utils/currency";
+import { formatCurrency, parseBudgetInMillionsInput } from "@/utils/currency";
 
 interface Props {
   open: boolean;
@@ -33,6 +33,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const [step, setStep] = useState<"confirm" | "overview" | "budget">("confirm");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
+  const [budgetError, setBudgetError] = useState("");
   const [nextEuropeanCompetitionId, setNextEuropeanCompetitionId] = useState<string>("none");
 
   const { data: save } = useFinancialSnapshot(saveId);
@@ -52,6 +53,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const seasonTrophies = trophies.filter((t) => `${t.year}/${String(t.year + 1).slice(-2)}` === currentSeason);
   const displayBudget = save && typeof save.budget === "number" ? formatCurrency(save.budget) : save?.budgetFormatted ?? "—";
   const displayBalance = save && typeof save.balance === "number" ? formatCurrency(save.balance) : save?.balanceFormatted ?? "—";
+  const parsedBudget = parseBudgetInMillionsInput(budgetInput);
 
   useEffect(() => {
     if (open) {
@@ -63,6 +65,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
     if (!isOpen) {
       setStep("confirm");
       setBudgetInput("");
+      setBudgetError("");
       setNextEuropeanCompetitionId("none");
     }
     onOpenChange(isOpen);
@@ -73,17 +76,22 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   };
 
   const handleFinish = async () => {
-    const budget = parseFloat(budgetInput);
+    if (parsedBudget === null) {
+      setBudgetError("Digite um valor válido em milhões. Ex.: 150 = 150M.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const success = await onConfirm(
-        budget,
+        parsedBudget,
         nextEuropeanCompetitionId === "none" ? null : nextEuropeanCompetitionId
       );
 
       if (success) {
         setStep("confirm");
         setBudgetInput("");
+        setBudgetError("");
         setNextEuropeanCompetitionId("none");
         onOpenChange(false);
       }
@@ -176,17 +184,26 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <label className={labelClass}>Orçamento da temporada</label>
                 <div className="relative">
                   <input
-                    type="number"
-                    step="1"
-                    min={0}
+                    type="text"
                     autoFocus
                     className={inputClass}
                     value={budgetInput}
-                    onChange={(e) => setBudgetInput(e.target.value)}
+                    onChange={(e) => {
+                      setBudgetInput(e.target.value);
+                      if (budgetError) setBudgetError("");
+                    }}
+                    onBlur={() => {
+                      if (!budgetInput.trim()) return;
+                      if (parsedBudget === null) {
+                        setBudgetError("Digite um valor válido em milhões. Ex.: 150 = 150M.");
+                      }
+                    }}
                     placeholder="85"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1.5">Digite o valor em milhões. Ex.: `150` = `150M`.</p>
+                {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
               </div>
               <div>
                 <label className={labelClass}>Competição europeia</label>
@@ -206,7 +223,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
             <div className="flex gap-3 pt-2">
               <button
                 onClick={handleFinish}
-                disabled={!budgetInput || !nextSeason || isSubmitting}
+                disabled={!budgetInput.trim() || parsedBudget === null || !nextSeason || isSubmitting}
                 className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <><span>Confirmar</span><ChevronRight size={16} /></>}
