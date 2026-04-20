@@ -2,6 +2,9 @@
  * Currency formatting utilities for €XK / €XM format.
  */
 
+import { formatRoundedSingleDecimal } from "@/utils/rounding";
+
+const ONE_THOUSAND = 1_000;
 const ONE_MILLION = 1_000_000;
 
 /**
@@ -35,20 +38,33 @@ export function normalizeStoredBudget(value: number | null | undefined): number 
 
 /**
  * Converts a number to a formatted currency string.
- * Examples: 750000 → "€750K", 1500000 → "€1.5M", 35000000 → "€35M", 500 → "€500"
+ * Examples: 750000 → "€750.0K", 1500000 → "€1.5M", 35000000 → "€35.0M", 500 → "€500.0"
  */
 export function formatCurrency(value: number): string {
   if (value < 0) return `-${formatCurrency(-value)}`;
-  if (value >= 1_000_000) {
-    const millions = value / 1_000_000;
-    const formatted = millions % 1 === 0 ? millions.toString() : millions.toFixed(1).replace(/\.0$/, "");
-    return `€${formatted}M`;
+  if (value >= ONE_MILLION) {
+    return formatCurrencyInMillions(value / ONE_MILLION);
   }
-  if (value >= 1_000) {
-    const thousands = value / 1_000;
-    const formatted = thousands % 1 === 0 ? thousands.toString() : thousands.toFixed(1).replace(/\.0$/, "");
-    return `€${formatted}K`;
+  if (value >= ONE_THOUSAND) {
+    return formatCurrencyInThousands(value / ONE_THOUSAND);
   }
-  if (value === 0) return "€0";
-  return `€${value}`;
+  return `€${formatRoundedSingleDecimal(value)}`;
+}
+
+export function formatCurrencyInMillions(value: number): string {
+  return `€${formatRoundedSingleDecimal(value)}M`;
+}
+
+export function formatCurrencyInThousands(value: number): string {
+  return `€${formatRoundedSingleDecimal(value)}K`;
+}
+
+export function formatSignedCurrencyInMillions(value: number): string {
+  if (value === 0) return formatCurrencyInMillions(0);
+  return `${value > 0 ? "+" : "-"}${formatCurrencyInMillions(Math.abs(value))}`;
+}
+
+export function formatSignedCurrencyInThousands(value: number): string {
+  if (value === 0) return formatCurrencyInThousands(0);
+  return `${value > 0 ? "+" : "-"}${formatCurrencyInThousands(Math.abs(value))}`;
 }

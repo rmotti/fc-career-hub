@@ -5,7 +5,7 @@ import { useTeamStats } from "@/hooks/useTeamStats";
 import { useTrophies } from "@/hooks/useTrophies";
 import { useFinancialSnapshot } from "@/hooks/useFinancialSnapshot";
 import { getLeagueStats } from "@/utils/competitions";
-import { formatCurrency } from "@/utils/currency";
+import { formatCurrency, formatCurrencyInMillions } from "@/utils/currency";
 
 interface Props {
   saveId: string;
@@ -177,7 +177,7 @@ const DashboardScreen = ({ saveId }: Props) => {
                       <span className="text-sm font-medium">{p.name}</span>
                       <span className="text-xs text-muted-foreground">{p.position}</span>
                     </div>
-                    <span className="font-display font-bold text-green-500">▲€{p.marketValueDelta}M</span>
+                    <span className="font-display font-bold text-green-500">▲{formatCurrencyInMillions(p.marketValueDelta ?? 0)}</span>
                   </div>
                 ))}
               </div>

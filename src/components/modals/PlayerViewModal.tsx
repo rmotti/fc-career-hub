@@ -3,6 +3,12 @@ import { type ApiPlayer } from "@/services/api";
 import { getBadge } from "@/lib/playerBadge";
 import Flag from "react-world-flags";
 import { Pencil, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  formatCurrencyInMillions,
+  formatCurrencyInThousands,
+  formatSignedCurrencyInMillions,
+} from "@/utils/currency";
+import { roundToSingleDecimal } from "@/utils/rounding";
 
 interface Props {
   open: boolean;
@@ -45,11 +51,19 @@ const POSITION_COLORS: Record<string, string> = {
 
 const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
-const Delta = ({ value, suffix = "" }: { value: number | null | undefined; suffix?: string }) => {
+const Delta = ({ value, suffix = "", moneyUnit }: { value: number | null | undefined; suffix?: string; moneyUnit?: "M" }) => {
   if (value == null) return <span className="text-muted-foreground">—</span>;
-  if (value === 0) return <span className="text-muted-foreground flex items-center gap-0.5"><Minus size={12} />0{suffix}</span>;
-  if (value > 0) return <span className="text-green-500 flex items-center gap-0.5"><TrendingUp size={12} />+{value}{suffix}</span>;
-  return <span className="text-destructive flex items-center gap-0.5"><TrendingDown size={12} />{value}{suffix}</span>;
+  const label = moneyUnit === "M" ? formatSignedCurrencyInMillions(value) : `${value > 0 ? "+" : ""}${value}${suffix}`;
+  if (value === 0) {
+    return (
+      <span className="text-muted-foreground flex items-center gap-0.5">
+        <Minus size={12} />
+        {moneyUnit === "M" ? formatCurrencyInMillions(0) : `0${suffix}`}
+      </span>
+    );
+  }
+  if (value > 0) return <span className="text-green-500 flex items-center gap-0.5"><TrendingUp size={12} />{label}</span>;
+  return <span className="text-destructive flex items-center gap-0.5"><TrendingDown size={12} />{label}</span>;
 };
 
 const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
@@ -155,16 +169,16 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-1">Salário</p>
             <p className="text-sm font-medium text-foreground">
-              {player.salaryFormatted ?? (player.salary != null ? `${player.salary}K€` : "—")}
+              {player.salary != null ? formatCurrencyInThousands(player.salary) : "—"}
             </p>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-1">Valor de Mercado</p>
             <div className="flex items-center gap-1.5">
               <p className="text-sm font-medium text-foreground">
-                {player.marketValueFormatted ?? (player.marketValue != null ? `€${player.marketValue}M` : "—")}
+                {player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—"}
               </p>
-              <Delta value={player.marketValueDelta} suffix="M" />
+              <Delta value={player.marketValueDelta} moneyUnit="M" />
             </div>
           </div>
           <div>
@@ -198,7 +212,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
                     const prevEntry = history[idx + 1];
                     const ovrDelta = prevEntry != null ? entry.ovr - prevEntry.ovr : null;
                     const mvDelta = prevEntry?.marketValue != null && entry.marketValue != null
-                      ? parseFloat((entry.marketValue - prevEntry.marketValue).toFixed(1))
+                      ? roundToSingleDecimal(entry.marketValue - prevEntry.marketValue)
                       : null;
                     const isLatest = idx === 0;
                     return (
@@ -218,8 +232,8 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
                         <td className="px-4 py-2.5 text-right text-muted-foreground">
                           {entry.marketValue != null ? (
                             <span className="flex items-center justify-end gap-1.5">
-                              <span>€{entry.marketValue}M</span>
-                              {mvDelta != null && <Delta value={mvDelta} suffix="M" />}
+                              <span>{formatCurrencyInMillions(entry.marketValue)}</span>
+                              {mvDelta != null && <Delta value={mvDelta} moneyUnit="M" />}
                             </span>
                           ) : "—"}
                         </td>

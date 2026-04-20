@@ -7,6 +7,7 @@ import { useTransfers } from "@/hooks/useTransfers";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats } from "@/hooks/useTeamStats";
 import { formatTrophyLabel, getCompetitionAccent } from "@/utils/competitions";
+import { formatCurrencyInMillions } from "@/utils/currency";
 import {
   Dialog,
   DialogContent,
@@ -322,7 +323,7 @@ const HistoryScreen = ({ saveId }: Props) => {
                       <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
                     </div>
                   </div>
-                  <span className="text-sm font-bold text-primary">{t.fee ? `€${t.fee}M` : "Livre"}</span>
+                  <span className="text-sm font-bold text-primary">{t.fee ? formatCurrencyInMillions(t.fee) : "Livre"}</span>
                 </div>
               ))}
             </div>
@@ -351,7 +352,7 @@ const HistoryScreen = ({ saveId }: Props) => {
                       <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
                     </div>
                   </div>
-                  <span className="text-sm font-bold text-accent">{t.fee ? `€${t.fee}M` : "Livre"}</span>
+                  <span className="text-sm font-bold text-accent">{t.fee ? formatCurrencyInMillions(t.fee) : "Livre"}</span>
                 </div>
               ))}
             </div>
@@ -448,7 +449,7 @@ const HistoryScreen = ({ saveId }: Props) => {
                     <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
                   </div>
                 </div>
-                <span className="text-sm font-bold text-primary shrink-0">{t.fee ? `€${t.fee}M` : "Livre"}</span>
+                <span className="text-sm font-bold text-primary shrink-0">{t.fee ? formatCurrencyInMillions(t.fee) : "Livre"}</span>
               </div>
             ))}
 
@@ -461,7 +462,7 @@ const HistoryScreen = ({ saveId }: Props) => {
                     <p className="text-[10px] text-muted-foreground">{t.from} → {t.to} · {t.season}</p>
                   </div>
                 </div>
-                <span className="text-sm font-bold text-accent shrink-0">{t.fee ? `€${t.fee}M` : "Livre"}</span>
+                <span className="text-sm font-bold text-accent shrink-0">{t.fee ? formatCurrencyInMillions(t.fee) : "Livre"}</span>
               </div>
             ))}
           </div>

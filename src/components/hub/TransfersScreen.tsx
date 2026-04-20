@@ -7,7 +7,8 @@ import { useFinancialSnapshot } from "@/hooks/useFinancialSnapshot";
 import { usePlayer, useUpdatePlayer, useUpdatePlayerStats } from "@/hooks/usePlayers";
 import TransferModal from "@/components/modals/TransferModal";
 import PlayerModal from "@/components/modals/PlayerModal";
-import { formatCurrency } from "@/utils/currency";
+import { formatCurrency, formatCurrencyInMillions, formatSignedCurrencyInMillions } from "@/utils/currency";
+import { shouldRemovePlayerFromSquad } from "@/utils/playerTransferStatus";
 
 interface Props {
   saveId: string;
@@ -31,7 +32,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
-  const [variation, setVariation] = useState<{ amount: string; type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida" } | null>(null);
+  const [variation, setVariation] = useState<{ amount: number; type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida" } | null>(null);
   const [purchasePlayerId, setPurchasePlayerId] = useState<string | null>(null);
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
   const [historyTypeFilter, setHistoryTypeFilter] = useState<TransferTypeFilter>("all");
@@ -81,20 +82,28 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
 
   const handleSaveTransfer = async (data: any, transferId?: string) => {
     if (transferId) {
-      await updateTransfer.mutateAsync({ saveId, transferId, data });
+      const updatedTransfer = await updateTransfer.mutateAsync({ saveId, transferId, data });
+      if (updatedTransfer.playerId && shouldRemovePlayerFromSquad(updatedTransfer.type)) {
+        await updatePlayer.mutateAsync({ saveId, playerId: updatedTransfer.playerId, data: { isActive: false } });
+      }
       toast.success("Transferência atualizada com sucesso!", { duration: 3000 });
     } else {
       const response = await createTransfer.mutateAsync({ saveId, data });
-      setVariation({ amount: data.fee || "0", type: data.type });
+      setVariation({ amount: data.fee || 0, type: data.type });
       setTimeout(() => setVariation(null), 5000);
 
       if ((data.type === "compra" || data.type === "emprestimo_entrada") && response.transfer?.playerId) {
         setPurchasePlayerId(response.transfer.playerId);
         setPlayerModalOpen(true);
         toast.success("Jogador adicionado! Complete as informações abaixo.", { duration: 4000 });
-      } else if (data.type === "emprestimo_saida" && response.transfer?.playerId) {
+      } else if (response.transfer?.playerId && shouldRemovePlayerFromSquad(data.type)) {
         await updatePlayer.mutateAsync({ saveId, playerId: response.transfer.playerId, data: { isActive: false } });
-        toast.success("Jogador enviado por empréstimo e removido do elenco.", { duration: 3000 });
+        toast.success(
+          data.type === "venda"
+            ? "Jogador vendido e removido do elenco."
+            : "Jogador enviado por empréstimo e removido do elenco.",
+          { duration: 3000 }
+        );
       } else {
         toast.success("Transferência registrada com sucesso!", { duration: 3000 });
       }
@@ -135,7 +144,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
       <div className="flex items-center gap-2">
         <span className={`font-display font-bold text-sm ${(t.type === "compra" || t.type === "emprestimo_entrada") ? "text-primary" : "text-accent"}`}>
           {t.fee
-            ? (t.feeFormatted ?? `€${t.fee}M`)
+            ? formatCurrencyInMillions(t.fee)
             : (t.type === "emprestimo_entrada" || t.type === "emprestimo_saida")
               ? "Empréstimo"
               : "Livre"}
@@ -215,7 +224,9 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 <p className="text-xl font-display font-bold text-primary">{displayBalance}</p>
                 {variation && (
                   <span className={`text-sm font-bold ${(variation.type === "venda" || variation.type === "emprestimo_saida") ? "text-green-500" : "text-destructive"} animate-in fade-in slide-in-from-left-2`}>
-                    {(variation.type === "venda" || variation.type === "emprestimo_saida") ? "+" : "-"}€{variation.amount}M
+                    {(variation.type === "venda" || variation.type === "emprestimo_saida")
+                      ? formatSignedCurrencyInMillions(variation.amount)
+                      : formatSignedCurrencyInMillions(-variation.amount)}
                   </span>
                 )}
               </div>

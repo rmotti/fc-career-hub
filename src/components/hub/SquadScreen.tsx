@@ -8,6 +8,7 @@ import PlayerModal from "@/components/modals/PlayerModal";
 import PlayerViewModal from "@/components/modals/PlayerViewModal";
 import { getBadge, type SquadRole } from "@/lib/playerBadge";
 import Flag from "react-world-flags";
+import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/utils/currency";
 
 interface Props {
   saveId: string;
@@ -263,13 +264,13 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                   <td className="px-4 py-3 font-display text-accent">
                     {CLEAN_SHEETS_POSITIONS.has(p.position) ? (stats?.cleanSheets ?? 0) : "—"}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.salaryFormatted ?? p.salary ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.salary != null ? formatCurrencyInThousands(p.salary) : "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     <div className="flex items-center gap-1.5">
-                      <span>{p.marketValueFormatted ?? (p.marketValue != null ? `€${p.marketValue}M` : "—")}</span>
+                      <span>{p.marketValue != null ? formatCurrencyInMillions(p.marketValue) : "—"}</span>
                       {p.marketValueDelta != null && (
                         <span className={`text-xs font-bold ${p.marketValueDelta > 0 ? "text-green-500" : p.marketValueDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                          {p.marketValueDelta > 0 ? `▲${p.marketValueDelta}M` : p.marketValueDelta < 0 ? `▼${Math.abs(p.marketValueDelta)}M` : "—"}
+                          {p.marketValueDelta > 0 ? `▲${formatCurrencyInMillions(p.marketValueDelta)}` : p.marketValueDelta < 0 ? `▼${formatCurrencyInMillions(Math.abs(p.marketValueDelta))}` : "—"}
                         </span>
                       )}
                     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
@@ -31,6 +31,22 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
   const isEntry = form.type === "compra" || form.type === "emprestimo_entrada";
   const isExit  = form.type === "venda"  || form.type === "emprestimo_saida";
+
+  const exitPlayerOptions = useMemo(() => {
+    const options = activePlayers.map((player) => ({
+      id: player.id,
+      label: `${player.name} (${player.position})`,
+    }));
+
+    if (transfer?.playerId && !options.some((player) => player.id === transfer.playerId)) {
+      options.unshift({
+        id: transfer.playerId,
+        label: `${transfer.playerName} (fora do elenco)`,
+      });
+    }
+
+    return options;
+  }, [activePlayers, transfer]);
 
   useEffect(() => {
     if (transfer) {
@@ -65,6 +81,17 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
   const handlePlayerSelect = (pId: string) => {
     const player = activePlayers.find(p => p.id === pId);
+    if (!player && transfer?.playerId === pId) {
+      setForm((prev) => ({
+        ...prev,
+        playerId: transfer.playerId || "",
+        playerName: transfer.playerName,
+        from: isExit ? currentClub : prev.from,
+        to: isEntry ? currentClub : prev.to,
+      }));
+      return;
+    }
+
     if (!player) {
       setForm(prev => ({ ...prev, playerId: "", playerName: "" }));
       return;
@@ -117,9 +144,9 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
             {isExit ? (
               <select className={inputClass} value={form.playerId || ""} onChange={(e) => handlePlayerSelect(e.target.value)} required>
                 <option value="">Selecionar jogador do elenco...</option>
-                {activePlayers.map((p: any) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.position})
+                {exitPlayerOptions.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.label}
                   </option>
                 ))}
               </select>

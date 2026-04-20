@@ -8,8 +8,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSave, useUpdateSave } from "@/hooks/useSaves";
 import { clearStoredActiveSaveId, getStoredActiveSaveId } from "@/lib/auth-storage";
-import { extractErrorMessage, playersApi } from "@/services/api";
+import { extractErrorMessage, playersApi, transfersApi } from "@/services/api";
 import { normalizeStoredBudget } from "@/utils/currency";
+import { getActiveSoldPlayers, getInactivePlayersToReactivate } from "@/utils/playerTransferStatus";
 
 export type HubOutletContext = {
   saveId: string;
@@ -27,6 +28,7 @@ const HubLayout = () => {
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
   const normalizedBudgetPatchRef = useRef<Set<string>>(new Set());
+  const transferredPlayersSyncRef = useRef<Set<string>>(new Set());
 
   const { data: activeSave, isError } = useSave(activeSaveId);
   const updateSave = useUpdateSave();
@@ -73,6 +75,38 @@ const HubLayout = () => {
     }
   }, [activeSaveId, isError, navigate, user]);
 
+  useEffect(() => {
+    if (!activeSave || transferredPlayersSyncRef.current.has(activeSave.id)) {
+      return;
+    }
+
+    transferredPlayersSyncRef.current.add(activeSave.id);
+
+    void (async () => {
+      try {
+        const [allPlayers, allTransfers] = await Promise.all([
+          playersApi.list(activeSave.id),
+          transfersApi.list(activeSave.id),
+        ]);
+
+        const playersToDeactivate = getActiveSoldPlayers(allPlayers, allTransfers);
+        if (playersToDeactivate.length === 0) {
+          return;
+        }
+
+        await Promise.all(
+          playersToDeactivate.map((player) =>
+            playersApi.update(activeSave.id, player.id, { isActive: false })
+          )
+        );
+
+        await queryClient.invalidateQueries({ queryKey: ["players", activeSave.id] });
+      } catch {
+        transferredPlayersSyncRef.current.delete(activeSave.id);
+      }
+    })();
+  }, [activeSave, queryClient]);
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -105,10 +139,13 @@ const HubLayout = () => {
     const newSeason = `${newYear}/${(newYear + 1).toString().slice(-2)}`;
 
     try {
-      const allPlayers = await playersApi.list(activeSave.id);
-      const loanedOut = allPlayers.filter(p => !p.isActive);
-      if (loanedOut.length > 0) {
-        await Promise.all(loanedOut.map(p => playersApi.update(activeSave.id, p.id, { isActive: true })));
+      const [allPlayers, allTransfers] = await Promise.all([
+        playersApi.list(activeSave.id),
+        transfersApi.list(activeSave.id),
+      ]);
+      const playersToReactivate = getInactivePlayersToReactivate(allPlayers, allTransfers);
+      if (playersToReactivate.length > 0) {
+        await Promise.all(playersToReactivate.map((player) => playersApi.update(activeSave.id, player.id, { isActive: true })));
         await queryClient.invalidateQueries({ queryKey: ["players", activeSave.id] });
       }
 
