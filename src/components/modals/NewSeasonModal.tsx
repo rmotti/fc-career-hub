@@ -133,7 +133,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                         <span className="font-display font-semibold">{CUP_LABELS[item.cupResult!] ?? item.cupResult}</span>
                       </div>
                     ))}
-                  {save?.balance && (
+                  {!!save?.balance && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Saldo final</span>
                       <span className="font-display font-bold">{displayBalance}</span>
@@ -307,7 +307,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
 
               {/* Balance */}
-              {save?.balance && (
+              {!!save?.balance && (
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign size={16} className="text-primary" />
