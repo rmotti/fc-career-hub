@@ -4,7 +4,10 @@ import { playersApi, type ApiPlayer } from "@/services/api";
 export const usePlayers = (saveId: string, active?: boolean, season?: string) => {
   return useQuery({
     queryKey: ["players", saveId, active, season],
-    queryFn: () => playersApi.list(saveId, active, season),
+    queryFn: async () => {
+      const players = await playersApi.list(saveId, active, season);
+      return Array.isArray(players) ? players : [];
+    },
     enabled: !!saveId,
   });
 };

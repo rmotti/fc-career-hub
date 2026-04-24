@@ -171,7 +171,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     await updateTeamStats.mutateAsync({
       saveId,
       statsId: selectedStat.id,
-      data: selectedStat.competition.type === "League"
+      data: selectedStat.competition?.type === "League"
         ? {
             goalsPro: stats.goalsPro,
             goalsAgainst: stats.goalsAgainst,
@@ -254,7 +254,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
             <div className="space-y-3">
               {group.stats.map((stat) => {
-                const isLeague = stat.competition.type === "League";
+                const isLeague = stat.competition?.type === "League";
                 const matches = stat.wins + stat.draws + stat.losses;
 
                 return (
@@ -262,9 +262,9 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-display text-base font-bold">{stat.competition.name}</p>
+                          <p className="font-display text-base font-bold">{stat.competition?.name ?? "Competição"}</p>
                           <span className="rounded-full border border-border px-2 py-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
-                            {stat.competition.type}
+                            {stat.competition?.type ?? "Indefinida"}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">

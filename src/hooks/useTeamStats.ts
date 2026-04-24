@@ -4,7 +4,10 @@ import { teamStatsApi } from "@/services/api";
 export function useTeamStats(saveId: string | null, season?: string) {
   return useQuery({
     queryKey: ["teamStats", saveId, { season }],
-    queryFn: () => teamStatsApi.list(saveId!, season),
+    queryFn: async () => {
+      const teamStats = await teamStatsApi.list(saveId!, season);
+      return Array.isArray(teamStats) ? teamStats : [];
+    },
     enabled: !!saveId,
   });
 }

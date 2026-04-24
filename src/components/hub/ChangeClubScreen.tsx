@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Check, Shield, Loader2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useClubs } from "@/hooks/useClubs";
+import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { useChangeClub } from "@/hooks/useClubStints";
+import { useUpdateSave } from "@/hooks/useSaves";
 import { extractErrorMessage } from "@/services/api";
+import { parseBudgetInMillionsInput } from "@/utils/currency";
 import { CLUBS_BY_LEAGUE } from "@/utils/leagues";
 
 interface Props {
@@ -13,19 +17,51 @@ interface Props {
 
 const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   const [selected, setSelected] = useState<string | null>(null);
+  const [budgetInput, setBudgetInput] = useState("");
+  const [budgetError, setBudgetError] = useState("");
+  const [europeanCompetitionId, setEuropeanCompetitionId] = useState("none");
   const { data: allClubs = [], isLoading } = useClubs();
+  const { data: europeanCompetitions = [] } = useEuropeanCompetitions();
   const changeClub = useChangeClub();
+  const updateSave = useUpdateSave();
+  const navigate = useNavigate();
 
-  const handleConfirm = () => {
-    if (!selected) return;
-    changeClub.mutate({ saveId, club: selected }, {
-      onSuccess: () => {
-        toast.success(`Agora você gerencia o ${selected}!`, { duration: 3000 });
-        setSelected(null);
-      },
-      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
-    });
+  const handleBudgetBlur = () => {
+    const budget = parseBudgetInMillionsInput(budgetInput);
+    if (budget === null) {
+      setBudgetError("Orçamento deve ser um número válido em milhões (ex: 100 para 100M)");
+      return;
+    }
+    setBudgetError("");
   };
+
+  const handleConfirm = async () => {
+    if (!selected) return;
+
+    const budget = parseBudgetInMillionsInput(budgetInput);
+    if (budget === null) {
+      setBudgetError("Orçamento obrigatório e deve ser um número válido em milhões");
+      return;
+    }
+
+    try {
+      await changeClub.mutateAsync({ saveId, club: selected });
+      await updateSave.mutateAsync({
+        saveId,
+        data: {
+          budget: String(budget),
+          europeanCompetitionId: europeanCompetitionId === "none" ? null : europeanCompetitionId,
+        },
+      });
+
+      toast.success(`Agora você gerencia o ${selected}!`, { duration: 3000 });
+      navigate("/dashboard");
+    } catch (err) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+    }
+  };
+
+  const isSubmitting = changeClub.isPending || updateSave.isPending;
 
   if (isLoading) {
     return (
@@ -86,14 +122,58 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
       </div>
 
       {selected && (
-        <button
-          onClick={handleConfirm}
-          disabled={changeClub.isPending}
-          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity animate-pulse-glow disabled:opacity-50 flex items-center gap-2"
-        >
-          {changeClub.isPending && <Loader2 size={16} className="animate-spin" />}
-          {changeClub.isPending ? "Transferindo..." : `Assinar com ${selected}`}
-        </button>
+        <div className="card-gamer p-5 space-y-4">
+          <div>
+            <p className="text-xs uppercase text-muted-foreground">Novo clube</p>
+            <p className="font-display text-lg font-bold">{selected}</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">
+                Competição Europeia
+              </label>
+              <select
+                value={europeanCompetitionId}
+                onChange={(e) => setEuropeanCompetitionId(e.target.value)}
+                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none"
+              >
+                <option value="none">Nenhuma</option>
+                {europeanCompetitions.map((competition) => (
+                  <option key={competition.id} value={competition.id}>{competition.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">
+                Orçamento
+              </label>
+              <input
+                type="text"
+                value={budgetInput}
+                onChange={(e) => {
+                  setBudgetInput(e.target.value);
+                  if (budgetError) setBudgetError("");
+                }}
+                onBlur={handleBudgetBlur}
+                placeholder="Ex: 100"
+                className={`w-full bg-background border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-shadow ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"}`}
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">Digite o valor em milhões. Ex.: 100 = 100M.</p>
+              {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
+            </div>
+          </div>
+
+          <button
+            onClick={handleConfirm}
+            disabled={isSubmitting}
+            className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity animate-pulse-glow disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+            {isSubmitting ? "Transferindo..." : `Assinar com ${selected}`}
+          </button>
+        </div>
       )}
     </div>
   );

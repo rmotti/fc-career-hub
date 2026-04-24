@@ -69,9 +69,9 @@ export function groupTeamStatsBySeason(stats: ApiTeamStats[]) {
     .map(([season, seasonStats]) => ({
       season,
       stats: [...seasonStats].sort((a, b) => {
-        if (a.competition.type === "League" && b.competition.type !== "League") return -1;
-        if (a.competition.type !== "League" && b.competition.type === "League") return 1;
-        return a.competition.name.localeCompare(b.competition.name);
+        if (a.competition?.type === "League" && b.competition?.type !== "League") return -1;
+        if (a.competition?.type !== "League" && b.competition?.type === "League") return 1;
+        return (a.competition?.name ?? "Competição").localeCompare(b.competition?.name ?? "Competição");
       }),
     }));
 }

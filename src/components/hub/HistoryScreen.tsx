@@ -30,11 +30,10 @@ const HistoryScreen = ({ saveId }: Props) => {
 
   const [openModal, setOpenModal] = useState<ModalType>(null);
 
-  // Aggregate team stats across all seasons
-  const allLeagueStats = allTeamStats.filter((ts) => ts.competition?.type === "League");
-  const totalWins = allLeagueStats.reduce((s, ts) => s + ts.wins, 0);
-  const totalDraws = allLeagueStats.reduce((s, ts) => s + ts.draws, 0);
-  const totalLosses = allLeagueStats.reduce((s, ts) => s + ts.losses, 0);
+  // Aggregate every registered competition across the save history.
+  const totalWins = allTeamStats.reduce((s, ts) => s + ts.wins, 0);
+  const totalDraws = allTeamStats.reduce((s, ts) => s + ts.draws, 0);
+  const totalLosses = allTeamStats.reduce((s, ts) => s + ts.losses, 0);
   const totalMatches = totalWins + totalDraws + totalLosses;
 
   // Top all-time scorers from totalStats

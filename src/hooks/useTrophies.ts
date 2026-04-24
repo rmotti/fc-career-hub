@@ -4,7 +4,10 @@ import { trophiesApi } from "@/services/api";
 export function useTrophies(saveId: string | null) {
   return useQuery({
     queryKey: ["trophies", saveId],
-    queryFn: () => trophiesApi.list(saveId!),
+    queryFn: async () => {
+      const trophies = await trophiesApi.list(saveId!);
+      return Array.isArray(trophies) ? trophies : [];
+    },
     enabled: !!saveId,
   });
 }

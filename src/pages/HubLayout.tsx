@@ -10,7 +10,7 @@ import { useSave, useUpdateSave } from "@/hooks/useSaves";
 import { clearStoredActiveSaveId, getStoredActiveSaveId } from "@/lib/auth-storage";
 import { extractErrorMessage, playersApi, transfersApi } from "@/services/api";
 import { normalizeStoredBudget } from "@/utils/currency";
-import { getActiveSoldPlayers, getInactivePlayersToReactivate } from "@/utils/playerTransferStatus";
+import { getInactivePlayersToReactivate } from "@/utils/playerTransferStatus";
 
 export type HubOutletContext = {
   saveId: string;
@@ -28,9 +28,8 @@ const HubLayout = () => {
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
   const normalizedBudgetPatchRef = useRef<Set<string>>(new Set());
-  const transferredPlayersSyncRef = useRef<Set<string>>(new Set());
 
-  const { data: activeSave, isError } = useSave(activeSaveId);
+  const { data: activeSave, isError, error, refetch: refetchActiveSave } = useSave(activeSaveId);
   const updateSave = useUpdateSave();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -40,7 +39,7 @@ const HubLayout = () => {
     if (activeSave?.currentSeason) {
       setSelectedSeason(activeSave.currentSeason);
     }
-  }, [activeSave?.currentSeason]);
+  }, [activeSave?.currentSeason, activeSave?.currentClubStint?.id]);
 
   useEffect(() => {
     if (!activeSave) return;
@@ -68,44 +67,14 @@ const HubLayout = () => {
   }, [activeSave, updateSave]);
 
   useEffect(() => {
-    if (user && isError && activeSaveId) {
+    const status = (error as { status?: number } | null)?.status;
+
+    if (user && isError && activeSaveId && status === 404) {
       clearStoredActiveSaveId(user.id);
       navigate("/app", { replace: true });
       toast.error("Não foi possível abrir esse save. Escolha outro para continuar.", { duration: 5000 });
     }
-  }, [activeSaveId, isError, navigate, user]);
-
-  useEffect(() => {
-    if (!activeSave || transferredPlayersSyncRef.current.has(activeSave.id)) {
-      return;
-    }
-
-    transferredPlayersSyncRef.current.add(activeSave.id);
-
-    void (async () => {
-      try {
-        const [allPlayers, allTransfers] = await Promise.all([
-          playersApi.list(activeSave.id),
-          transfersApi.list(activeSave.id),
-        ]);
-
-        const playersToDeactivate = getActiveSoldPlayers(allPlayers, allTransfers);
-        if (playersToDeactivate.length === 0) {
-          return;
-        }
-
-        await Promise.all(
-          playersToDeactivate.map((player) =>
-            playersApi.update(activeSave.id, player.id, { isActive: false })
-          )
-        );
-
-        await queryClient.invalidateQueries({ queryKey: ["players", activeSave.id] });
-      } catch {
-        transferredPlayersSyncRef.current.delete(activeSave.id);
-      }
-    })();
-  }, [activeSave, queryClient]);
+  }, [activeSaveId, error, isError, navigate, user]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -116,8 +85,27 @@ const HubLayout = () => {
   }
 
   if (!activeSave) {
+    if (isError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground">
+          <div className="card-gamer max-w-md p-6 text-center">
+            <h1 className="font-display text-xl font-bold">Não foi possível carregar o save</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              A sessão continua aberta, mas a última atualização do save falhou.
+            </p>
+            <button
+              onClick={() => void refetchActiveSave()}
+              className="mt-5 rounded-md bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground">
         <div className="text-muted-foreground animate-pulse font-display text-lg">Carregando save...</div>
       </div>
     );

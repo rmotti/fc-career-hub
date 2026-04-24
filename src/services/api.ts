@@ -225,7 +225,7 @@ export interface ApiTeamStats {
   saveId: string;
   clubStintId: string;
   competitionId: string;
-  competition: ApiCompetition;
+  competition: ApiCompetition | null;
   season: string;
   goalsPro: number;
   goalsAgainst: number;
@@ -243,6 +243,7 @@ export interface ApiTeamStats {
 export interface ApiTransfer {
   id: string;
   saveId: string;
+  clubStintId?: string | null;
   playerName: string;
   type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida";
   from: string;
@@ -251,6 +252,7 @@ export interface ApiTransfer {
   feeFormatted?: string;
   season: string;
   playerId?: string;
+  createdAt?: string;
 }
 
 export interface ApiTrophy {

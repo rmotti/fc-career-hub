@@ -43,7 +43,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
   const { data: europeanCompetitions = [] } = useEuropeanCompetitions();
 
   const teamStats = getLeagueStats(teamStatsArr);
-  const cupStats = teamStatsArr.filter((item) => item.competition.type !== "League");
+  const cupStats = teamStatsArr.filter((item) => item.competition?.type !== "League");
 
   const topScorers = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 3);
   const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
@@ -129,7 +129,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                     .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
                     .map((item) => (
                       <div key={item.id} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{item.competition.name}</span>
+                        <span className="text-muted-foreground">{item.competition?.name ?? "Competição"}</span>
                         <span className="font-display font-semibold">{CUP_LABELS[item.cupResult!] ?? item.cupResult}</span>
                       </div>
                     ))}
@@ -296,7 +296,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                       .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
                       .map((item) => (
                         <div key={item.id} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{item.competition.name}</span>
+                          <span className="text-muted-foreground">{item.competition?.name ?? "Competição"}</span>
                           <span className={`font-display font-semibold ${item.cupResult === "Campeao" ? "text-yellow-500" : ""}`}>
                             {CUP_LABELS[item.cupResult!] ?? item.cupResult}
                           </span>

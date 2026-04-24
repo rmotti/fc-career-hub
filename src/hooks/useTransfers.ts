@@ -11,7 +11,10 @@ function refreshSaveQueries(qc: ReturnType<typeof useQueryClient>, saveId: strin
 export function useTransfers(saveId: string | null, season?: "current") {
   return useQuery({
     queryKey: ["transfers", saveId, { season }],
-    queryFn: () => transfersApi.list(saveId!, season),
+    queryFn: async () => {
+      const transfers = await transfersApi.list(saveId!, season);
+      return Array.isArray(transfers) ? transfers : [];
+    },
     enabled: !!saveId,
   });
 }

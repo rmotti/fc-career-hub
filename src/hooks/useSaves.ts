@@ -14,7 +14,6 @@ export function useSave(saveId: string | null) {
     queryFn: () => savesApi.get(saveId!),
     enabled: !!saveId,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
   });
 }
 

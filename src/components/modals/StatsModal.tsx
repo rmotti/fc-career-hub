@@ -72,7 +72,8 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
 
   if (!stat) return null;
 
-  const isLeague = stat.competition.type === "League";
+  const isLeague = stat.competition?.type === "League";
+  const competitionName = stat.competition?.name ?? "Competição";
   const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
   const labelClass = "text-xs text-muted-foreground uppercase mb-1 block";
 
@@ -80,7 +81,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-lg">Editar {stat.competition.name}</DialogTitle>
+          <DialogTitle className="font-display text-lg">Editar {competitionName}</DialogTitle>
           <DialogDescription>Atualize os números da competição na temporada.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
