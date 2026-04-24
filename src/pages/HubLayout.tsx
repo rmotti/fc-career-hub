@@ -17,6 +17,7 @@ export type HubOutletContext = {
   currentClub: string;
   selectedSeason: string;
   currentSeason: string;
+  currentClubStintId: string | null;
 };
 
 const HubLayout = () => {
@@ -199,6 +200,7 @@ const HubLayout = () => {
               currentClub,
               selectedSeason: outletSeason,
               currentSeason: activeSave.currentSeason,
+              currentClubStintId: activeSave.currentClubStint?.id ?? null,
             } satisfies HubOutletContext}
           />
         </main>

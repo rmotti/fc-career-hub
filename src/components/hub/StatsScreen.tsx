@@ -19,6 +19,7 @@ interface Props {
   saveId: string;
   selectedSeason?: string;
   currentSeason?: string;
+  currentClubStintId?: string | null;
 }
 
 type PlayerStatModalKey = "goals" | "assists" | "cleanSheets" | "matches" | "goalContributions" | null;
@@ -85,7 +86,7 @@ const PlayerRankingCard = ({
   );
 };
 
-const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
+const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId }: Props) => {
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [selectedStat, setSelectedStat] = useState<ApiTeamStats | null>(null);
   const [playerStatModal, setPlayerStatModal] = useState<PlayerStatModalKey>(null);
@@ -94,7 +95,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const statsSeason = selectedSeason || currentSeason;
 
   const { data: squad = [], isLoading: isLoadingPlayers } = usePlayers(saveId, true, statsSeason);
-  const { data: teamStatsData = [], isLoading: isLoadingTeamStats } = useTeamStats(saveId, statsSeason);
+  const { data: teamStatsData = [], isLoading: isLoadingTeamStats } = useTeamStats(saveId, statsSeason, currentClubStintId);
   const updateTeamStats = useUpdateTeamStats();
 
   const teamStats = getAggregateTeamStats(teamStatsData);

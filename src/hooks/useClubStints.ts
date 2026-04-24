@@ -23,11 +23,11 @@ export function useChangeClub() {
     mutationFn: ({ saveId, club }: { saveId: string; club: string }) =>
       clubStintsApi.changeClub(saveId, { club }),
     onSuccess: (_res, vars) => {
-      qc.removeQueries({ queryKey: ["players", vars.saveId] });
-      qc.removeQueries({ queryKey: ["teamStats", vars.saveId] });
-      qc.removeQueries({ queryKey: ["transfers", vars.saveId] });
-      qc.removeQueries({ queryKey: ["trophies", vars.saveId] });
-      qc.removeQueries({ queryKey: ["clubStints", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["trophies", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["clubStints", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["saves"] });
     },
