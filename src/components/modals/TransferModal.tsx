@@ -56,7 +56,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
         type: transfer.type as TransferType,
         from: transfer.from,
         to: transfer.to,
-        fee: transfer.fee ?? "",
+        fee: transfer.fee == null ? "" : String(transfer.fee),
       });
     } else {
       setForm({
