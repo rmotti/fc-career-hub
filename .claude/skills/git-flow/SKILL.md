@@ -97,6 +97,16 @@ EOF
 - **Nunca forçar push** sem aprovação explícita.
 - Se existirem mudanças não relacionadas, propor commits atômicos separados.
 
+## Verificação de documentação pós-commit
+
+Após cada commit, execute:
+
+```bash
+git diff HEAD~1 HEAD --name-only
+```
+
+Se houver mudanças em arquivos estruturais — novos diretórios em `src/`, arquivos de rota, componentes de página, hooks, `package.json`, `vite.config.ts`, `tsconfig.json`, `tailwind.config.ts` ou arquivos na pasta `skills/` — avise o usuário e execute a skill `docs-frontend` automaticamente para manter o README.md atualizado.
+
 ## Saída esperada
 
 Ao final, informe:

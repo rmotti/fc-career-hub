@@ -1,6 +1,6 @@
 ---
 name: docs-frontend
-description: Gera ou atualiza o README.md do repositório frontend. Use esta skill quando o usuário pedir para documentar o projeto, gerar ou atualizar o README, ou colar código do frontend para ser documentado. Triggers: "documenta o projeto", "gera o README", "atualiza a documentação", ou quando o usuário colar código de componentes, páginas, hooks ou serviços frontend.
+description: Gera ou atualiza o README.md do repositório frontend. Use esta skill quando o usuário pedir para documentar o projeto, gerar ou atualizar o README, ou colar código do frontend para ser documentado. Também deve ser executada automaticamente após commits que alterem a estrutura do projeto. Triggers: "documenta o projeto", "gera o README", "atualiza a documentação", ou quando o usuário colar código de componentes, páginas, hooks ou serviços frontend.
 ---
 
 # Docs — Frontend
