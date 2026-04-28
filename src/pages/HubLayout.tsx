@@ -5,7 +5,7 @@ import HubSidebar from "@/components/hub/HubSidebar";
 import HubHeader from "@/components/hub/HubHeader";
 import NewSeasonModal from "@/components/modals/NewSeasonModal";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { useSave, useUpdateSave } from "@/hooks/useSaves";
 import { clearStoredActiveSaveId, getStoredActiveSaveId } from "@/lib/auth-storage";
 import { extractErrorMessage, playersApi, transfersApi } from "@/services/api";

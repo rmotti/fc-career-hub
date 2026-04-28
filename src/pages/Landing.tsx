@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { LogoMark } from "@/components/Logo";
 import {
   Trophy, BarChart2, ClipboardList, ArrowRight, Shield, Users,

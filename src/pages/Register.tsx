@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Loader2, Check, ArrowLeft, Trophy, Users, TrendingUp, Repeat2 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { extractErrorMessage } from "@/services/api";
 
 // ─── Decorative left panel ───────────────────────────────────────────────────

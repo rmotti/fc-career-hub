@@ -83,7 +83,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     } else {
       setForm((prev) => ({ ...prev, from: currentClub }));
     }
-  }, [form.type, currentClub]);
+  }, [form.type, currentClub, isEntry]);
 
   const handlePlayerSelect = (pId: string) => {
     const player = activePlayers.find(p => p.id === pId);

@@ -1,5 +1,7 @@
 import type { ApiCompetition, ApiTeamStats, ApiTrophy } from "@/services/api";
 
+export type AggregateTeamStats = Pick<ApiTeamStats, "wins" | "draws" | "losses" | "goalsPro" | "goalsAgainst">;
+
 export const CUP_OPTIONS = [
   { value: "NaoParticipou", label: "Não participou" },
   { value: "Eliminado", label: "Eliminado" },
@@ -40,7 +42,7 @@ export function getLeagueStats(stats: ApiTeamStats[]) {
   return stats.find((item) => item.competition?.type === "League") ?? stats[0] ?? null;
 }
 
-export function getAggregateTeamStats(stats: ApiTeamStats[]) {
+export function getAggregateTeamStats(stats: ApiTeamStats[]): AggregateTeamStats | null {
   if (stats.length === 0) {
     return null;
   }

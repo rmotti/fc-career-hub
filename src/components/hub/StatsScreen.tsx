@@ -25,7 +25,13 @@ import {
 import { usePlayers } from "@/hooks/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/hooks/useTeamStats";
 import type { ApiPlayer, ApiTeamStats } from "@/services/api";
-import { CUP_LABELS, getAggregateTeamStats, getCompetitionAccent, groupTeamStatsBySeason } from "@/utils/competitions";
+import {
+  CUP_LABELS,
+  getAggregateTeamStats,
+  getCompetitionAccent,
+  groupTeamStatsBySeason,
+  type AggregateTeamStats,
+} from "@/utils/competitions";
 
 interface Props {
   saveId: string;
@@ -175,7 +181,7 @@ function PlayerSpotlight({ player, totalGoals }: PlayerSpotlightProps) {
 }
 
 interface CampaignSummaryProps {
-  teamStats: ApiTeamStats;
+  teamStats: AggregateTeamStats;
   competitions: number;
   keyPlayer: ApiPlayer | null;
   totalGoals: number;

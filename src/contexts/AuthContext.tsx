@@ -1,20 +1,6 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  authApi,
-  registerUnauthorizedHandler,
-  type ApiSession,
-  type ApiUser,
-} from "@/services/api";
+import { authApi, registerUnauthorizedHandler, type ApiSession, type ApiUser } from "@/services/api";
 import {
   clearStoredActiveSaveId,
   clearStoredToken,
@@ -24,20 +10,7 @@ import {
   setStoredToken,
   setStoredUser,
 } from "@/lib/auth-storage";
-
-type AuthContextValue = {
-  user: ApiUser | null;
-  session: ApiSession | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  signIn: (data: { email: string; password: string }) => Promise<void>;
-  signUp: (data: { name: string; email: string; password: string }) => Promise<void>;
-  signOut: () => Promise<void>;
-  clearSession: () => void;
-};
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+import { AuthContext, type AuthContextValue } from "@/contexts/auth-context-core";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -166,14 +139,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }), [clearSession, isLoading, session, signIn, signOut, signUp, token, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-
-  return context;
 }
