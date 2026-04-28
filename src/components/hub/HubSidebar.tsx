@@ -1,15 +1,21 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect, type ElementType, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
-  ChevronsLeft, ChevronsRight, Menu, X, Shirt
+  ChevronsLeft, ChevronsRight, Menu, X, Shirt,
+  Trophy, BriefcaseBusiness, Shield
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HubSidebarProps {
   userName: string;
   userPlan: string;
+  saveName: string;
+  clubName: string;
+  season: string;
   onNewSeason: () => void;
   onExitSave: () => void;
   onSignOut: () => void;
@@ -17,24 +23,26 @@ interface HubSidebarProps {
   onToggleCollapse: () => void;
 }
 
-const navItems: { to: string; label: string; icon: React.ElementType }[] = [
+const navItems: { to: string; label: string; icon: ElementType }[] = [
   { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { to: "/squad", label: "Elenco", icon: Users },
   { to: "/field", label: "Escalação", icon: Shirt },
-  { to: "/stats", label: "Estatísticas", icon: BarChart3 },
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
+  { to: "/stats", label: "Estatísticas", icon: BarChart3 },
   { to: "/history", label: "História", icon: History },
 ];
 
-const adminItems: { type: "button" | "link"; label: string; icon: React.ElementType; to?: string; onClick?: "newSeason" | "exitSave" }[] = [
-  { type: "button", label: "Nova Temporada", icon: CalendarPlus, onClick: "newSeason" },
-  { type: "button", label: "Mudar Save", icon: ArrowLeftRight, onClick: "exitSave" },
+const careerItems: { type: "button" | "link"; label: string; description?: string; icon: ElementType; to?: string; onClick?: "newSeason" }[] = [
+  { type: "button", label: "Nova Temporada", description: "Avançar calendário", icon: CalendarPlus, onClick: "newSeason" },
   { type: "link", label: "Mudar de Clube", icon: RefreshCw, to: "/change-club" },
 ];
 
 const HubSidebar = ({
   userName,
   userPlan,
+  saveName,
+  clubName,
+  season,
   onNewSeason,
   onExitSave,
   onSignOut,
@@ -80,27 +88,57 @@ const HubSidebar = ({
     onToggleCollapse();
   };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
-      collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+  const navLinkClass = ({ isActive }: { isActive: boolean }, isCollapsed = collapsed) =>
+    `group relative flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[42px] ${
+      isCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
     } ${
       isActive
-        ? "bg-primary/10 text-primary border border-primary/20"
+        ? "bg-primary/10 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.14)]"
         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     }`;
 
-  const actionButtonClass =
-    `flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[44px] ${
-      collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+  const getActionButtonClass = (isCollapsed = collapsed) =>
+    `group relative flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium transition-all min-h-[42px] ${
+      isCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
     } text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`;
 
-  const sectionTitleClass = collapsed
-    ? "sr-only"
-    : "px-3 text-[11px] font-body font-semibold uppercase tracking-[0.2em] text-muted-foreground/70";
+  const getPrimaryActionButtonClass = (isCollapsed = collapsed) =>
+    `group relative flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-semibold transition-all min-h-[44px] ${
+      isCollapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+    } bg-primary/10 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)] hover:bg-primary/15`;
 
-  const sidebarContent = (
-    <>
-      <div className={`border-b border-sidebar-border ${collapsed ? "flex justify-center p-3" : "flex items-center gap-2.5 p-4"}`}>
+  const getSectionTitleClass = (isCollapsed = collapsed) =>
+    isCollapsed
+      ? "sr-only"
+      : "px-3 text-[10px] font-body font-semibold uppercase tracking-[0.22em] text-muted-foreground/70";
+
+  const renderTooltip = (label: string, children: ReactNode, showTooltip = collapsed) => {
+    if (!showTooltip) return children;
+
+    return (
+      <Tooltip delayDuration={150}>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side="right" className="font-body text-xs">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
+
+  const renderActiveMarker = () => (
+    <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity group-[.active]:opacity-100" />
+  );
+
+  const renderSidebarContent = (contentCollapsed: boolean) => {
+    const collapsed = contentCollapsed;
+    const actionButtonClass = getActionButtonClass(collapsed);
+    const primaryActionButtonClass = getPrimaryActionButtonClass(collapsed);
+    const sectionTitleClass = getSectionTitleClass(collapsed);
+    const renderSidebarTooltip = (label: string, children: ReactNode) => renderTooltip(label, children, collapsed);
+
+    return (
+      <>
+      <div className={`border-b border-sidebar-border bg-gradient-to-b from-primary/5 to-transparent ${collapsed ? "flex justify-center p-3" : "flex items-center gap-2.5 p-4"}`}>
         <LogoMark size={collapsed ? 30 : 28} />
         {!collapsed && (
           <div>
@@ -110,115 +148,174 @@ const HubSidebar = ({
         )}
       </div>
 
-      <div className={`border-b border-sidebar-border ${collapsed ? "px-2 py-3" : "px-4 py-4"}`}>
+      <div className={`border-b border-sidebar-border ${collapsed ? "px-2 py-3" : "px-3 py-3"}`}>
         {collapsed ? (
-          <div className="flex justify-center">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
-              {userInitial}
+          renderSidebarTooltip(
+            `${clubName} · ${season}`,
+            <div className="flex justify-center">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]">
+                <Shield size={18} />
+              </div>
             </div>
-          </div>
+          )
         ) : (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
-              {userInitial}
+          <div className="rounded-md border border-sidebar-border bg-sidebar-accent/45 p-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]">
+                <Trophy size={19} />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate font-display text-sm font-bold leading-5 text-foreground">{saveName}</p>
+                <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <Shield size={13} className="shrink-0 text-primary/80" />
+                  <span className="truncate font-medium text-sidebar-accent-foreground">{clubName}</span>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="truncate font-display text-sm font-bold text-foreground">{userName}</p>
-              <p className="mt-0.5 text-[11px] font-body uppercase tracking-[0.18em] text-muted-foreground">
-                Plano {userPlan}
-              </p>
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-sidebar-border pt-2">
+              <span className="text-[10px] font-body font-semibold uppercase tracking-[0.18em] text-muted-foreground">Temporada</span>
+              <span className="rounded-sm bg-primary/10 px-2 py-0.5 font-display text-xs font-bold text-primary">{season}</span>
             </div>
           </div>
         )}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className={`min-h-0 flex-1 overflow-x-hidden px-3 py-4 ${isCollapseAnimating ? "overflow-y-hidden" : "overflow-y-auto"}`}>
+        <ScrollArea
+          type="auto"
+          className={`min-h-0 flex-1 basis-0 ${isCollapseAnimating ? "[&_[data-orientation=vertical]]:opacity-0" : ""}`}
+          viewportClassName="overflow-x-hidden px-3 py-4 pr-4"
+          scrollbars="vertical"
+        >
           <section className="space-y-2 overflow-x-hidden">
             <p className={sectionTitleClass}>Principal</p>
             <nav className="space-y-1 overflow-x-hidden">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    title={collapsed ? item.label : undefined}
-                    className={navLinkClass}
-                  >
-                    <Icon size={18} />
-                      {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
-                    </NavLink>
-                  );
+                  <Fragment key={item.to}>
+                    {renderSidebarTooltip(
+                      item.label,
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) => `${navLinkClass({ isActive }, collapsed)} ${isActive ? "active" : ""}`}
+                      >
+                        {renderActiveMarker()}
+                        <Icon size={18} className="shrink-0" />
+                        {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                      </NavLink>
+                    )}
+                  </Fragment>
+                );
               })}
             </nav>
           </section>
 
           <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
-            <p className={sectionTitleClass}>Administração</p>
+            <p className={sectionTitleClass}>Carreira</p>
             <div className="space-y-1 overflow-x-hidden">
-              {adminItems.map((item) => {
+              {careerItems.map((item) => {
                 const Icon = item.icon;
 
                 if (item.type === "link" && item.to) {
                   return (
-                    <NavLink
-                      key={item.label}
-                      to={item.to}
-                      title={collapsed ? item.label : undefined}
-                      className={navLinkClass}
-                    >
-                      <Icon size={18} />
-                      {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
-                    </NavLink>
+                    <Fragment key={item.label}>
+                      {renderSidebarTooltip(
+                        item.label,
+                          <NavLink
+                            to={item.to}
+                            className={({ isActive }) => `${navLinkClass({ isActive }, collapsed)} ${isActive ? "active" : ""}`}
+                          >
+                          {renderActiveMarker()}
+                          <Icon size={18} className="shrink-0" />
+                          {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                        </NavLink>
+                      )}
+                    </Fragment>
                   );
                 }
 
-                const onClick = item.onClick === "newSeason" ? handleNewSeason : handleExitSave;
-
                 return (
-                  <button
-                    key={item.label}
-                    onClick={onClick}
-                    title={collapsed ? item.label : undefined}
-                    className={actionButtonClass}
-                  >
-                    <Icon size={18} />
-                    {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
-                  </button>
+                  <Fragment key={item.label}>
+                    {renderSidebarTooltip(
+                      item.label,
+                      <button
+                        onClick={handleNewSeason}
+                        className={primaryActionButtonClass}
+                      >
+                        <Icon size={18} className="shrink-0" />
+                        {!collapsed && (
+                          <span className="min-w-0 flex-1 text-left">
+                            <span className="block truncate">{item.label}</span>
+                            {item.description && <span className="block truncate text-[11px] font-normal text-primary/75">{item.description}</span>}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </Fragment>
                 );
               })}
             </div>
           </section>
-        </div>
 
-        <div className="overflow-x-hidden border-t border-sidebar-border p-3">
-          <section className="space-y-2 overflow-x-hidden">
-            <p className={sectionTitleClass}>Conta</p>
-            <button
-              onClick={handleSignOut}
-              title={collapsed ? "Sair da conta" : undefined}
-              className={`flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all min-h-[44px] ${
-                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-              }`}
-            >
-              <LogOut size={18} />
-              {!collapsed && <span className="min-w-0 truncate">Sair da Conta</span>}
-            </button>
-
-            <button
-              onClick={handleToggleSidebar}
-              title={collapsed ? "Expandir menu" : "Recolher menu"}
-              className="hidden md:flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-muted-foreground hover:text-primary hover:bg-sidebar-accent transition-all min-h-[44px] justify-center overflow-x-hidden px-2 py-2.5"
-            >
-              {collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
-              {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Recolher</span>}
-            </button>
+          <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
+            <p className={sectionTitleClass}>Workspace</p>
+            <div className="space-y-1 overflow-x-hidden">
+              {renderSidebarTooltip(
+                "Mudar Save",
+                <button
+                  onClick={handleExitSave}
+                  className={actionButtonClass}
+                >
+                  <BriefcaseBusiness size={18} className="shrink-0" />
+                  {!collapsed && <span className="min-w-0 truncate">Mudar Save</span>}
+                </button>
+              )}
+            </div>
           </section>
-        </div>
+
+          <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
+            <p className={sectionTitleClass}>Conta</p>
+            {!collapsed && (
+              <div className="mb-2 flex items-center gap-2 rounded-md px-3 py-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent font-display text-xs font-bold text-sidebar-accent-foreground">
+                  {userInitial}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{userName}</p>
+                  <p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Plano {userPlan}</p>
+                </div>
+              </div>
+            )}
+            {renderSidebarTooltip(
+              "Sair da conta",
+              <button
+                onClick={handleSignOut}
+                className={`flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-destructive transition-all min-h-[42px] hover:bg-destructive/10 ${
+                  collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+                }`}
+              >
+                <LogOut size={18} className="shrink-0" />
+                {!collapsed && <span className="min-w-0 truncate">Sair da Conta</span>}
+              </button>
+            )}
+
+            {renderSidebarTooltip(
+              collapsed ? "Expandir menu" : "Recolher menu",
+              <button
+                onClick={handleToggleSidebar}
+                className="hidden md:flex w-full min-w-0 items-center gap-3 overflow-x-hidden rounded-md px-2 py-2.5 text-sm font-medium text-muted-foreground transition-all min-h-[42px] hover:bg-sidebar-accent hover:text-primary"
+              >
+                {collapsed ? <ChevronsRight size={18} className="shrink-0" /> : <ChevronsLeft size={18} className="shrink-0" />}
+                {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Recolher</span>}
+              </button>
+            )}
+          </section>
+        </ScrollArea>
       </div>
-    </>
-  );
+      </>
+    );
+  };
 
   return (
     <>
@@ -241,7 +338,7 @@ const HubSidebar = ({
 
       {/* Mobile drawer */}
       <aside
-        className={`md:hidden fixed inset-y-0 left-0 z-50 w-60 bg-sidebar border-r border-sidebar-border flex flex-col transform transition-transform duration-300 ${
+        className={`md:hidden fixed inset-y-0 left-0 z-50 flex h-dvh max-h-dvh w-[min(15rem,calc(100vw-2rem))] flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transform transition-transform duration-300 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -252,16 +349,16 @@ const HubSidebar = ({
         >
           <X size={18} />
         </button>
-        {sidebarContent}
+        {renderSidebarContent(false)}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`hidden md:flex md:sticky md:top-0 h-screen shrink-0 overflow-hidden flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${
+        className={`hidden h-dvh shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-all duration-300 md:sticky md:top-0 md:flex ${
           collapsed ? "w-16" : "w-60"
         }`}
       >
-        {sidebarContent}
+        {renderSidebarContent(collapsed)}
       </aside>
     </>
   );

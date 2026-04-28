@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import SaveSelect from "@/components/SaveSelect";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,16 +9,18 @@ import { type ApiSave, extractErrorMessage } from "@/services/api";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { data: saves = [], isLoading: savesLoading } = useSaves();
   const createSave = useCreateSave();
   const [isRedirectingToDashboard, setIsRedirectingToDashboard] = useState(false);
+  const isSwitchingSave = searchParams.get("switch") === "1";
 
   useEffect(() => {
-    if (user && getStoredActiveSaveId(user.id)) {
+    if (user && getStoredActiveSaveId(user.id) && !isSwitchingSave) {
       navigate("/dashboard", { replace: true });
     }
-  }, [navigate, user]);
+  }, [isSwitchingSave, navigate, user]);
 
   const handleSelectSave = (save: ApiSave) => {
     if (!user) {

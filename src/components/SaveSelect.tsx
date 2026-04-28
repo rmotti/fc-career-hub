@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Plus, Gamepad2, Shield, Calendar, Loader2, Trash2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowRight, CheckCircle2, ChevronLeft, Loader2, Plus, Shield, Sparkles, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { extractErrorMessage, type ApiSave, type UserPlan } from "@/services/api";
 import { useClubsByLeague } from "@/hooks/useClubs";
 import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { useDeleteSave } from "@/hooks/useSaves";
 import { parseBudgetInMillionsInput } from "@/utils/currency";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 interface Props {
   userName: string;
@@ -16,6 +17,23 @@ interface Props {
   onCreateSave: (name: string, club: string, budget: string, europeanCompetitionId: string | null) => Promise<void>;
   creating: boolean;
 }
+
+const planSaveLimit: Partial<Record<UserPlan, number>> = {
+  FREE: 3,
+};
+
+const formatUpdatedAt = (value?: string) => {
+  if (!value) return "Sem data recente";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sem data recente";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
 
 const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreateSave, creating }: Props) => {
   const [showForm, setShowForm] = useState(false);
@@ -31,6 +49,18 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
 
   const leagueNames = Object.keys(clubsByLeague);
   const clubsForLeague: string[] = newLeague ? (clubsByLeague[newLeague] ?? []) : [];
+  const saveLimit = planSaveLimit[userPlan];
+  const saveCountLabel = saveLimit ? `${saves.length}/${saveLimit} saves` : `${saves.length} saves`;
+
+  const resetForm = () => {
+    setShowForm(false);
+    setNewName("");
+    setNewLeague("");
+    setNewClub("");
+    setNewBudget("");
+    setNewEuropeanCompetitionId("none");
+    setBudgetError("");
+  };
 
   const handleBudgetBlur = () => {
     const num = parseBudgetInMillionsInput(newBudget);
@@ -43,8 +73,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
 
   const handleCreate = async () => {
     const num = parseBudgetInMillionsInput(newBudget);
-    if (!newName.trim()) return;
-    if (!newClub) return;
+    if (!newName.trim() || !newClub) return;
     if (num === null) {
       setBudgetError("Orçamento obrigatório e deve ser um número válido em milhões");
       return;
@@ -58,209 +87,385 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
         String(num),
         newEuropeanCompetitionId === "none" ? null : newEuropeanCompetitionId
       );
-      setShowForm(false);
-      setNewName("");
-      setNewLeague("");
-      setNewClub("");
-      setNewBudget("");
-      setNewEuropeanCompetitionId("none");
+      resetForm();
     } catch {
       // A mensagem de erro ja e exibida no fluxo de criacao.
     }
   };
 
+  const canCreate = !!newName.trim() && !!newClub && parseBudgetInMillionsInput(newBudget) !== null && !creating;
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-6 pb-12 w-full max-w-5xl mx-auto space-y-16 py-12">
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:52px_52px]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_20%_20%,hsl(var(--primary)/0.16),transparent_34%),radial-gradient(circle_at_78%_12%,hsl(var(--accent)/0.12),transparent_30%)]" />
+
       {creating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 px-6 backdrop-blur-sm">
           <div className="card-gamer flex min-w-[280px] flex-col items-center gap-4 p-8 text-center">
             <Loader2 size={28} className="animate-spin text-primary" />
             <div className="space-y-1">
               <p className="font-display text-lg font-bold text-foreground">Preparando seu save</p>
-              <p className="text-sm text-muted-foreground">Estamos criando a carreira e redirecionando para o dashboard...</p>
+              <p className="text-sm text-muted-foreground">Criando a carreira e abrindo o dashboard...</p>
             </div>
           </div>
         </div>
       )}
-      
-      {/* 1. Header / Hero */}
-      <section className="text-center w-full mt-8">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <Gamepad2 size={36} className="text-primary" />
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
-            FC 26 <span className="text-primary text-glow-primary">HUB</span>
-          </h1>
-        </div>
-        <p className="text-muted-foreground text-lg sm:text-xl font-medium mb-1">Gerencie seus saves do Modo Carreira</p>
-        <p className="text-muted-foreground/60 text-sm">
-          Olá, {userName} • Plano {userPlan}
-        </p>
-      </section>
 
-      {/* 2. Action Buttons & Form */}
-      <section className="w-full max-w-3xl">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 text-muted-foreground py-12 bg-card rounded-xl border border-border">
-            <Loader2 size={24} className="animate-spin text-primary" />
-            <span className="font-medium">Carregando saves...</span>
-          </div>
-        ) : !showForm ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {saves.map((save) => (
-                <div key={save.id} className="relative group/card">
-                  <button
-                    onClick={() => onSelectSave(save)}
-                    className="card-gamer p-6 text-left hover:border-primary/50 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 w-full"
-                  >
-                    <h3 className="font-display text-xl font-bold group-hover:text-primary transition-colors mb-4 truncate pr-8">
-                      {save.name}
-                    </h3>
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Shield size={16} className="text-primary/80" />
-                        <span className="font-medium truncate">{save.currentClubStint?.club ?? "—"}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar size={16} className="text-muted-foreground/80" />
-                        <span>Temporada {save.currentSeason}</span>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm(`Deletar o save "${save.name}"? Esta ação não pode ser desfeita.`)) {
-                        deleteSave.mutate(save.id, {
-                          onError: (error) => {
-                            toast.error(extractErrorMessage(error), { duration: 5000 });
-                          },
-                        });
-                      }
-                    }}
-                    disabled={deleteSave.isPending}
-                    className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover/card:opacity-100"
-                    title="Deletar save"
-                  >
-                    {deleteSave.isPending ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                  </button>
-                </div>
-              ))}
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-8 lg:px-10">
+        <header className="flex flex-col gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary shadow-[0_0_24px_hsl(var(--primary)/0.16)]">
+              <Shield size={22} />
             </div>
+            <div>
+              <p className="font-display text-xs font-bold uppercase tracking-[0.22em] text-primary">FC 26 Hub</p>
+              <h1 className="font-display text-3xl font-bold leading-none tracking-tight sm:text-4xl">Suas carreiras</h1>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card/70 px-4 py-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{userName}</span>
+            <span className="mx-2 text-border">/</span>
+            <span>Plano {userPlan}</span>
+            <span className="mx-2 text-border">/</span>
+            <span>{saveCountLabel}</span>
+          </div>
+        </header>
+
+        {loading ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4 text-muted-foreground">
+              <Loader2 size={22} className="animate-spin text-primary" />
+              <span className="font-medium">Carregando saves...</span>
+            </div>
+          </div>
+        ) : showForm ? (
+          <CreateSavePanel
+            budgetError={budgetError}
+            canCreate={canCreate}
+            clubsForLeague={clubsForLeague}
+            creating={creating}
+            europeanCompetitions={europeanCompetitions}
+            leagueNames={leagueNames}
+            newBudget={newBudget}
+            newClub={newClub}
+            newEuropeanCompetitionId={newEuropeanCompetitionId}
+            newLeague={newLeague}
+            newName={newName}
+            onBudgetBlur={handleBudgetBlur}
+            onCancel={resetForm}
+            onCreate={handleCreate}
+            onEuropeanCompetitionChange={setNewEuropeanCompetitionId}
+            onBudgetChange={(value) => {
+              setNewBudget(value);
+              setBudgetError("");
+            }}
+            onClubChange={setNewClub}
+            onLeagueChange={(value) => {
+              setNewLeague(value);
+              setNewClub("");
+            }}
+            onNameChange={setNewName}
+          />
+        ) : saves.length === 0 ? (
+          <EmptyState onCreate={() => setShowForm(true)} />
+        ) : (
+          <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center py-8">
+            <div className="mb-6">
+              <p className="font-display text-xl font-bold leading-none">Escolha um save</p>
+              <p className="mt-1 text-sm text-muted-foreground">Abra uma carreira existente ou crie uma nova jornada.</p>
+            </div>
+
+            <Carousel
+              opts={{
+                align: "start",
+                containScroll: "trimSnaps",
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4 py-1">
+                {saves.map((save) => (
+                  <CarouselItem key={save.id} className="basis-full pl-4 sm:basis-[78%] md:basis-1/2 lg:basis-1/3">
+                    <SaveCard
+                      save={save}
+                      onSelectSave={onSelectSave}
+                      onDelete={(selectedSave) => {
+                        if (confirm(`Deletar o save "${selectedSave.name}"? Esta ação não pode ser desfeita.`)) {
+                          deleteSave.mutate(selectedSave.id, {
+                            onError: (error) => {
+                              toast.error(extractErrorMessage(error), { duration: 5000 });
+                            },
+                          });
+                        }
+                      }}
+                      deleting={deleteSave.isPending}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-4 border-border bg-card text-foreground hover:bg-primary hover:text-primary-foreground disabled:hidden md:-left-12" />
+              <CarouselNext className="-right-4 border-border bg-card text-foreground hover:bg-primary hover:text-primary-foreground disabled:hidden md:-right-12" />
+            </Carousel>
 
             <button
               onClick={() => setShowForm(true)}
-              className="w-full card-gamer p-5 flex items-center justify-center gap-2 text-primary hover:bg-primary/5 transition-all duration-300 font-display font-semibold text-lg border-dashed border-2 hover:border-primary/60 group"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card/45 px-5 py-5 font-display text-lg font-bold text-primary transition-colors hover:border-primary/60 hover:bg-primary/5"
             >
-              <Plus size={24} className="group-hover:scale-110 transition-transform" />
-              Criar Novo Save
+              <Plus size={22} />
+              Criar novo save
             </button>
-          </div>
-        ) : (
-          <div className="card-gamer p-6 sm:p-8 space-y-6 slide-in-bottom">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-              <div className="bg-primary/10 p-2 rounded-lg text-primary">
-                <Plus size={24} />
-              </div>
-              <h3 className="font-display text-2xl font-bold">Iniciando nova jornada</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Nome do Save</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Ex: A Dinastia"
-                  className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Liga</label>
-                  <select
-                    value={newLeague}
-                    onChange={(e) => { setNewLeague(e.target.value); setNewClub(""); }}
-                    className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none"
-                  >
-                    <option value="">Selecione a liga...</option>
-                    {leagueNames.map((l) => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Time Inicial</label>
-                  <select
-                    value={newClub}
-                    onChange={(e) => setNewClub(e.target.value)}
-                    disabled={!newLeague}
-                    className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Selecione o time...</option>
-                    {clubsForLeague.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Orçamento inicial</label>
-                <input
-                  type="text"
-                  value={newBudget}
-                  onChange={(e) => { setNewBudget(e.target.value); setBudgetError(""); }}
-                  onBlur={handleBudgetBlur}
-                  placeholder="Ex: 100"
-                  className={`w-full bg-background border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-shadow ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"}`}
-                />
-                <p className="text-xs text-muted-foreground mt-1.5">Digite o valor em milhões. Ex.: `100` = `100M`.</p>
-                {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block tracking-wider">Competição Europeia Inicial</label>
-                <select
-                  value={newEuropeanCompetitionId}
-                  onChange={(e) => setNewEuropeanCompetitionId(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none"
-                >
-                  <option value="none">Nenhuma</option>
-                  {europeanCompetitions.map((competition) => (
-                    <option key={competition.id} value={competition.id}>{competition.name}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted-foreground mt-1.5">Opcional para a 1ª temporada.</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <button
-                onClick={handleCreate}
-                disabled={creating}
-                className="flex-1 bg-primary text-primary-foreground py-3 rounded-lg font-display font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
-              >
-                {creating ? (
-                  <span className="flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> Criando...</span>
-                ) : "Iniciar Carreira"}
-              </button>
-              <button
-                onClick={() => { setShowForm(false); setNewLeague(""); setNewClub(""); setBudgetError(""); setNewEuropeanCompetitionId("none"); }}
-                className="flex-1 bg-muted text-foreground py-3 rounded-lg font-medium text-sm hover:bg-muted/80 transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
+          </section>
         )}
-      </section>
-
-      {/* 3. Footer */}
-      <footer className="w-full text-center pt-8 border-t border-border/50">
-        <p className="text-sm text-muted-foreground/60 font-medium">FC 26 Hub · Feito para jogadores de Modo Carreira</p>
-      </footer>
+      </main>
     </div>
   );
 };
+
+interface SaveCardProps {
+  save: ApiSave;
+  onSelectSave: (save: ApiSave) => void;
+  onDelete: (save: ApiSave) => void;
+  deleting: boolean;
+}
+
+const SaveCard = ({ save, onSelectSave, onDelete, deleting }: SaveCardProps) => (
+  <article className="group/card relative">
+    <button
+      onClick={() => onSelectSave(save)}
+      className="card-gamer relative min-h-[180px] w-full overflow-hidden p-6 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/80 via-accent/70 to-transparent opacity-70" />
+      <h3 className="truncate pr-10 font-display text-2xl font-bold leading-none transition-colors group-hover/card:text-primary">
+        {save.name}
+      </h3>
+
+      <div className="mt-5 space-y-3">
+        <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
+          <Shield size={16} className="shrink-0 text-primary/80" />
+          <span className="font-medium text-foreground">{save.currentClubStint?.club ?? "Clube indefinido"}</span>
+        </p>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Trophy size={16} className="shrink-0 text-muted-foreground/80" />
+          <span>Temporada {save.currentSeason}</span>
+        </p>
+      </div>
+
+      <div className="mt-5">
+        <MiniStat label="Atualizado" value={formatUpdatedAt(save.updatedAt ?? save.createdAt)} />
+      </div>
+
+      <span className="mt-5 inline-flex items-center gap-2 font-display text-sm font-bold text-primary">
+        Abrir carreira
+        <ArrowRight size={16} />
+      </span>
+    </button>
+
+    <button
+      onClick={() => onDelete(save)}
+      disabled={deleting}
+      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+      title="Deletar save"
+    >
+      {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+    </button>
+  </article>
+);
+
+interface CreateSavePanelProps {
+  budgetError: string;
+  canCreate: boolean;
+  clubsForLeague: string[];
+  creating: boolean;
+  europeanCompetitions: Array<{ id: string; name: string }>;
+  leagueNames: string[];
+  newBudget: string;
+  newClub: string;
+  newEuropeanCompetitionId: string;
+  newLeague: string;
+  newName: string;
+  onBudgetBlur: () => void;
+  onBudgetChange: (value: string) => void;
+  onCancel: () => void;
+  onClubChange: (value: string) => void;
+  onCreate: () => void;
+  onEuropeanCompetitionChange: (value: string) => void;
+  onLeagueChange: (value: string) => void;
+  onNameChange: (value: string) => void;
+}
+
+const CreateSavePanel = ({
+  budgetError,
+  canCreate,
+  clubsForLeague,
+  creating,
+  europeanCompetitions,
+  leagueNames,
+  newBudget,
+  newClub,
+  newEuropeanCompetitionId,
+  newLeague,
+  newName,
+  onBudgetBlur,
+  onBudgetChange,
+  onCancel,
+  onClubChange,
+  onCreate,
+  onEuropeanCompetitionChange,
+  onLeagueChange,
+  onNameChange,
+}: CreateSavePanelProps) => (
+  <section className="grid flex-1 gap-6 py-8 lg:grid-cols-[360px_minmax(0,1fr)]">
+    <aside className="card-gamer h-fit p-5">
+      <button onClick={onCancel} className="mb-5 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <ChevronLeft size={16} />
+        Voltar para carreiras
+      </button>
+      <p className="font-display text-3xl font-bold leading-none">Nova carreira</p>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        Defina a base do save uma vez. O resto da história começa no dashboard.
+      </p>
+      <div className="mt-6 space-y-3">
+        <Step done={!!newName.trim()} label="Identidade" />
+        <Step done={!!newClub} label="Clube inicial" />
+        <Step done={parseBudgetInMillionsInput(newBudget) !== null} label="Orçamento" />
+        <Step done label="Competição opcional" />
+      </div>
+    </aside>
+
+    <div className="card-gamer p-5 sm:p-7">
+      <div className="grid gap-5">
+        <Field label="Nome do save">
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Ex: A Dinastia"
+            className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/50"
+          />
+        </Field>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Liga">
+            <select
+              value={newLeague}
+              onChange={(e) => onLeagueChange(e.target.value)}
+              className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">Selecione a liga...</option>
+              {leagueNames.map((league) => (
+                <option key={league} value={league}>{league}</option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Clube inicial">
+            <select
+              value={newClub}
+              onChange={(e) => onClubChange(e.target.value)}
+              disabled={!newLeague}
+              className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">Selecione o time...</option>
+              {clubsForLeague.map((club) => (
+                <option key={club} value={club}>{club}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Orçamento inicial">
+            <input
+              type="text"
+              value={newBudget}
+              onChange={(e) => onBudgetChange(e.target.value)}
+              onBlur={onBudgetBlur}
+              placeholder="Ex: 100"
+              className={`h-12 w-full rounded-lg border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow placeholder:text-muted-foreground/50 focus:ring-2 ${
+                budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"
+              }`}
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">Digite em milhões. Ex.: 100 = 100M.</p>
+            {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive">{budgetError}</p>}
+          </Field>
+
+          <Field label="Competição europeia inicial">
+            <select
+              value={newEuropeanCompetitionId}
+              onChange={(e) => onEuropeanCompetitionChange(e.target.value)}
+              className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="none">Nenhuma</option>
+              {europeanCompetitions.map((competition) => (
+                <option key={competition.id} value={competition.id}>{competition.name}</option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-muted-foreground">Opcional para a primeira temporada.</p>
+          </Field>
+        </div>
+
+        <div className="mt-2 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-border bg-background/50 px-5 py-3 font-display text-sm font-bold text-foreground transition-colors hover:border-primary/40"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onCreate}
+            disabled={!canCreate}
+            className="landing-btn-primary flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {creating ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
+            Iniciar carreira
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
+  <section className="flex flex-1 items-center justify-center py-12">
+    <div className="card-gamer max-w-2xl p-8 text-center">
+      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+        <Trophy size={27} />
+      </div>
+      <h2 className="font-display text-4xl font-bold leading-none">Nenhum save criado ainda</h2>
+      <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-muted-foreground">
+        Crie seu primeiro save para registrar temporadas, elenco, mercado, estatísticas e conquistas.
+      </p>
+      <button
+        onClick={onCreate}
+        className="landing-btn-primary mx-auto mt-7 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-sm font-bold text-primary-foreground"
+      >
+        <Plus size={18} />
+        Criar primeiro save
+      </button>
+    </div>
+  </section>
+);
+
+const Field = ({ label, children }: { label: string; children: ReactNode }) => (
+  <label className="block">
+    <span className="mb-2 block font-display text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+    {children}
+  </label>
+);
+
+const Step = ({ done, label }: { done: boolean; label: string }) => (
+  <div className="flex items-center gap-3 rounded-lg border border-border bg-background/35 px-3 py-2.5">
+    <CheckCircle2 size={17} className={done ? "text-primary" : "text-muted-foreground/50"} />
+    <span className={`font-display text-sm font-bold ${done ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
+  </div>
+);
+
+const MiniStat = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-md border border-border/80 bg-background/35 px-3 py-2">
+    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+    <p className="mt-1 truncate font-display text-sm font-bold text-foreground">{value}</p>
+  </div>
+);
 
 export default SaveSelect;

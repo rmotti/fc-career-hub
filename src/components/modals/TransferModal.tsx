@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
+import type React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
-import { Lock, ArrowDownLeft, ArrowUpRight, Loader2 } from "lucide-react";
+import { BadgeEuro, Building2, Lock, ArrowDownLeft, ArrowUpRight, Loader2, Repeat2, Save, UserRound, X } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
 
 interface Props {
@@ -16,6 +18,10 @@ interface Props {
 }
 
 type TransferType = "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida";
+
+const inputClass = "h-10 w-full rounded-md border border-border bg-background/40 px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus:border-primary/60 focus:ring-1 focus:ring-primary/30 disabled:opacity-60";
+const lockedClass = "cursor-not-allowed bg-muted/50 pl-9 text-muted-foreground";
+const labelClass = "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground";
 
 const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeason, onSave, saveId }: Props) => {
   const { data: activePlayers = [] } = usePlayers(saveId, true);
@@ -105,8 +111,13 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isExit && !form.playerId) {
+      toast.error("Selecione um jogador do elenco.", { duration: 3000 });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSave(
@@ -121,114 +132,188 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     }
   };
 
-  const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
-  const lockedClass = "opacity-70 cursor-not-allowed bg-muted/60 pl-9";
-  const labelClass = "text-xs text-muted-foreground uppercase mb-1 block";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-display text-lg flex items-center gap-2">
-            {isEntry
-              ? <ArrowDownLeft size={18} className="text-primary" />
-              : <ArrowUpRight size={18} className="text-accent" />
-            }
-            {transfer ? "Editar Transferência" : "Nova Transferência"}
+      <DialogContent className="max-w-3xl border-border bg-card p-0">
+        <DialogHeader className="border-b border-border px-6 py-4">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            {transfer ? "Atualizar transferência" : "Nova transferência"}
+          </p>
+          <DialogTitle className="flex items-center gap-2 font-display text-2xl leading-none">
+            {isEntry ? <ArrowDownLeft size={20} className="text-primary" /> : <ArrowUpRight size={20} className="text-accent" />}
+            {transfer ? "Editar movimento" : "Registrar movimento"}
           </DialogTitle>
-          <DialogDescription>Registre uma contratação ou venda.</DialogDescription>
+          <DialogDescription>
+            Registre entradas, saídas e empréstimos com impacto financeiro e atualização automática do elenco.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className={labelClass}>Jogador</label>
-            {isExit ? (
-              <select className={inputClass} value={form.playerId || ""} onChange={(e) => handlePlayerSelect(e.target.value)} required>
-                <option value="">Selecionar jogador do elenco...</option>
-                {exitPlayerOptions.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input className={inputClass} value={form.playerName} onChange={(e) => setForm({ ...form, playerName: e.target.value })} placeholder="Nome do jogador" required />
-            )}
-          </div>
-          <div>
-            <label className={labelClass}>Tipo</label>
-            <select className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as TransferType })}>
-              <option value="compra">Compra</option>
-              <option value="venda">Venda</option>
-              <option value="emprestimo_entrada">Empréstimo (entrada)</option>
-              <option value="emprestimo_saida">Empréstimo (saída)</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>De</label>
-              <div className="relative">
-                <input
-                  className={`${inputClass} ${isExit ? lockedClass : ""}`}
-                  value={isExit ? currentClub : form.from}
-                  onChange={(e) => !isExit && setForm({ ...form, from: e.target.value })}
-                  disabled={isExit}
-                  placeholder="Clube de origem"
-                  required
-                />
-                {isExit && <Lock size={14} className="absolute left-3 top-2.5 text-muted-foreground" />}
+
+        <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
+          <fieldset className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.9fr]" disabled={isSubmitting}>
+            <FormSection icon={UserRound} title="Jogador" compact>
+              <div className="grid grid-cols-1 gap-3">
+                <Field label="Tipo de movimento" icon={Repeat2}>
+                  <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value as TransferType })}>
+                    <SelectTrigger className="h-10 border-border bg-background/40 text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
+                      <SelectItem value="compra" className="focus:bg-primary/10 focus:text-primary">Compra</SelectItem>
+                      <SelectItem value="venda" className="focus:bg-primary/10 focus:text-primary">Venda</SelectItem>
+                      <SelectItem value="emprestimo_entrada" className="focus:bg-primary/10 focus:text-primary">Empréstimo de entrada</SelectItem>
+                      <SelectItem value="emprestimo_saida" className="focus:bg-primary/10 focus:text-primary">Empréstimo de saída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <Field label="Jogador">
+                  {isExit ? (
+                    <Select value={form.playerId || "none"} onValueChange={(value) => handlePlayerSelect(value === "none" ? "" : value)}>
+                      <SelectTrigger className="h-10 border-border bg-background/40 text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
+                        <SelectValue placeholder="Selecionar jogador do elenco" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72 border-border bg-card text-foreground shadow-xl shadow-black/30">
+                        <SelectItem value="none" className="text-muted-foreground focus:bg-muted focus:text-foreground">
+                          Selecionar jogador do elenco
+                        </SelectItem>
+                        {exitPlayerOptions.map((player) => (
+                          <SelectItem key={player.id} value={player.id} className="focus:bg-primary/10 focus:text-primary">
+                            {player.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <input
+                      className={inputClass}
+                      value={form.playerName}
+                      onChange={(e) => setForm({ ...form, playerName: e.target.value })}
+                      placeholder="Nome do jogador"
+                      required
+                    />
+                  )}
+                </Field>
               </div>
-            </div>
-            <div>
-              <label className={labelClass}>Para</label>
-              <div className="relative">
-                <input
-                  className={`${inputClass} ${isEntry ? lockedClass : ""}`}
-                  value={isEntry ? currentClub : form.to}
-                  onChange={(e) => !isEntry && setForm({ ...form, to: e.target.value })}
-                  disabled={isEntry}
-                  placeholder="Clube de destino"
-                  required
-                />
-                {isEntry && <Lock size={14} className="absolute left-3 top-2.5 text-muted-foreground" />}
+            </FormSection>
+
+            <FormSection icon={BadgeEuro} title="Mercado" compact>
+              <div className="grid grid-cols-1 gap-3">
+                <Field label="Valor">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      className={`${inputClass} pr-11`}
+                      value={form.fee}
+                      onChange={(e) => setForm({ ...form, fee: e.target.value })}
+                      placeholder="45"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">M€</span>
+                  </div>
+                  {(form.type === "emprestimo_entrada" || form.type === "emprestimo_saida") && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">Empréstimos não afetam o saldo da equipe.</p>
+                  )}
+                </Field>
+
+                <Field label="Temporada">
+                  <div className="relative">
+                    <input className={`${inputClass} ${lockedClass}`} value={currentSeason} disabled />
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                </Field>
               </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Valor</label>
-              <div className="relative">
-                <input type="number" step="0.1" min={0} className={inputClass} value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} placeholder="45" />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
+            </FormSection>
+
+            <FormSection icon={Building2} title="Clubes">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="De">
+                  <div className="relative">
+                    <input
+                      className={`${inputClass} ${isExit ? lockedClass : ""}`}
+                      value={isExit ? currentClub : form.from}
+                      onChange={(e) => !isExit && setForm({ ...form, from: e.target.value })}
+                      disabled={isExit}
+                      placeholder="Clube de origem"
+                      required
+                    />
+                    {isExit && <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                  </div>
+                </Field>
+                <Field label="Para">
+                  <div className="relative">
+                    <input
+                      className={`${inputClass} ${isEntry ? lockedClass : ""}`}
+                      value={isEntry ? currentClub : form.to}
+                      onChange={(e) => !isEntry && setForm({ ...form, to: e.target.value })}
+                      disabled={isEntry}
+                      placeholder="Clube de destino"
+                      required
+                    />
+                    {isEntry && <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                  </div>
+                </Field>
               </div>
-              {(form.type === "emprestimo_entrada" || form.type === "emprestimo_saida") && (
-                <p className="text-xs text-muted-foreground mt-1">Empréstimos não afetam o saldo da equipe.</p>
-              )}
+            </FormSection>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end lg:col-span-2">
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 rounded-md bg-muted px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              >
+                <X size={14} />
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
+              >
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={15} />}
+                {transfer ? "Salvar alterações" : "Registrar transferência"}
+              </button>
             </div>
-            <div>
-              <label className={labelClass}>Temporada</label>
-              <div className="relative">
-                <input
-                  className={`${inputClass} ${lockedClass}`}
-                  value={currentSeason}
-                  disabled
-                />
-                <Lock size={14} className="absolute left-3 top-2.5 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-70">
-              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-              {transfer ? "Salvar" : "Registrar"}
-            </button>
-            <button type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50">
-              Cancelar
-            </button>
-          </div>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>
   );
 };
+
+function FormSection({
+  icon: Icon,
+  title,
+  children,
+  compact = false,
+}: {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <section className={`rounded-lg border border-border bg-muted/20 p-4 ${compact ? "lg:self-start" : "lg:col-span-2"}`}>
+      <div className="mb-4 flex items-center gap-2">
+        <Icon size={15} className="text-primary" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, icon: Icon, children }: { label: string; icon?: React.ElementType; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className={labelClass}>
+        {Icon && <Icon size={12} className="mr-1 inline text-muted-foreground" />}
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
 
 export default TransferModal;

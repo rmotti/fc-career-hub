@@ -1,6 +1,21 @@
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useEffect, useState, type FormEvent } from "react";
+import type React from "react";
+import {
+  Activity,
+  BadgeEuro,
+  BarChart3,
+  CircleDollarSign,
+  IdCard,
+  Loader2,
+  Save,
+  ShieldCheck,
+  Shirt,
+  Target,
+  UserRound,
+  X,
+} from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type ApiPlayer, extractErrorMessage } from "@/services/api";
 import { useUpdatePlayerStats } from "@/hooks/usePlayers";
 import { toast } from "sonner";
@@ -26,11 +41,24 @@ const EMPTY_PLAYER = {
   goals: 0 as number | "", assists: 0 as number | "", yellowCards: 0 as number | "", redCards: 0 as number | "", matches: 0 as number | "", cleanSheets: 0 as number | "",
 };
 
+const inputClass = "h-10 w-full rounded-md border border-border bg-background/40 px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus:border-primary/60 focus:ring-1 focus:ring-primary/30 disabled:opacity-60";
+const labelClass = "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground";
+
+const STATUS_LABELS: Record<string, string> = {
+  Crucial: "Crucial",
+  Important: "Importante",
+  Role: "Rotação",
+  Sporadic: "Esporádico",
+  Promising: "Promissor",
+};
+
 const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
   const [form, setForm] = useState(EMPTY_PLAYER);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!player;
   const updateStats = useUpdatePlayerStats();
+  const badge = player ? getBadge(player) : null;
+  const selectedCountry = COUNTRIES.find((country) => country.code === form.nation);
 
   useEffect(() => {
     if (open) {
@@ -60,7 +88,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
     }
   }, [player, open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     const submissionForm = {
@@ -133,169 +161,230 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
     }
   };
 
-  const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
-  const labelClass = "text-xs text-muted-foreground uppercase mb-1 block";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display text-lg">{isEdit ? "Editar Jogador" : "Adicionar Jogador"}</DialogTitle>
-          <DialogDescription>Preencha os dados do jogador.</DialogDescription>
-        </DialogHeader>
-        {player && (() => {
-          const badge = getBadge(player);
-          return badge ? (
-            <div className="flex items-center gap-2 mb-2">
+      <DialogContent className="max-w-4xl border-border bg-card p-0">
+        <DialogHeader className="border-b border-border px-6 py-4">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            {isEdit ? "Atualizar jogador" : "Novo jogador"}
+          </p>
+          <DialogTitle className="font-display text-2xl leading-none">
+            {isEdit ? "Editar jogador" : "Adicionar ao elenco"}
+          </DialogTitle>
+          <DialogDescription className="flex flex-wrap items-center gap-2">
+            Dados do atleta, estatísticas da temporada e informações de mercado em um só lugar.
+            {badge && (
               <span
-                className="px-2 py-1 rounded text-sm font-semibold"
+                className="rounded px-2 py-0.5 text-xs font-semibold"
                 style={{ backgroundColor: badge.color + "22", color: badge.color, border: `1px solid ${badge.color}44` }}
               >
                 {badge.icon} {badge.label}
               </span>
-            </div>
-          ) : null;
-        })()}
-        <form onSubmit={handleSubmit}>
-          <fieldset className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Nome</label>
-              <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            </div>
-            <div>
-              <label className={labelClass}>Nação</label>
-              <div className="relative flex items-center gap-2">
-                {form.nation && (
-                  <Flag code={form.nation} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-sm object-cover pointer-events-none" style={{ width: 20, height: 14 }} />
-                )}
-                <select
-                  className={`${inputClass} ${form.nation ? "pl-10" : ""}`}
-                  value={form.nation}
-                  onChange={(e) => setForm({ ...form, nation: e.target.value })}
-                >
-                  <option value="">— Selecionar —</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={labelClass}>Posição</label>
-              <select className={inputClass} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })}>
-                {POSITIONS.map((pos) => (
-                  <option key={pos} value={pos}>{pos}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Status</label>
-              <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                <option value="Crucial">Crucial</option>
-                <option value="Important">Importante</option>
-                <option value="Role">Rotação</option>
-                <option value="Sporadic">Esporádico</option>
-                <option value="Promising">Promissor</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Idade</label>
-              <input type="number" className={inputClass} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value === "" ? "" : parseInt(e.target.value) })} min={15} max={45} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className={labelClass}>OVR</label>
-              <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} />
-            </div>
-            <div>
-              <label className={labelClass}>Potencial</label>
-              <input type="number" className={inputClass} value={form.potential} onChange={(e) => setForm({ ...form, potential: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} placeholder="—" />
-            </div>
-            <div>
-              <label className={labelClass}>Camisa</label>
-              <input type="number" className={inputClass} value={form.shirtNumber} onChange={(e) => setForm({ ...form, shirtNumber: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} max={99} placeholder="—" />
-            </div>
-            <div>
-              <label className={labelClass}>Partidas</label>
-              <input type="number" className={inputClass} value={form.matches} onChange={(e) => setForm({ ...form, matches: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className={labelClass}>Gols</label>
-              <input type="number" className={inputClass} value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-            <div>
-              <label className={labelClass}>Assist.</label>
-              <input type="number" className={inputClass} value={form.assists} onChange={(e) => setForm({ ...form, assists: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-            {CLEAN_SHEETS_POSITIONS.has(form.position) && (
-              <div>
-                <label className={labelClass}>Clean Sheets</label>
-                <input type="number" className={inputClass} value={form.cleanSheets} onChange={(e) => setForm({ ...form, cleanSheets: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-              </div>
             )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Cartões Amarelos</label>
-              <input type="number" className={inputClass} value={form.yellowCards} onChange={(e) => setForm({ ...form, yellowCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-            <div>
-              <label className={labelClass}>Cartões Vermelhos</label>
-              <input type="number" className={inputClass} value={form.redCards} onChange={(e) => setForm({ ...form, redCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Salário</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="1"
-                  min={0}
-                  className={inputClass}
-                  value={form.salary ?? ""}
-                  onChange={(e) => setForm({ ...form, salary: e.target.value ? parseFloat(e.target.value) : "" })}
-                  placeholder="75"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">K€</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
+          <fieldset className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_0.9fr]" disabled={isSubmitting}>
+            <FormSection icon={UserRound} title="Identidade">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.35fr]">
+                <Field label="Nome">
+                  <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                </Field>
+                <Field label="Nação">
+                  <Select value={form.nation || "none"} onValueChange={(value) => setForm({ ...form, nation: value === "none" ? "" : value })}>
+                    <SelectTrigger className="h-10 border-border bg-background/40 text-left text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30 [&>span:first-child]:!flex [&>span:first-child]:min-w-0 [&>span:first-child]:flex-1 [&>span:first-child]:items-center [&>span:first-child]:justify-start">
+                      {selectedCountry ? (
+                        <span className="flex min-w-0 items-center justify-start gap-2 text-left">
+                          <Flag code={selectedCountry.code} style={{ width: 20, height: 14, borderRadius: 3, objectFit: "cover" }} />
+                          <span className="truncate">{selectedCountry.name}</span>
+                        </span>
+                      ) : (
+                        <SelectValue placeholder="Selecionar" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72 border-border bg-card text-foreground shadow-xl shadow-black/30">
+                      <SelectItem value="none" className="text-muted-foreground focus:bg-muted focus:text-foreground">
+                        Selecionar
+                      </SelectItem>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.code} value={country.code} className="focus:bg-primary/10 focus:text-primary">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <Flag code={country.code} style={{ width: 18, height: 13, borderRadius: 2, objectFit: "cover" }} />
+                            <span className="truncate">{country.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
-            </div>
-            <div>
-              <label className={labelClass}>Valor de Mercado</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.1"
-                  min={0}
-                  className={inputClass}
-                  value={form.marketValue ?? ""}
-                  onChange={(e) => setForm({ ...form, marketValue: e.target.value ? parseFloat(e.target.value) : "" })}
-                  placeholder="35"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
+
+              <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-[0.85fr_1.35fr_0.8fr_0.8fr]">
+                <Field label="Posição" icon={Shirt}>
+                  <Select value={form.position} onValueChange={(value) => setForm({ ...form, position: value })}>
+                    <SelectTrigger className="h-10 border-border bg-background/40 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
+                      {POSITIONS.map((pos) => (
+                        <SelectItem key={pos} value={pos} className="font-semibold focus:bg-primary/10 focus:text-primary">
+                          {pos}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Status" icon={IdCard}>
+                  <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value })}>
+                    <SelectTrigger className="h-10 min-w-0 border-border bg-background/40 text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
+                      <SelectItem value="Crucial" className="focus:bg-primary/10 focus:text-primary">Crucial</SelectItem>
+                      <SelectItem value="Important" className="focus:bg-primary/10 focus:text-primary">Importante</SelectItem>
+                      <SelectItem value="Role" className="focus:bg-primary/10 focus:text-primary">Rotação</SelectItem>
+                      <SelectItem value="Sporadic" className="focus:bg-primary/10 focus:text-primary">Esporádico</SelectItem>
+                      <SelectItem value="Promising" className="focus:bg-primary/10 focus:text-primary">Promissor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Idade">
+                  <input type="number" className={inputClass} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value === "" ? "" : parseInt(e.target.value) })} min={15} max={45} />
+                </Field>
+                <Field label="Camisa">
+                  <input type="number" className={inputClass} value={form.shirtNumber} onChange={(e) => setForm({ ...form, shirtNumber: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} max={99} placeholder="—" />
+                </Field>
               </div>
+            </FormSection>
+
+            <FormSection icon={Activity} title="Desenvolvimento" compact>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="OVR atual">
+                  <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} />
+                </Field>
+                <Field label="Potencial">
+                  <input type="number" className={inputClass} value={form.potential} onChange={(e) => setForm({ ...form, potential: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} placeholder="—" />
+                </Field>
+              </div>
+            </FormSection>
+
+            <FormSection icon={BarChart3} title="Estatísticas da temporada">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Field label="Partidas">
+                  <input type="number" className={inputClass} value={form.matches} onChange={(e) => setForm({ ...form, matches: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+                </Field>
+                <Field label="Gols" icon={Target}>
+                  <input type="number" className={inputClass} value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+                </Field>
+                <Field label="Assist.">
+                  <input type="number" className={inputClass} value={form.assists} onChange={(e) => setForm({ ...form, assists: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+                </Field>
+                {CLEAN_SHEETS_POSITIONS.has(form.position) && (
+                  <Field label="Clean sheets" icon={ShieldCheck}>
+                    <input type="number" className={inputClass} value={form.cleanSheets} onChange={(e) => setForm({ ...form, cleanSheets: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+                  </Field>
+                )}
+                <Field label="Amarelos">
+                  <input type="number" className={inputClass} value={form.yellowCards} onChange={(e) => setForm({ ...form, yellowCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+                </Field>
+                <Field label="Vermelhos">
+                  <input type="number" className={inputClass} value={form.redCards} onChange={(e) => setForm({ ...form, redCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
+                </Field>
+              </div>
+            </FormSection>
+
+            <FormSection icon={CircleDollarSign} title="Mercado" compact>
+              <div className="grid grid-cols-1 gap-3">
+                <Field label="Salário semanal" icon={BadgeEuro}>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="1"
+                      min={0}
+                      className={`${inputClass} pr-11`}
+                      value={form.salary ?? ""}
+                      onChange={(e) => setForm({ ...form, salary: e.target.value ? parseFloat(e.target.value) : "" })}
+                      placeholder="75"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">K€</span>
+                  </div>
+                </Field>
+                <Field label="Valor de mercado">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      className={`${inputClass} pr-11`}
+                      value={form.marketValue ?? ""}
+                      onChange={(e) => setForm({ ...form, marketValue: e.target.value ? parseFloat(e.target.value) : "" })}
+                      placeholder="35"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">M€</span>
+                  </div>
+                </Field>
+              </div>
+            </FormSection>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end lg:col-span-2">
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 rounded-md bg-muted px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              >
+                <X size={14} />
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
+              >
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={15} />}
+                {isEdit ? "Salvar alterações" : "Adicionar jogador"}
+              </button>
             </div>
-          </div>
-<div className="flex gap-3 pt-2">
-            <button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-70">
-              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-              {isEdit ? "Salvar" : "Adicionar"}
-            </button>
-            <button type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50">
-              Cancelar
-            </button>
-          </div>
           </fieldset>
         </form>
       </DialogContent>
     </Dialog>
   );
 };
+
+function FormSection({
+  icon: Icon,
+  title,
+  children,
+  compact = false,
+}: {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <section className={`rounded-lg border border-border bg-muted/20 p-4 ${compact ? "lg:self-start" : ""}`}>
+      <div className="mb-4 flex items-center gap-2">
+        <Icon size={15} className="text-primary" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, icon: Icon, children }: { label: string; icon?: React.ElementType; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className={labelClass}>
+        {Icon && <Icon size={12} className="mr-1 inline text-muted-foreground" />}
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
 
 export default PlayerModal;

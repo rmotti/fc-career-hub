@@ -52,6 +52,11 @@ describe("formatCurrency", () => {
       expect(formatCurrency(1_500_000)).toBe("€1.5M");
       expect(formatCurrency(2_750_000)).toBe("€2.8M");
     });
+
+    it("usa bilhões a partir de 1000M", () => {
+      expect(formatCurrency(1_000_000_000)).toBe("€1.0B");
+      expect(formatCurrency(1_250_000_000)).toBe("€1.3B");
+    });
   });
 
   describe("valores negativos", () => {
@@ -66,12 +71,16 @@ describe("formatCurrency", () => {
 describe("currency unit helpers", () => {
   it("formata milhões e milhares com uma casa decimal", () => {
     expect(formatCurrencyInMillions(4)).toBe("€4.0M");
+    expect(formatCurrencyInMillions(999.9)).toBe("€999.9M");
+    expect(formatCurrencyInMillions(1000)).toBe("€1.0B");
+    expect(formatCurrencyInMillions(1250)).toBe("€1.3B");
     expect(formatCurrencyInThousands(45)).toBe("€45.0K");
   });
 
   it("formata deltas monetários com uma casa decimal", () => {
     expect(formatSignedCurrencyInMillions(0.2999999999999998)).toBe("+€0.3M");
     expect(formatSignedCurrencyInMillions(-1)).toBe("-€1.0M");
+    expect(formatSignedCurrencyInMillions(1000)).toBe("+€1.0B");
   });
 });
 

@@ -153,7 +153,7 @@ const HubLayout = () => {
 
   const handleExitSave = () => {
     clearStoredActiveSaveId(user.id);
-    navigate("/app");
+    navigate("/app?switch=1");
   };
 
   const handleSignOut = async () => {
@@ -177,6 +177,9 @@ const HubLayout = () => {
       <HubSidebar
         userName={user.name}
         userPlan={user.plan}
+        saveName={activeSave.name}
+        clubName={currentClub}
+        season={activeSave.currentSeason}
         onNewSeason={() => setShowNewSeasonModal(true)}
         onExitSave={handleExitSave}
         onSignOut={handleSignOut}

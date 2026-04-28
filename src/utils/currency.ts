@@ -1,11 +1,12 @@
 /**
- * Currency formatting utilities for €XK / €XM format.
+ * Currency formatting utilities for €XK / €XM / €XB format.
  */
 
 import { formatRoundedSingleDecimal } from "@/utils/rounding";
 
 const ONE_THOUSAND = 1_000;
 const ONE_MILLION = 1_000_000;
+const ONE_BILLION_IN_MILLIONS = 1_000;
 
 /**
  * Parses a budget input expressed in millions and converts it to euros.
@@ -38,7 +39,7 @@ export function normalizeStoredBudget(value: number | null | undefined): number 
 
 /**
  * Converts a number to a formatted currency string.
- * Examples: 750000 → "€750.0K", 1500000 → "€1.5M", 35000000 → "€35.0M", 500 → "€500.0"
+ * Examples: 750000 -> "€750.0K", 1500000 -> "€1.5M", 1000000000 -> "€1.0B", 500 -> "€500.0"
  */
 export function formatCurrency(value: number): string {
   if (value < 0) return `-${formatCurrency(-value)}`;
@@ -52,6 +53,10 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatCurrencyInMillions(value: number): string {
+  if (value >= ONE_BILLION_IN_MILLIONS) {
+    return `€${formatRoundedSingleDecimal(value / ONE_BILLION_IN_MILLIONS)}B`;
+  }
+
   return `€${formatRoundedSingleDecimal(value)}M`;
 }
 
