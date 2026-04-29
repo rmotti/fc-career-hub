@@ -26,6 +26,7 @@ import {
 } from "@/utils/currency";
 import { roundToSingleDecimal } from "@/utils/rounding";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getAlternativePositions } from "@/utils/playerPositions";
 
 interface Props {
   open: boolean;
@@ -89,6 +90,8 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
   const stats = player.currentSeasonStats || player.totalStats;
   const badge = getBadge(player);
   const positionColor = POSITION_COLORS[player.position] ?? "bg-muted text-muted-foreground";
+  const alternativePositions = getAlternativePositions(player);
+  const alternativePositionsLabel = alternativePositions.length > 0 ? alternativePositions.join(", ") : "—";
   const statusLabel = STATUS_LABELS[player.status] ?? player.status;
   const statusColor = STATUS_COLORS[player.status] ?? STATUS_COLORS.Role;
 
@@ -181,6 +184,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
             </div>
             <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
               <PlayerDetail icon={Shirt} label="Posição" value={player.position} badgeClass={positionColor} />
+              <PlayerDetail icon={Shirt} label="Alternativas" value={alternativePositionsLabel} />
               <PlayerDetail icon={FlagIcon} label="Nação" value={player.nation ?? "—"} flag={player.nation} />
               <PlayerDetail icon={BadgeEuro} label="Salário" value={player.salary != null ? `${formatCurrencyInThousands(player.salary)}/sem` : "—"} />
               <PlayerDetail icon={CircleDollarSign} label="Valor de mercado" value={player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—"} delta={<Delta value={player.marketValueDelta} moneyUnit="M" />} />

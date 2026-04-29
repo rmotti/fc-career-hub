@@ -193,11 +193,11 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
 
   const handleSavePurchasePlayer = async (data: any, playerId?: string) => {
     if (!playerId) return;
-    const { goals, assists, yellowCards, redCards, matches, ...playerData } = data;
+    const { goals, assists, yellowCards, redCards, matches, cleanSheets, ...playerData } = data;
     await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
-    const hasStats = goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || matches > 0;
+    const hasStats = goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || matches > 0 || cleanSheets > 0;
     if (hasStats) {
-      await updateStats.mutateAsync({ saveId, playerId, data: { goals, assists, yellowCards, redCards, matches } });
+      await updateStats.mutateAsync({ saveId, playerId, data: { goals, assists, yellowCards, redCards, matches, cleanSheets } });
     }
     toast.success("Jogador atualizado!", { duration: 3000 });
     setPurchasePlayerId(null);

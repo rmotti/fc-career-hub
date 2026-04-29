@@ -25,6 +25,7 @@ import { getBadge, type SquadRole } from "@/lib/playerBadge";
 import Flag from "react-world-flags";
 import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/utils/currency";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getAlternativePositions, playerCanPlayPosition } from "@/utils/playerPositions";
 
 interface Props {
   saveId: string;
@@ -172,14 +173,15 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       const matchesSearch = normalizedSearch.length === 0
         || player.name.toLocaleLowerCase().includes(normalizedSearch)
         || player.position.toLocaleLowerCase().includes(normalizedSearch)
+        || getAlternativePositions(player).some((position) => position.toLocaleLowerCase().includes(normalizedSearch))
         || player.status.toLocaleLowerCase().includes(normalizedSearch)
         || String(player.shirtNumber ?? "").includes(normalizedSearch);
 
       if (!matchesSearch) return false;
 
-      if (activeFilter === "attack") return ATTACK_POSITIONS.has(player.position);
-      if (activeFilter === "midfield") return MIDFIELD_POSITIONS.has(player.position);
-      if (activeFilter === "defense") return DEFENSE_POSITIONS.has(player.position);
+      if (activeFilter === "attack") return [...ATTACK_POSITIONS].some((position) => playerCanPlayPosition(player, position));
+      if (activeFilter === "midfield") return [...MIDFIELD_POSITIONS].some((position) => playerCanPlayPosition(player, position));
+      if (activeFilter === "defense") return [...DEFENSE_POSITIONS].some((position) => playerCanPlayPosition(player, position));
       if (activeFilter === "prospects") return player.age <= 23 && (player.potential ?? 0) >= Math.max(80, player.ovr + 4);
       if (activeFilter === "incomplete") {
         return !stats || ((stats.matches ?? 0) === 0 && stats.goals === 0 && stats.assists === 0 && stats.cleanSheets === 0);
@@ -482,9 +484,17 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                       );
                     }
                     if (col.key === "position") {
+                      const alternativePositions = getAlternativePositions(p);
                       return (
                   <td key={col.key} className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>
+                      {alternativePositions.map((position) => (
+                        <span key={position} className="rounded border border-border bg-muted/35 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                          {position}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                       );
                     }
@@ -636,6 +646,8 @@ interface SquadHighlightProps {
 }
 
 function SquadHighlight({ label, player, value, icon: Icon, tone }: SquadHighlightProps) {
+  const alternativePositions = player ? getAlternativePositions(player) : [];
+
   return (
     <div className="rounded-lg border border-border bg-card/60 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -647,7 +659,7 @@ function SquadHighlight({ label, player, value, icon: Icon, tone }: SquadHighlig
       </div>
       <p className="truncate text-sm font-semibold text-foreground">{player?.name ?? "Monitorar elenco"}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {player ? `${player.position} · ${player.ovr} OVR` : "Use filtros para ajustar dados e detectar lacunas."}
+        {player ? `${[player.position, ...alternativePositions].join("/")} · ${player.ovr} OVR` : "Use filtros para ajustar dados e detectar lacunas."}
       </p>
     </div>
   );

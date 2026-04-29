@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { usePlayers } from "@/hooks/usePlayers";
 import { type ApiPlayer } from "@/services/api";
+import { getAlternativePositions, playerCanPlayPosition } from "@/utils/playerPositions";
 import Flag from "react-world-flags";
 import {
   Select,
@@ -115,12 +116,12 @@ const NO_FLAG_POSITION_MATCHES: Record<string, string[]> = {
   ATA: ["SA"],
 };
 
-const getPositionFlag = (playerPosition: string, slotPosition: string): PositionFlag => {
-  if (playerPosition === slotPosition) return null;
-  if ((playerPosition === "PE" && slotPosition === "ME") || (playerPosition === "PD" && slotPosition === "MD")) return null;
-  if (NO_FLAG_POSITION_MATCHES[playerPosition]?.includes(slotPosition)) return null;
-  if (playerPosition === "GOL" || slotPosition === "GOL") return "red";
-  return YELLOW_POSITION_MATCHES[playerPosition]?.includes(slotPosition) ? "yellow" : "red";
+const getPositionFlag = (player: ApiPlayer, slotPosition: string): PositionFlag => {
+  if (playerCanPlayPosition(player, slotPosition)) return null;
+  if ((player.position === "PE" && slotPosition === "ME") || (player.position === "PD" && slotPosition === "MD")) return null;
+  if (NO_FLAG_POSITION_MATCHES[player.position]?.includes(slotPosition)) return null;
+  if (player.position === "GOL" || slotPosition === "GOL") return "red";
+  return YELLOW_POSITION_MATCHES[player.position]?.includes(slotPosition) ? "yellow" : "red";
 };
 
 const getPositionFlagRank = (flag: PositionFlag) => {
@@ -129,8 +130,8 @@ const getPositionFlagRank = (flag: PositionFlag) => {
   return 2;
 };
 
-const canPlacePlayerInSlot = (playerPosition: string, slotPosition: string) => {
-  if (playerPosition === "GOL" || slotPosition === "GOL") return playerPosition === slotPosition;
+const canPlacePlayerInSlot = (player: ApiPlayer, slotPosition: string) => {
+  if (slotPosition === "GOL" || player.position === "GOL") return playerCanPlayPosition(player, slotPosition);
   return true;
 };
 
@@ -267,8 +268,22 @@ function persistState(saveId: string, state: FieldState) {
 
 // ── Pure player card (display only) ───────────────────────────────────────
 
-const PlayerCard = ({ player, compact = false, overlay = false, isSelected = false, positionFlag = null }: { player: ApiPlayer; compact?: boolean; overlay?: boolean; isSelected?: boolean; positionFlag?: PositionFlag }) => {
-  const c = SLOT_COLORS[player.position] ?? FALLBACK_COLORS;
+const PlayerCard = ({
+  player,
+  displayPosition = player.position,
+  compact = false,
+  overlay = false,
+  isSelected = false,
+  positionFlag = null,
+}: {
+  player: ApiPlayer;
+  displayPosition?: string;
+  compact?: boolean;
+  overlay?: boolean;
+  isSelected?: boolean;
+  positionFlag?: PositionFlag;
+}) => {
+  const c = SLOT_COLORS[displayPosition] ?? SLOT_COLORS[player.position] ?? FALLBACK_COLORS;
   const w = compact ? "w-12" : "w-[60px]";
   const h = compact ? 60 : 72;
   return (
@@ -296,8 +311,8 @@ const PlayerCard = ({ player, compact = false, overlay = false, isSelected = fal
           !
         </span>
       )}
-      <span className={`text-[8px] font-display font-bold tracking-widest leading-none px-1.5 py-0.5 rounded ${c.badge} relative z-10`}>
-        {player.position}
+      <span className={`max-w-[54px] truncate text-[8px] font-display font-bold tracking-widest leading-none px-1.5 py-0.5 rounded ${c.badge} relative z-10`}>
+        {displayPosition}
       </span>
       <span className={`font-display font-bold leading-none ${c.text} ${compact ? "text-base" : "text-xl"} relative z-10`}>
         {player.ovr}
@@ -442,7 +457,13 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
         >
           <div className={`group transition-opacity ${isSelectionActive && !isSelected && !isValidForSelection ? "opacity-40" : ""}`}>
             <Draggable id={player.id} disabled={canDragPosition}>
-              <PlayerCard player={player} compact={compact} isSelected={isSelected} positionFlag={positionFlag} />
+              <PlayerCard
+                player={player}
+                displayPosition={showPosition && playerCanPlayPosition(player, position) ? position : player.position}
+                compact={compact}
+                isSelected={isSelected}
+                positionFlag={positionFlag}
+              />
             </Draggable>
             <button
               onPointerDown={(e) => e.stopPropagation()}
@@ -545,10 +566,10 @@ const RESERVE_FILTERS: { value: ReserveFilter; label: string }[] = [
 
 const matchesReserveFilter = (player: ApiPlayer, filter: ReserveFilter) => {
   if (filter === "all") return true;
-  if (filter === "goalkeepers") return player.position === "GOL";
-  if (filter === "defenders") return ["LD", "LE", "ZAG"].includes(player.position);
-  if (filter === "midfielders") return ["VOL", "MC", "ME", "MD", "MEI"].includes(player.position);
-  return ["PE", "PD", "SA", "ATA"].includes(player.position);
+  if (filter === "goalkeepers") return playerCanPlayPosition(player, "GOL");
+  if (filter === "defenders") return ["LD", "LE", "ZAG"].some((position) => playerCanPlayPosition(player, position));
+  if (filter === "midfielders") return ["VOL", "MC", "ME", "MD", "MEI"].some((position) => playerCanPlayPosition(player, position));
+  return ["PE", "PD", "SA", "ATA"].some((position) => playerCanPlayPosition(player, position));
 };
 
 const FieldScreen = ({ saveId }: Props) => {
@@ -606,7 +627,11 @@ const FieldScreen = ({ saveId }: Props) => {
       .filter((p) => matchesReserveFilter(p, reserveFilter))
       .filter((p) => {
         if (!query) return true;
-        return p.name.toLocaleLowerCase().includes(query) || p.position.toLocaleLowerCase().includes(query);
+        return (
+          p.name.toLocaleLowerCase().includes(query) ||
+          p.position.toLocaleLowerCase().includes(query) ||
+          getAlternativePositions(p).some((position) => position.toLocaleLowerCase().includes(query))
+        );
       })
       .sort((a, b) => (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99) || b.ovr - a.ovr);
   }, [reservePlayers, reserveFilter, reserveSearch]);
@@ -619,7 +644,7 @@ const FieldScreen = ({ saveId }: Props) => {
     const idx = parseInt(idxStr);
     const slotPos = starterPositions[idx];
     const p = playerById.get(activePlayerId);
-    return p ? canPlacePlayerInSlot(p.position, slotPos) : false;
+    return p ? canPlacePlayerInSlot(p, slotPos) : false;
   }, [activePlayerId, starterPositions, playerById]);
 
   const availableForSelection = useMemo(() => {
@@ -631,7 +656,7 @@ const FieldScreen = ({ saveId }: Props) => {
     const slotPosition = selectingSlot.type === "starter" ? starterPositions[selectingSlot.index] : null;
     return players.filter((p) => {
       const free = !assignedIds.has(p.id) || p.id === currentId;
-      const ok = slotPosition === null || canPlacePlayerInSlot(p.position, slotPosition);
+      const ok = slotPosition === null || canPlacePlayerInSlot(p, slotPosition);
       return free && ok;
     });
   }, [selectingSlot, players, assignedIds, state, starterPositions]);
@@ -644,7 +669,7 @@ const FieldScreen = ({ saveId }: Props) => {
 
     const slotPosition = starterPositions[selectingSlot.index];
     return availableForSelection.slice().sort((a, b) => {
-      const flagRankDiff = getPositionFlagRank(getPositionFlag(a.position, slotPosition)) - getPositionFlagRank(getPositionFlag(b.position, slotPosition));
+      const flagRankDiff = getPositionFlagRank(getPositionFlag(a, slotPosition)) - getPositionFlagRank(getPositionFlag(b, slotPosition));
       if (flagRankDiff !== 0) return flagRankDiff;
       const positionDiff = (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99);
       if (positionDiff !== 0) return positionDiff;
@@ -677,7 +702,7 @@ const FieldScreen = ({ saveId }: Props) => {
     const idx = parseInt(idxStr);
     const slotPos = starterPositions[idx];
     const p = playerById.get(selectedPlayerId);
-    return p ? canPlacePlayerInSlot(p.position, slotPos) : false;
+    return p ? canPlacePlayerInSlot(p, slotPos) : false;
   }, [selectedPlayerId, starterPositions, playerById]);
 
   const placeSelectedPlayer = useCallback((target: { type: "starter" | "bench"; index: number }) => {
@@ -687,7 +712,7 @@ const FieldScreen = ({ saveId }: Props) => {
 
     if (target.type === "starter") {
       const slotPos = starterPositions[target.index];
-      if (!canPlacePlayerInSlot(player.position, slotPos)) return; // keep selection, let user pick another slot
+      if (!canPlacePlayerInSlot(player, slotPos)) return; // keep selection, let user pick another slot
     }
 
     const newStarters = [...state.starters];
@@ -711,7 +736,7 @@ const FieldScreen = ({ saveId }: Props) => {
       const displacedPlayer = playerById.get(displaced);
       if (fromStarterIdx !== -1 && displacedPlayer) {
         const slotPos = starterPositions[fromStarterIdx];
-        if (canPlacePlayerInSlot(displacedPlayer.position, slotPos)) newStarters[fromStarterIdx] = displaced;
+        if (canPlacePlayerInSlot(displacedPlayer, slotPos)) newStarters[fromStarterIdx] = displaced;
       } else if (fromBenchIdx !== -1) {
         newBench[fromBenchIdx] = displaced;
       }
@@ -753,7 +778,7 @@ const FieldScreen = ({ saveId }: Props) => {
     // Position restriction for starter slots
     if (targetType === "starter") {
       const slotPos = starterPositions[targetIdx];
-      if (!canPlacePlayerInSlot(player.position, slotPos)) return;
+      if (!canPlacePlayerInSlot(player, slotPos)) return;
     }
 
     const newStarters = [...state.starters];
@@ -782,7 +807,7 @@ const FieldScreen = ({ saveId }: Props) => {
       const displacedPlayer = playerById.get(displaced);
       if (fromStarterIdx !== -1 && displacedPlayer) {
         const slotPos = starterPositions[fromStarterIdx];
-        if (canPlacePlayerInSlot(displacedPlayer.position, slotPos)) {
+        if (canPlacePlayerInSlot(displacedPlayer, slotPos)) {
           newStarters[fromStarterIdx] = displaced;
         }
         // else displaced becomes a free reserve
@@ -1030,7 +1055,7 @@ const FieldScreen = ({ saveId }: Props) => {
                           isSelected={selectedPlayerId === playerId && !!playerId}
                           isSelectionActive={isSelectionActive}
                           isValidForSelection={isValidForSelection(slotId)}
-                          positionFlag={player ? getPositionFlag(player.position, slotPosition) : null}
+                          positionFlag={player ? getPositionFlag(player, slotPosition) : null}
                           onPositionDrag={(point) => handleStarterPositionDrag(slotIdx, point)}
                           onPositionDragPreviewChange={handlePositionPreviewChange}
                           onPositionDragPreviewMove={handlePositionPreviewMove}
@@ -1151,7 +1176,7 @@ const FieldScreen = ({ saveId }: Props) => {
                               : "bg-background/40 border-border/60 hover:border-border hover:bg-background/60"
                           }`}
                         >
-                          <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tracking-widest shrink-0 ${c.badge}`}>
+                          <span className={`max-w-20 truncate text-[9px] font-display font-bold px-1.5 py-0.5 rounded tracking-widest shrink-0 ${c.badge}`}>
                             {p.position}
                           </span>
                           <span className="flex-1 text-sm text-foreground/90 font-medium truncate">{p.name}</span>
@@ -1197,14 +1222,14 @@ const FieldScreen = ({ saveId }: Props) => {
               {sortedAvailableForSelection.map((p) => {
                 const c = SLOT_COLORS[p.position] ?? FALLBACK_COLORS;
                 const slotPosition = selectingSlot?.type === "starter" ? starterPositions[selectingSlot.index] : null;
-                const flag = slotPosition ? getPositionFlag(p.position, slotPosition) : null;
+                const flag = slotPosition ? getPositionFlag(p, slotPosition) : null;
                 return (
                   <button
                     key={p.id}
                     onClick={() => handleSelectPlayer(p)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-card border border-transparent hover:border-border transition-all text-left"
                   >
-                    <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tracking-widest shrink-0 ${c.badge}`}>
+                    <span className={`max-w-20 truncate text-[9px] font-display font-bold px-1.5 py-0.5 rounded tracking-widest shrink-0 ${c.badge}`}>
                       {p.position}
                     </span>
                     <span className="flex-1 text-sm text-foreground truncate">{p.name}</span>

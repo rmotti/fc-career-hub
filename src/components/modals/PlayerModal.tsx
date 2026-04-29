@@ -16,12 +16,13 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { type ApiPlayer, extractErrorMessage } from "@/services/api";
+import { type ApiPlayer, type PlayerPosition, extractErrorMessage } from "@/services/api";
 import { useUpdatePlayerStats } from "@/hooks/usePlayers";
 import { toast } from "sonner";
 import { getBadge } from "@/lib/playerBadge";
 import Flag from "react-world-flags";
 import { COUNTRIES } from "@/utils/countries";
+import { PLAYER_POSITIONS, getAlternativePositions, normalizeAlternativePositions } from "@/utils/playerPositions";
 
 interface Props {
   open: boolean;
@@ -31,11 +32,11 @@ interface Props {
   saveId: string;
 }
 
-const POSITIONS = ["GOL", "LD", "LE", "ZAG", "VOL", "MC", "ME", "MD", "MEI", "PE", "PD", "SA", "ATA"] as const;
 const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
 const EMPTY_PLAYER = {
   name: "", nation: "" as string, position: "MC" as string, age: 20 as number | "", status: "Important" as string, ovr: 70 as number | "",
+  alternativePositions: [] as PlayerPosition[],
   salary: "" as number | "", marketValue: "" as number | "",
   potential: "" as number | "", shirtNumber: "" as number | "",
   goals: 0 as number | "", assists: 0 as number | "", yellowCards: 0 as number | "", redCards: 0 as number | "", matches: 0 as number | "", cleanSheets: 0 as number | "",
@@ -68,6 +69,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
           name: player.name,
           nation: player.nation ?? "",
           position: player.position,
+          alternativePositions: getAlternativePositions(player),
           age: player.age,
           status: player.status,
           ovr: player.ovr,
@@ -91,8 +93,12 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
+    const { alternativePositions, ...baseForm } = form;
     const submissionForm = {
-      ...form,
+      ...baseForm,
+      alternativePosition: {
+        positions: normalizeAlternativePositions(alternativePositions, form.position),
+      },
       nation: form.nation === "" ? undefined : form.nation,
       age: form.age === "" ? 0 : form.age,
       ovr: form.ovr === "" ? 0 : form.ovr,
@@ -118,10 +124,17 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       );
     })() : false;
 
+    const previousAlternativePositions = player ? getAlternativePositions(player) : [];
+    const alternativePositionsChanged = player ? (
+      submissionForm.alternativePosition.positions.length !== previousAlternativePositions.length ||
+      submissionForm.alternativePosition.positions.some((position, index) => position !== previousAlternativePositions[index])
+    ) : true;
+
     const playerDataChanged = player ? (
       form.name !== player.name ||
       form.nation !== (player.nation ?? "") ||
       form.position !== player.position ||
+      alternativePositionsChanged ||
       form.age !== player.age ||
       form.status !== player.status ||
       form.ovr !== player.ovr ||
@@ -222,12 +235,19 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
               <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-[0.85fr_1.35fr_0.8fr_0.8fr]">
                 <Field label="Posição" icon={Shirt}>
-                  <Select value={form.position} onValueChange={(value) => setForm({ ...form, position: value })}>
+                  <Select
+                    value={form.position}
+                    onValueChange={(value) => setForm({
+                      ...form,
+                      position: value,
+                      alternativePositions: normalizeAlternativePositions(form.alternativePositions, value),
+                    })}
+                  >
                     <SelectTrigger className="h-10 border-border bg-background/40 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
-                      {POSITIONS.map((pos) => (
+                      {PLAYER_POSITIONS.map((pos) => (
                         <SelectItem key={pos} value={pos} className="font-semibold focus:bg-primary/10 focus:text-primary">
                           {pos}
                         </SelectItem>
@@ -256,6 +276,40 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                   <input type="number" className={inputClass} value={form.shirtNumber} onChange={(e) => setForm({ ...form, shirtNumber: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} max={99} placeholder="—" />
                 </Field>
               </div>
+
+              {form.position !== "GOL" && (
+                <Field label="Posições alternativas">
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                    {PLAYER_POSITIONS.filter((pos) => pos !== form.position && pos !== "GOL").map((pos) => {
+                      const isSelected = form.alternativePositions.includes(pos);
+
+                      return (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => {
+                            const nextPositions = isSelected
+                              ? form.alternativePositions.filter((position) => position !== pos)
+                              : [...form.alternativePositions, pos];
+                            setForm({
+                              ...form,
+                              alternativePositions: normalizeAlternativePositions(nextPositions, form.position),
+                            });
+                          }}
+                          className={`h-9 rounded-md border text-xs font-bold transition-[background-color,border-color,color,transform] active:scale-[0.97] ${
+                            isSelected
+                              ? "border-primary/45 bg-primary/15 text-primary"
+                              : "border-border bg-background/35 text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                          }`}
+                          aria-pressed={isSelected}
+                        >
+                          {pos}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+              )}
             </FormSection>
 
             <FormSection icon={Activity} title="Desenvolvimento" compact>

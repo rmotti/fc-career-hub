@@ -6,6 +6,7 @@ import { type ApiTransfer, extractErrorMessage } from "@/services/api";
 import { toast } from "sonner";
 import { BadgeEuro, Building2, Lock, ArrowDownLeft, ArrowUpRight, Loader2, Repeat2, Save, UserRound, X } from "lucide-react";
 import { usePlayers } from "@/hooks/usePlayers";
+import { getAlternativePositions } from "@/utils/playerPositions";
 
 interface Props {
   open: boolean;
@@ -41,7 +42,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
   const exitPlayerOptions = useMemo(() => {
     const options = activePlayers.map((player) => ({
       id: player.id,
-      label: `${player.name} (${player.position})`,
+      label: `${player.name} (${[player.position, ...getAlternativePositions(player)].join("/")})`,
     }));
 
     if (transfer?.playerId && !options.some((player) => player.id === transfer.playerId)) {
