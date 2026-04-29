@@ -28,7 +28,7 @@ export default function Unauthorized() {
         {/* Logo */}
         <Link to="/" className="mb-8 inline-flex items-center gap-2">
           <LogoMark size={28} />
-          <span className="font-display text-sm font-bold text-muted-foreground">FC 26 Hub</span>
+          <span className="font-display text-sm font-bold text-muted-foreground">FC Career Hub</span>
         </Link>
 
         {/* Lock icon with glow ring */}

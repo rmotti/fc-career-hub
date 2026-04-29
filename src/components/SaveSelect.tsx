@@ -119,7 +119,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
               <Shield size={22} />
             </div>
             <div>
-              <p className="font-display text-xs font-bold uppercase tracking-[0.22em] text-primary">FC 26 Hub</p>
+              <p className="font-display text-xs font-bold uppercase tracking-[0.22em] text-primary">FC Career Hub</p>
               <h1 className="font-display text-3xl font-bold leading-none tracking-tight sm:text-4xl">Suas carreiras</h1>
             </div>
           </div>

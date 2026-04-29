@@ -29,7 +29,7 @@ export default function AuthHubShowcase() {
   return (
     <div className="space-y-10">
       <section className="w-full space-y-8">
-        <h2 className="font-display text-center text-3xl font-bold sm:text-4xl">O que e o FC 26 Hub?</h2>
+        <h2 className="font-display text-center text-3xl font-bold sm:text-4xl">O que e o FC Career Hub?</h2>
         <div className="grid grid-cols-1 gap-6 text-left md:grid-cols-3">
           {featureCards.map(({ icon: Icon, title, desc }) => (
             <article

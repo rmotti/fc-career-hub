@@ -142,7 +142,7 @@ const HubSidebar = ({
         <LogoMark size={collapsed ? 30 : 28} />
         {!collapsed && (
           <div>
-            <p className="font-display text-sm font-bold leading-none text-foreground">FC 26 Hub</p>
+            <p className="font-display text-sm font-bold leading-none text-foreground">FC Career Hub</p>
             <p className="mt-0.5 font-body text-[10px] uppercase tracking-widest text-muted-foreground">Modo Carreira</p>
           </div>
         )}

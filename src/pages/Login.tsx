@@ -35,7 +35,7 @@ function LeftPanel() {
       {/* Logo */}
       <div className="relative flex items-center gap-2.5">
         <LogoMark size={32} />
-        <span className="font-display text-lg font-bold tracking-tight">FC 26 Hub</span>
+        <span className="font-display text-lg font-bold tracking-tight">FC Career Hub</span>
       </div>
 
       {/* Headline + cards */}
@@ -132,7 +132,7 @@ export default function Login() {
         <div className="mb-10 flex w-full max-w-sm items-center justify-between lg:hidden">
           <div className="flex items-center gap-2">
             <LogoMark size={28} />
-            <span className="font-display text-base font-bold">FC 26 Hub</span>
+            <span className="font-display text-base font-bold">FC Career Hub</span>
           </div>
           <Link to="/" className="flex items-center gap-1 font-body text-xs text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft size={12} />

@@ -1,11 +1,11 @@
-# ⚽ FC 26 Career Mode Hub
+# ⚽ FC Career Hub
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white)
 
-Uma aplicação web para **gerenciar e acompanhar seus saves do Modo Carreira** do EA FC 26. Permite criar múltiplos saves, gerenciar elencos, registrar transferências, acompanhar estatísticas de temporada e manter o histórico completo da sua carreira como treinador.
+Uma aplicação web para **gerenciar e acompanhar seus saves do Modo Carreira** do FC. Permite criar múltiplos saves, gerenciar elencos, registrar transferências, acompanhar estatísticas de temporada e manter o histórico completo da sua carreira como treinador.
 
 ---
 

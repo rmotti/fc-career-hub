@@ -36,7 +36,7 @@ export default function AuthPageLayout({
             <div className="relative">
               <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                 <Shield size={16} />
-                FC 26 Hub
+                FC Career Hub
               </div>
               <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
                 Sua carreira, sua conta, seu histórico.

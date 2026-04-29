@@ -1,8 +1,8 @@
-# FC 26 Career Hub: mapa do projeto para redesign de landing page
+# FC Career Hub: mapa do projeto para redesign de landing page
 
 ## 1. Resumo executivo
 
-O projeto e um aplicativo web para jogadores de EA FC 26 que querem registrar e acompanhar seus saves do Modo Carreira. O valor principal do produto hoje esta em organizar a jornada completa do save: clube atual, elenco, estatisticas, transferencias, trofeus e historico da carreira.
+O projeto e um aplicativo web para jogadores de FC que querem registrar e acompanhar seus saves do Modo Carreira. O valor principal do produto hoje esta em organizar a jornada completa do save: clube atual, elenco, estatisticas, transferencias, trofeus e historico da carreira.
 
 Do ponto de vista de conversao, o ponto mais importante e este:
 
@@ -128,7 +128,7 @@ Ao redesenhar a landing, o ideal e nao destruir esse papel. Considere transforma
 
 Com base no README e nos componentes atuais, a mensagem central do produto e:
 
-"Organize, acompanhe e preserve toda a sua jornada no modo carreira do EA FC 26 em um unico hub."
+"Organize, acompanhe e preserve toda a sua jornada no modo carreira do FC em um unico hub."
 
 Sub-beneficios reais ja suportados pelo produto:
 
@@ -269,7 +269,7 @@ Objetivo principal:
 Objetivos secundarios:
 
 - deixar claro o que o produto faz em menos de 5 segundos
-- mostrar por que o FC 26 Hub e util para jogadores de Modo Carreira
+- mostrar por que o FC Career Hub e util para jogadores de Modo Carreira
 - criar desejo visual sem perder legibilidade
 - destacar continuidade, controle e historico como beneficios emocionais
 
@@ -283,7 +283,7 @@ Objetivos secundarios:
 
 ## 15. Resumo final para o agente
 
-O FC 26 Career Hub ja tem um produto com profundidade funcional, identidade visual base e ganchos de monetizacao. O que falta e uma camada publica de marketing orientada a conversao. A maior decisao tecnica nao e apenas "como deixar a landing bonita", e sim "como separar landing publica e app autenticado sem quebrar o fluxo atual".
+O FC Career Hub ja tem um produto com profundidade funcional, identidade visual base e ganchos de monetizacao. O que falta e uma camada publica de marketing orientada a conversao. A maior decisao tecnica nao e apenas "como deixar a landing bonita", e sim "como separar landing publica e app autenticado sem quebrar o fluxo atual".
 
 Se o objetivo for alta conversao, trate o redesign como combinacao de:
 

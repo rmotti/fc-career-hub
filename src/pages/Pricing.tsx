@@ -140,7 +140,7 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2">
           <LogoMark size={32} />
-          <span className="font-display text-lg font-bold tracking-tight">FC 26 Hub</span>
+          <span className="font-display text-lg font-bold tracking-tight">FC Career Hub</span>
         </Link>
 
         <nav className="flex items-center gap-4">
@@ -426,7 +426,7 @@ export default function Pricing() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <Link to="/" className="flex items-center gap-2">
             <LogoMark size={22} />
-            <span className="font-display text-sm font-semibold text-muted-foreground">FC 26 Career Hub</span>
+            <span className="font-display text-sm font-semibold text-muted-foreground">FC Career Hub</span>
           </Link>
           <p className="font-body text-xs text-muted-foreground/60">
             Não afiliado à EA Sports. Feito para fãs de Modo Carreira.

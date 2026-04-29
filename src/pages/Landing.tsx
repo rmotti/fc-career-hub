@@ -167,7 +167,7 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <LogoMark size={32} />
-          <span className="font-display text-lg font-bold tracking-tight">FC 26 Hub</span>
+          <span className="font-display text-lg font-bold tracking-tight">FC Career Hub</span>
         </div>
 
         <nav className="flex items-center gap-1">
@@ -435,7 +435,7 @@ export default function Landing() {
                 style={{ animation: "shimmer 3s ease-in-out infinite" }}
               >
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                FC 26 Career Hub
+                FC Career Hub
               </div>
 
               <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
@@ -502,7 +502,7 @@ export default function Landing() {
         <div className="relative mx-auto max-w-6xl px-6">
           <Reveal className="mb-16 text-center">
             <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">O que você ganha</p>
-            <h2 className="font-display text-4xl font-bold sm:text-5xl">Por que usar o FC 26 Hub?</h2>
+            <h2 className="font-display text-4xl font-bold sm:text-5xl">Por que usar o FC Career Hub?</h2>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-muted-foreground">
               Feito para quem leva o Modo Carreira a sério. Nada se perde, tudo fica registrado.
             </p>
@@ -770,7 +770,7 @@ export default function Landing() {
                 </span>
               </h2>
               <p className="mx-auto mt-6 max-w-lg font-body text-base leading-relaxed text-muted-foreground">
-                Crie sua conta em segundos e comece a montar o histórico completo da sua carreira no EA FC 26.
+                Crie sua conta em segundos e comece a montar o histórico completo da sua carreira no FC.
               </p>
 
               <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -799,7 +799,7 @@ export default function Landing() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <div className="flex items-center gap-2">
             <LogoMark size={22} />
-            <span className="font-display text-sm font-semibold text-muted-foreground">FC 26 Career Hub</span>
+            <span className="font-display text-sm font-semibold text-muted-foreground">FC Career Hub</span>
           </div>
           <p className="font-body text-xs text-muted-foreground/60">Não afiliado à EA Sports. Feito para fãs de Modo Carreira.</p>
           <div className="flex gap-4">
