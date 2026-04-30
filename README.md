@@ -1,247 +1,365 @@
-# ⚽ FC Career Hub
+# FC Career Hub
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white)
 
-Uma aplicação web para **gerenciar e acompanhar seus saves do Modo Carreira** do FC. Permite criar múltiplos saves, gerenciar elencos, registrar transferências, acompanhar estatísticas de temporada e manter o histórico completo da sua carreira como treinador.
+FC Career Hub is a web app for managing and tracking FC Career Mode saves. It lets users create multiple careers, manage squads, build lineups, register transfers, track season statistics, and preserve the long-term history of a manager save.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-| Camada | Tecnologia |
-|--------|-----------|
-| **Framework** | React 18 + TypeScript 5 |
-| **Build Tool** | Vite 5 |
-| **Estilização** | TailwindCSS 3 + `tailwindcss-animate` |
-| **UI Components** | shadcn/ui (Radix UI primitives) |
-| **Roteamento** | React Router DOM v6 |
-| **Estado do Servidor** | TanStack React Query v5 |
-| **Formulários** | React Hook Form + Zod |
-| **Gráficos** | Recharts |
-| **Ícones** | Lucide React |
-| **Notificações** | Sonner |
-| **Temas** | next-themes |
-| **Testes** | Vitest + Testing Library + Playwright |
-| **HTTP Client** | Fetch API nativa |
+| Layer | Technology |
+| --- | --- |
+| Framework | React 18 + TypeScript 5 |
+| Build tool | Vite 5 |
+| Styling | Tailwind CSS 3 + `tailwindcss-animate` |
+| UI components | shadcn/ui with Radix UI primitives |
+| Routing | React Router DOM v6 |
+| Server state | TanStack React Query v5 |
+| Forms | React Hook Form + Zod |
+| Charts | Recharts |
+| Icons | Lucide React |
+| Notifications | Sonner |
+| Product tour | React Joyride |
+| Tests | Vitest + Testing Library + Playwright |
+| HTTP client | Native Fetch API |
 
 ---
 
-## 🚀 Como Executar
+## Getting Started
 
 ```bash
-# Instalar dependências
+# Install dependencies
 npm install
 
-# Rodar em modo de desenvolvimento
+# Start development server
 npm run dev
 
-# Build para produção
+# Build for production
 npm run build
 
-# Rodar testes
+# Run tests
 npm run test
 
-# Rodar testes em modo watch
+# Run tests in watch mode
 npm run test:watch
+
+# Type-check only
+npm run type-check
 ```
 
-O servidor de desenvolvimento sobe em `http://localhost:8080`.
+The development server uses `http://localhost:8080` by default. Vite may pick the next available port if `8080` is already in use.
 
 ---
 
-## 🌐 Variáveis de Ambiente
+## Environment Variables
 
-| Variável | Descrição |
-|----------|-----------|
-| `VITE_API_URL` | URL base da API backend |
+| Variable | Description |
+| --- | --- |
+| `VITE_API_URL` | Backend API base URL |
 
-Crie um arquivo `.env.local` na raiz com:
+Create a `.env.local` file at the repository root:
 
 ```env
-VITE_API_URL=https://sua-api.com
+VITE_API_URL=https://your-api.com
 ```
 
 ---
 
-## 📋 Funcionalidades
+## Main Features
 
-### 1. Autenticação
-- Cadastro e login com token JWT armazenado em `localStorage`
-- Sessão persistida entre recarregamentos via `AuthContext`
-- Rotas protegidas (`ProtectedRoute`) e rotas públicas exclusivas (`PublicOnlyRoute`)
+### Authentication
 
-### 2. Seleção e Criação de Saves
-- Tela inicial com lista de saves existentes (com clube, temporada e troféus)
-- Criação de novo save com nome customizado e seleção de clube inicial
+- Register and sign in with JWT-based sessions.
+- Persist the authenticated user in local storage through `AuthContext`.
+- Protect app routes with `ProtectedRoute`.
+- Keep login/register unavailable to already-authenticated users with `PublicOnlyRoute`.
 
-### 3. Dashboard (Visão Geral)
-- **Orçamento e Saldo** — Visualização lado a lado das finanças do clube
-- **Alertas Financeiros** — Destaque visual quando o saldo está abaixo de 20% do orçamento
-- **Máscaras de Moeda** — Formatação automática (`€XK` para milhares, `€XM` para milhões)
-- **Artilheiro** — Jogador com mais gols no elenco
-- **Troféus** — Total de troféus conquistados
-- **Temporada Atual** — Retrospecto de vitórias, empates e derrotas
-- **Top 5 Artilheiros** — Ranking dos melhores marcadores
+### Save Selection And Creation
 
-### 4. Elenco (Squad)
-- Tabela completa de jogadores com **ordenação por coluna** (nome, posição, idade, OVR, gols, assistências, salário, valor de mercado)
-- Badges de posição coloridos (GOL, ZAG, MEI, ATA)
-- Destaque de OVR por faixa (≥83 primário, ≥80 accent)
-- **Badges de perfil** — Elite, Artilheiro, Garçom, Motor, Em Ascensão, Promessa, Diamante, Veterano
-- **CRUD de jogadores** — adicionar, editar, visualizar e remover jogadores via modal
-- Campos do jogador: nome, posição, idade, OVR, gols, assistências, salário, valor de mercado, cartões amarelos/vermelhos, status (Crucial / Important / Role / Sporadic / Promising)
+- View existing career saves with club and season context.
+- Create a new career by choosing save name, league, starting club, initial budget, and optional European competition.
+- Switch between saves without signing out.
+- Delete old saves from the save selection screen.
 
-### 5. Estatísticas da Temporada
-- **Cards Resumo** — Gols Pró, Gols Contra e Posse de Bola
-- **Campos de Competição** — Posição na Liga, Resultado na Copa Europeia e Copa Nacional
-- **Rankings** — Top 5 Artilheiros, Top 5 Assistentes e Top 5 Cartões
-- **Edição de Stats** — Modal para atualização rápida de todos os dados do time na temporada
+### Optional Product Tour
 
-### 6. Avançar Temporada (End-of-Season)
-- **Fluxo em 3 etapas** — Confirmação → Resumo Geral → Celebração
-- **Resumo Financeiro e Técnico** — Saldo final, artilheiros e garçons da temporada encerrada
-- **Criação Automática de Troféus** — Títulos detectados e adicionados automaticamente à vitrine
-- **Modal de Celebração** — Animado para novas conquistas
+- A `?` help button is available on the save selection screen and inside the hub header.
+- After the first save is created, users see a modal asking whether they want to start the tour or skip it.
+- Skipping the first prompt does not remove the help button.
+- The hub tour is route-aware: Dashboard, Squad, Field, Transfers, Stats, History, and Change Club each have their own steps.
+- Tour logic, styling, route step configuration, and visible-target resolution live in `src/components/tutorial`.
+- Screens only expose stable `data-tour` anchors for Joyride to target.
 
-### 7. Transferências
-- **Duas abas** — Janela Atual e Histórico completo
-- **Controle Orçamentário** — Saldo atualizado automaticamente ao registrar compras ou vendas
-- **CRUD de Transferências** — Adicionar, editar e remover via modal com máscaras de valor
-- **Histórico Global** — Todas as transferências ordenadas por temporada e clube
+### Dashboard
 
-### 8. História (Legado do Save)
-- **Vitrine de Troféus** — Títulos com identificação por cores (Liga, Continental, Copas) e clube
-- **Clubes Gerenciados** — Passagens com período e retrospecto técnico
-- **Recordes do Save** — Maior compra, maior venda, artilheiro e assistente histórico
-- **Estatísticas Globais** — Total de jogos e retrospecto de toda a carreira
+- Season overview with campaign record, protagonists, financial health, squad evolution, market activity, and trophies.
+- Budget and balance indicators with low-balance highlighting.
+- Current-season market summary.
+- Top performers by goals, assists, OVR, growth, and value.
 
-### 9. Mudar de Clube
-- Grid de clubes disponíveis para selecionar novo clube
-- Preserva histórico global ao trocar de clube
-- Reseta elenco, orçamento e estatísticas para o novo clube
+### Squad
+
+- Full player table with sortable columns.
+- View modes for management, stats, market, and development.
+- Filters for attack, midfield, defense, prospects, and incomplete stats.
+- Player profile badges such as elite, top scorer, playmaker, rising, prospect, veteran, and more.
+- Add, edit, view, and release players through modals.
+- Track OVR, potential, market value, salary, role, shirt number, nationality, alternative positions, and season stats.
+
+### Field
+
+- Interactive lineup builder with starters, bench, and available reserves.
+- Drag-and-drop support for placing players.
+- Formation selector with multiple tactical shapes.
+- Position compatibility warnings.
+- Local persistence for lineup state per save.
+
+### Transfers
+
+- Current window and full history views.
+- Register purchases, sales, incoming loans, and outgoing loans.
+- Automatically reflect transfer activity in the financial snapshot.
+- Add purchased players to the squad and complete their profile.
+- Filter historical transfers by type, season, and value order.
+
+### Season Statistics
+
+- Team campaign summary by season.
+- Competition-by-competition records.
+- Editable team stats for league and cup competitions.
+- Individual rankings for goals, assists, goal contributions, clean sheets, and appearances.
+- Season selector in the hub header when viewing stats.
+
+### End Of Season
+
+- Start a new season from the hub sidebar.
+- Set the next-season budget and optional European competition.
+- Reactivate eligible loaned players when the season advances.
+- Preserve previous-season data for historical/statistical views.
+
+### History
+
+- Career legacy overview.
+- Trophy showcase with competition and club context.
+- Club stint timeline.
+- Save-wide records such as biggest purchase, biggest sale, top scorer, and top assistant.
+- Long-term career statistics.
+
+### Change Club
+
+- Browse clubs grouped by league.
+- Search and filter possible destinations.
+- Open a contract confirmation flow before changing clubs.
+- Preserve career history while resetting the new club context.
 
 ---
 
-## 🗺️ Rotas
+## Routes
 
-| Rota | Componente | Descrição |
-|------|-----------|-----------|
-| `/` | `Index` | Redireciona para `SaveSelect` ou `/hub/dashboard` |
-| `/login` | `Login` | Autenticação do usuário |
-| `/register` | `Register` | Cadastro de novo usuário |
-| `/pricing` | `Pricing` | Planos e preços |
-| `/hub` | `HubLayout` | Layout base com sidebar e header |
-| `/hub/dashboard` | `Dashboard` | Visão geral do save |
-| `/hub/squad` | `Squad` | Elenco com CRUD de jogadores |
-| `/hub/stats` | `Stats` | Estatísticas da temporada atual |
-| `/hub/history` | `History` | Histórico de troféus e clubes |
-| `/hub/transfers` | `Transfers` | Transferências e histórico financeiro |
-| `/hub/change-club` | `ChangeClub` | Seleção de novo clube |
-| `/hub/field` | `Field` | Visualização de formação/campo |
-| `/unauthorized` | `Unauthorized` | Acesso negado |
-| `/*` | `NotFound` | Página 404 |
+| Route | Component | Description |
+| --- | --- | --- |
+| `/` | `Landing` | Public landing page |
+| `/pricing` | `Pricing` | Pricing page |
+| `/login` | `Login` | User sign-in |
+| `/register` | `Register` | User registration |
+| `/unauthorized` | `Unauthorized` | Access denied screen |
+| `/app` | `Index` | Save selection and creation |
+| `/dashboard` | `Dashboard` | Career overview |
+| `/squad` | `Squad` | Squad management |
+| `/field` | `Field` | Lineup builder |
+| `/transfers` | `Transfers` | Market activity and transfer history |
+| `/stats` | `Stats` | Season statistics |
+| `/history` | `History` | Career legacy and trophies |
+| `/change-club` | `ChangeClub` | Club switching flow |
+| `*` | `NotFound` | 404 fallback |
+
+All routes from `/app` onward are protected and require an authenticated user.
 
 ---
 
-## 📁 Estrutura do Projeto
+## Project Structure
 
-```
+```text
 src/
-├── App.tsx                        # Roteamento principal
-├── main.tsx                       # Entry point
-├── index.css                      # Estilos globais
+├── App.tsx
+├── main.tsx
+├── index.css
 ├── components/
-│   ├── AuthPageLayout.tsx         # Layout das páginas de auth
-│   ├── AuthHubShowcase.tsx        # Showcase exibido nas telas de auth
-│   ├── AuthStatusScreen.tsx       # Tela de status de autenticação
-│   ├── AuthGuards.tsx             # ProtectedRoute e PublicOnlyRoute
-│   ├── SaveSelect.tsx             # Tela de seleção/criação de saves
-│   ├── NavLink.tsx                # Link de navegação da sidebar
-│   ├── Logo.tsx                   # Componente de logo
+│   ├── AuthGuards.tsx
+│   ├── AuthHubShowcase.tsx
+│   ├── AuthPageLayout.tsx
+│   ├── AuthStatusScreen.tsx
+│   ├── Logo.tsx
+│   ├── NavLink.tsx
+│   ├── SaveSelect.tsx
 │   ├── hub/
-│   │   ├── HubSidebar.tsx         # Sidebar de navegação
-│   │   ├── HubHeader.tsx          # Header com save/clube/temporada
-│   │   ├── DashboardScreen.tsx    # Tela Visão Geral
-│   │   ├── SquadScreen.tsx        # Tela Elenco
-│   │   ├── StatsScreen.tsx        # Tela Estatísticas
-│   │   ├── HistoryScreen.tsx      # Tela História
-│   │   ├── TransfersScreen.tsx    # Tela Transferências
-│   │   ├── ChangeClubScreen.tsx   # Tela Mudar de Clube
-│   │   ├── FieldScreen.tsx        # Tela de Formação/Campo
-│   │   └── StatCard.tsx           # Card reutilizável de estatística
+│   │   ├── ChangeClubScreen.tsx
+│   │   ├── DashboardScreen.tsx
+│   │   ├── FieldScreen.tsx
+│   │   ├── HistoryScreen.tsx
+│   │   ├── HubHeader.tsx
+│   │   ├── HubSidebar.tsx
+│   │   ├── SquadScreen.tsx
+│   │   ├── StatCard.tsx
+│   │   ├── StatsScreen.tsx
+│   │   └── TransfersScreen.tsx
 │   ├── modals/
-│   │   ├── PlayerModal.tsx        # Adicionar/Editar jogador
-│   │   ├── PlayerViewModal.tsx    # Visualizar detalhes do jogador
-│   │   ├── StatsModal.tsx         # Editar estatísticas do time
-│   │   ├── TransferModal.tsx      # Registrar transferência
-│   │   └── NewSeasonModal.tsx     # Encerramento de temporada + celebração
-│   └── ui/                        # Componentes shadcn/ui (~40 componentes)
+│   │   ├── NewSeasonModal.tsx
+│   │   ├── PlayerModal.tsx
+│   │   ├── PlayerViewModal.tsx
+│   │   ├── StatsModal.tsx
+│   │   └── TransferModal.tsx
+│   ├── tutorial/
+│   │   ├── HubTutorial.tsx
+│   │   ├── SaveSelectTutorial.tsx
+│   │   ├── TutorialHelpButton.tsx
+│   │   ├── TutorialTooltip.tsx
+│   │   ├── hubTutorialSteps.ts
+│   │   ├── saveSelectTutorialSteps.ts
+│   │   ├── tutorialStyles.ts
+│   │   └── tutorialUtils.ts
+│   └── ui/
 ├── contexts/
-│   └── AuthContext.tsx            # Contexto de autenticação (user, session, signIn, signOut)
+│   ├── AuthContext.tsx
+│   ├── auth-context-core.ts
+│   └── useAuth.ts
 ├── hooks/
-│   ├── useSaves.ts                # CRUD de saves
-│   ├── usePlayers.ts              # CRUD de jogadores + stats
-│   ├── useTransfers.ts            # CRUD de transferências
-│   ├── useTeamStats.ts            # Estatísticas do time
-│   ├── useTrophies.ts             # CRUD de troféus
-│   ├── useClubs.ts                # Lista de clubes
-│   ├── useClubStints.ts           # Passagens por clubes + mudar clube
-│   ├── useCompetitions.ts         # Lista de competições
-│   ├── useFinancialSnapshot.ts    # Snapshot financeiro (orçamento + saldo calculado)
-│   ├── use-mobile.tsx             # Detecção de mobile
-│   └── use-toast.ts               # Sistema de toast
-├── services/
-│   └── api.ts                     # Cliente HTTP centralizado + tipos da API
+│   ├── useClubStints.ts
+│   ├── useClubs.ts
+│   ├── useCompetitions.ts
+│   ├── useFinancialSnapshot.ts
+│   ├── usePlayers.ts
+│   ├── useSaves.ts
+│   ├── useTeamStats.ts
+│   ├── useTransfers.ts
+│   └── useTrophies.ts
 ├── lib/
-│   ├── utils.ts                   # Helper cn() para classes TailwindCSS
-│   └── auth-storage.ts            # Persistência de sessão no localStorage
+│   ├── auth-storage.ts
+│   ├── playerBadge.ts
+│   └── utils.ts
+├── pages/
+│   ├── HubLayout.tsx
+│   ├── Index.tsx
+│   ├── Landing.tsx
+│   ├── Login.tsx
+│   ├── Register.tsx
+│   └── hub/
+├── services/
+│   └── api.ts
 └── utils/
-    ├── currency.ts                # Formatação e parsing de valores monetários
-    ├── finance.ts                 # Cálculo de saldo a partir de transferências
-    ├── rounding.ts                # Arredondamento de decimais
-    ├── playerBadge.ts             # Badges de perfil do jogador (Elite, Artilheiro, etc.)
-    ├── playerTransferStatus.ts    # Status de transferência dos jogadores
-    ├── competitions.ts            # Dados de competições e copas
-    ├── leagues.ts                 # Dados de ligas
-    └── countries.ts               # Dados de países/nações
+    ├── competitions.ts
+    ├── countries.ts
+    ├── currency.ts
+    ├── finance.ts
+    ├── leagues.ts
+    ├── playerPositions.ts
+    ├── playerTransferStatus.ts
+    └── rounding.ts
 ```
 
 ---
 
-## 📊 Modelo de Dados (API)
+## Product Tour Architecture
+
+The tour is implemented with `react-joyride`.
+
+### Files
+
+| File | Responsibility |
+| --- | --- |
+| `HubTutorial.tsx` | Controls the route-aware hub tour and first-save prompt |
+| `SaveSelectTutorial.tsx` | Controls the save selection screen tour |
+| `TutorialHelpButton.tsx` | Shared `?` button |
+| `TutorialTooltip.tsx` | Custom Joyride tooltip UI |
+| `hubTutorialSteps.ts` | Route-specific hub tour steps |
+| `saveSelectTutorialSteps.ts` | Save selection tour steps |
+| `tutorialStyles.ts` | Shared Joyride styles, locale, and options |
+| `tutorialUtils.ts` | Visible-element resolution before starting a tour |
+
+### Adding A New Hub Step
+
+1. Add a stable `data-tour` attribute to the screen element:
+
+```tsx
+<section data-tour="my-feature-panel">...</section>
+```
+
+2. Add the step to the route in `src/components/tutorial/hubTutorialSteps.ts`:
+
+```ts
+{
+  target: "[data-tour='my-feature-panel']",
+  title: "Feature panel",
+  content: "Explain what the user can do here.",
+  placement: "bottom",
+}
+```
+
+3. Keep tour behavior inside `src/components/tutorial`. Screen components should only expose anchors.
+
+The tour filters targets at runtime and only starts with elements that are visible in the viewport, avoiding hidden mobile/desktop duplicates.
+
+---
+
+## Data Model Overview
 
 ### `ApiSave`
-Save do Modo Carreira com: nome, temporada atual, orçamento e referência ao clube atual via `clubStintId`.
+
+Career save with name, current season/year, budget, available seasons, and the current club stint.
 
 ### `ApiClubStint`
-Passagem por um clube com: save, clube, temporada de início/fim, retrospecto (vitórias, empates, derrotas) e flag de clube atual.
+
+A manager stint at a club, including start/end season and whether it is the active club.
 
 ### `ApiPlayer`
-Jogador do elenco com: nome, posição (`GOL / ZAG / MEI / ATA`), idade, OVR, salário, valor de mercado, status e estatísticas da temporada.
+
+Squad player with identity, nationality, shirt number, position, alternative positions, OVR, potential, status, salary, market value, and stats.
 
 ### `ApiPlayerSeasonStats`
-Estatísticas de temporada do jogador: gols, assistências, cartões amarelos e vermelhos.
+
+Player season statistics such as matches, goals, assists, clean sheets, cards, and goal contributions.
 
 ### `ApiTeamStats`
-Estatísticas do time por temporada: gols pró/contra, posse, vitórias, empates, derrotas, posição na liga, resultado nas copas.
+
+Team statistics by competition and season, including wins, draws, losses, goals for/against, league position, and cup result.
 
 ### `ApiTransfer`
-Transferência com: jogador, tipo (`buy / sell`), clubes de origem e destino, valor e temporada.
+
+Transfer record with player, type, origin/destination clubs, fee, season, and optional linked player ID.
 
 ### `ApiTrophy`
-Troféu conquistado com: competição, ano e clube.
+
+Trophy record with competition, year, season, and club context.
 
 ### `ApiCompetition`
-Competição com: nome, tipo (`league / national_cup / european_cup`) e país.
+
+Competition metadata such as name and type.
 
 ---
 
-## 🎨 Design
+## Design System
 
-- **Dark mode** por padrão via `next-themes`
-- UI com estética **gamer/esportiva** com efeitos de glow e bordas estilizadas
-- Paleta semântica: `primary` (destaque), `accent` (secundário), `destructive` (perigo/derrotas), `warning` (atenção/empates), `gold` (troféus)
-- Totalmente responsivo com grid adaptativo
+- Dark UI by default.
+- Sport/gaming-inspired interface with restrained glow, sharp cards, dense information, and clear hierarchy.
+- Semantic palette:
+  - `primary`: positive actions and key emphasis
+  - `accent`: secondary highlights
+  - `destructive`: losses, removals, dangerous states
+  - `warning`: caution and draws
+  - `gold`: trophies and legacy moments
+- Reusable shadcn/ui components live in `src/components/ui`.
+- Prefer Lucide icons for icon buttons and compact controls.
+
+---
+
+## Notes For Contributors
+
+- Prefer existing app patterns before introducing new abstractions.
+- Keep feature logic close to its domain folder.
+- Keep tour behavior centralized in `src/components/tutorial`.
+- Avoid changing unrelated files while implementing a feature.
+- Run `npm run type-check` and `npm run build` before shipping UI changes.
