@@ -309,7 +309,7 @@ function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
   const typeLabel = isLeague ? "Liga" : isEuropean ? "Europeia" : "Copa";
 
   return (
-    <article className={`rounded-lg border ${borderClass} ${bgClass} p-4 transition-colors hover:border-primary/35`}>
+    <article data-tour="stats-competition-card" className={`rounded-lg border ${borderClass} ${bgClass} p-4 transition-colors hover:border-primary/35`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -342,6 +342,7 @@ function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
 
         {canEdit && (
           <button
+            data-tour="stats-edit-competition"
             type="button"
             onClick={onEdit}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"

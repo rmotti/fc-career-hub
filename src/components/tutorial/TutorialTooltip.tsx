@@ -19,12 +19,12 @@ const TutorialTooltip = ({
   return (
     <section
       {...tooltipProps}
-      className="relative max-h-[min(86vh,420px)] w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-border bg-card text-left text-foreground shadow-[0_24px_80px_hsl(220_20%_3%/0.68)]"
+      className="relative max-h-[calc(100dvh-1.5rem)] w-[min(360px,calc(100vw-1.5rem))] overflow-hidden rounded-lg border border-border bg-card text-left text-foreground shadow-[0_24px_80px_hsl(220_20%_3%/0.68)] sm:max-h-[min(86vh,420px)] sm:w-[min(360px,calc(100vw-2rem))]"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-[hsl(var(--gold))]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary)/0.10),transparent_36%),linear-gradient(180deg,hsl(var(--card)),hsl(var(--surface)))]" />
 
-      <div className="relative p-5">
+      <div className="relative p-4 sm:p-5">
         <header className="mb-4 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2">
@@ -33,7 +33,7 @@ const TutorialTooltip = ({
               </span>
               <span className="font-display text-xs font-bold text-muted-foreground">{getStepLabel(index, size)}</span>
             </div>
-            {step.title && <h3 className="font-display text-2xl font-bold leading-none text-foreground">{step.title}</h3>}
+            {step.title && <h3 className="font-display text-xl font-bold leading-tight text-foreground sm:text-2xl sm:leading-none">{step.title}</h3>}
           </div>
 
           <button
@@ -47,7 +47,7 @@ const TutorialTooltip = ({
           </button>
         </header>
 
-        <div className="max-h-32 overflow-y-auto pr-1 text-sm leading-6 text-muted-foreground">{step.content}</div>
+        <div className="max-h-[32dvh] overflow-y-auto pr-1 text-sm leading-6 text-muted-foreground sm:max-h-32">{step.content}</div>
 
         <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-muted">
           <div

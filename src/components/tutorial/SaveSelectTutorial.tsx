@@ -4,9 +4,11 @@ import { saveSelectTutorialSteps } from "@/components/tutorial/saveSelectTutoria
 import TutorialHelpButton from "@/components/tutorial/TutorialHelpButton";
 import TutorialTooltip from "@/components/tutorial/TutorialTooltip";
 import { tutorialJoyrideStyles, tutorialLocale, tutorialOptions } from "@/components/tutorial/tutorialStyles";
-import { resolveVisibleSteps } from "@/components/tutorial/tutorialUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getResponsiveTutorialSteps, resolveVisibleSteps } from "@/components/tutorial/tutorialUtils";
 
 const SaveSelectTutorial = () => {
+  const isMobile = useIsMobile();
   const [run, setRun] = useState(false);
   const [tourKey, setTourKey] = useState(0);
   const [activeSteps, setActiveSteps] = useState<Step[]>(saveSelectTutorialSteps);
@@ -14,7 +16,7 @@ const SaveSelectTutorial = () => {
   const startTutorial = () => {
     setRun(false);
     window.setTimeout(() => {
-      const nextSteps = resolveVisibleSteps(saveSelectTutorialSteps);
+      const nextSteps = resolveVisibleSteps(getResponsiveTutorialSteps(saveSelectTutorialSteps, isMobile));
       if (nextSteps.length === 0) return;
 
       setActiveSteps(nextSteps);

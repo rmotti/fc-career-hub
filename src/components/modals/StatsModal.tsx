@@ -142,8 +142,8 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
     : CUP_OPTIONS.find((opt) => opt.value === form.cupResult)?.label ?? "Resultado pendente";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-hidden border-border bg-card p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent data-tour="stats-modal" className="max-h-[90vh] max-w-2xl overflow-hidden border-border bg-card p-0" onInteractOutside={(e) => e.preventDefault()}>
         <div className="border-b border-border bg-background/35 px-5 py-4">
           <DialogHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -186,7 +186,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
 
         <form onSubmit={handleSubmit} className="max-h-[calc(90vh-104px)] overflow-y-auto">
           <div className="space-y-5 p-5">
-            <section>
+            <section data-tour="stats-modal-campaign">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Campanha</p>
@@ -204,7 +204,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
               </div>
             </section>
 
-            <section>
+            <section data-tour="stats-modal-goals">
               <div className="mb-3">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gols</p>
                 <p className="mt-1 text-xs text-muted-foreground">Use o placar agregado da competição inteira.</p>
@@ -227,7 +227,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
               </div>
             </section>
 
-            <section>
+            <section data-tour="stats-modal-result">
               <div className="mb-3">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   {isLeague ? "Tabela" : "Resultado final"}
@@ -292,6 +292,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
 
           <div className="flex flex-col-reverse gap-2 border-t border-border bg-background/35 p-4 sm:flex-row sm:justify-end">
             <button
+              data-tour="stats-modal-cancel"
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
@@ -301,6 +302,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
               Cancelar
             </button>
             <button
+              data-tour="stats-modal-save"
               type="submit"
               disabled={isSubmitting}
               className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 font-display text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-70"

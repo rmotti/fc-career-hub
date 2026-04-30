@@ -13,7 +13,8 @@ import {
 import { getHubTutorialSteps } from "@/components/tutorial/hubTutorialSteps";
 import TutorialTooltip from "@/components/tutorial/TutorialTooltip";
 import { tutorialJoyrideStyles, tutorialLocale, tutorialOptions } from "@/components/tutorial/tutorialStyles";
-import { resolveVisibleSteps } from "@/components/tutorial/tutorialUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getResponsiveTutorialSteps, resolveVisibleSteps } from "@/components/tutorial/tutorialUtils";
 
 const promptKey = (userId: string) => `fcch:tutorial-prompt:${userId}`;
 
@@ -24,6 +25,7 @@ interface HubTutorialProps {
 
 const HubTutorial = ({ userId, startRequest }: HubTutorialProps) => {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [run, setRun] = useState(false);
   const [tourKey, setTourKey] = useState(0);
   const [activeSteps, setActiveSteps] = useState<Step[]>(getHubTutorialSteps(location.pathname));
@@ -48,7 +50,7 @@ const HubTutorial = ({ userId, startRequest }: HubTutorialProps) => {
     const launch = () => {
       setRun(false);
       window.setTimeout(() => {
-        const nextSteps = resolveVisibleSteps(getHubTutorialSteps(location.pathname));
+        const nextSteps = resolveVisibleSteps(getResponsiveTutorialSteps(getHubTutorialSteps(location.pathname), isMobile));
         if (nextSteps.length === 0) return;
 
         setActiveSteps(nextSteps);

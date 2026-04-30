@@ -134,8 +134,8 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl border-border bg-card p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent data-tour="transfer-modal" className="max-w-3xl border-border bg-card p-0" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
             {transfer ? "Atualizar transferência" : "Nova transferência"}
@@ -151,7 +151,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
           <fieldset className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.9fr]" disabled={isSubmitting}>
-            <FormSection icon={UserRound} title="Jogador" compact>
+            <FormSection dataTour="transfer-modal-player" icon={UserRound} title="Jogador" compact>
               <div className="grid grid-cols-1 gap-3">
                 <Field label="Tipo de movimento" icon={Repeat2}>
                   <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value as TransferType })}>
@@ -197,7 +197,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
               </div>
             </FormSection>
 
-            <FormSection icon={BadgeEuro} title="Mercado" compact>
+            <FormSection dataTour="transfer-modal-market" icon={BadgeEuro} title="Mercado" compact>
               <div className="grid grid-cols-1 gap-3">
                 <Field label="Valor">
                   <div className="relative">
@@ -226,7 +226,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
               </div>
             </FormSection>
 
-            <FormSection icon={Building2} title="Clubes">
+            <FormSection dataTour="transfer-modal-clubs" icon={Building2} title="Clubes">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="De">
                   <div className="relative">
@@ -259,6 +259,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
             <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end lg:col-span-2">
               <button
+                data-tour="transfer-modal-cancel"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
@@ -268,6 +269,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                 Cancelar
               </button>
               <button
+                data-tour="transfer-modal-save"
                 type="submit"
                 disabled={isSubmitting}
                 className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
@@ -288,14 +290,16 @@ function FormSection({
   title,
   children,
   compact = false,
+  dataTour,
 }: {
   icon: React.ElementType;
   title: string;
   children: React.ReactNode;
   compact?: boolean;
+  dataTour?: string;
 }) {
   return (
-    <section className={`rounded-lg border border-border bg-muted/20 p-4 ${compact ? "lg:self-start" : "lg:col-span-2"}`}>
+    <section data-tour={dataTour} className={`rounded-lg border border-border bg-muted/20 p-4 ${compact ? "lg:self-start" : "lg:col-span-2"}`}>
       <div className="mb-4 flex items-center gap-2">
         <Icon size={15} className="text-primary" />
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>

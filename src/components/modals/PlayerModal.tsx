@@ -175,8 +175,8 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl border-border bg-card p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent data-tour="player-modal" className="max-w-4xl border-border bg-card p-0" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
             {isEdit ? "Atualizar jogador" : "Novo jogador"}
@@ -199,7 +199,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
           <fieldset className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_0.9fr]" disabled={isSubmitting}>
-            <FormSection icon={UserRound} title="Identidade">
+            <FormSection dataTour="player-modal-identity" icon={UserRound} title="Identidade">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.35fr]">
                 <Field label="Nome">
                   <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -312,7 +312,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               )}
             </FormSection>
 
-            <FormSection icon={Activity} title="Desenvolvimento" compact>
+            <FormSection dataTour="player-modal-development" icon={Activity} title="Desenvolvimento" compact>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="OVR atual">
                   <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} />
@@ -323,7 +323,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               </div>
             </FormSection>
 
-            <FormSection icon={BarChart3} title="Estatísticas da temporada">
+            <FormSection dataTour="player-modal-stats" icon={BarChart3} title="Estatísticas da temporada">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Field label="Partidas">
                   <input type="number" className={inputClass} value={form.matches} onChange={(e) => setForm({ ...form, matches: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
@@ -348,7 +348,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               </div>
             </FormSection>
 
-            <FormSection icon={CircleDollarSign} title="Mercado" compact>
+            <FormSection dataTour="player-modal-market" icon={CircleDollarSign} title="Mercado" compact>
               <div className="grid grid-cols-1 gap-3">
                 <Field label="Salário semanal" icon={BadgeEuro}>
                   <div className="relative">
@@ -383,6 +383,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
             <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end lg:col-span-2">
               <button
+                data-tour="player-modal-cancel"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
@@ -392,6 +393,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                 Cancelar
               </button>
               <button
+                data-tour="player-modal-save"
                 type="submit"
                 disabled={isSubmitting}
                 className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
@@ -412,14 +414,16 @@ function FormSection({
   title,
   children,
   compact = false,
+  dataTour,
 }: {
   icon: React.ElementType;
   title: string;
   children: React.ReactNode;
   compact?: boolean;
+  dataTour?: string;
 }) {
   return (
-    <section className={`rounded-lg border border-border bg-muted/20 p-4 ${compact ? "lg:self-start" : ""}`}>
+    <section data-tour={dataTour} className={`rounded-lg border border-border bg-muted/20 p-4 ${compact ? "lg:self-start" : ""}`}>
       <div className="mb-4 flex items-center gap-2">
         <Icon size={15} className="text-primary" />
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>

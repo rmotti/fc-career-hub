@@ -318,6 +318,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         </div>
         {!isPastSeason && (
           <button
+            data-tour="squad-create-player"
             onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
             className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
           >
@@ -556,6 +557,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                       {!isPastSeason && (
                         <>
                           <button
+                            data-tour="squad-edit-player"
                             onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
                             className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
                             title="Editar dados e estatísticas"

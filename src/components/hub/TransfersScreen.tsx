@@ -250,6 +250,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
           {!isPastSeason && (
             <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
               <button
+                data-tour="transfers-edit-transfer"
                 type="button"
                 onClick={() => openEditModal(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
@@ -298,6 +299,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
           <td className="whitespace-nowrap px-4 py-3 text-right">
             <div className="inline-flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
               <button
+                data-tour="transfers-edit-transfer"
                 type="button"
                 onClick={() => openEditModal(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
@@ -353,6 +355,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
           ))}
           {!isPastSeason && (
             <button
+              data-tour="transfers-create-transfer"
               type="button"
               onClick={openCreateModal}
               className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"

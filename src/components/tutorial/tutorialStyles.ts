@@ -7,7 +7,7 @@ const tutorialJoyrideStyles = {
     overlayColor: "hsl(220 20% 7% / 0.78)",
     primaryColor: "hsl(142 70% 49%)",
     textColor: "hsl(210 20% 92%)",
-    zIndex: 80,
+    zIndex: 120,
   },
   floater: {
     filter: "drop-shadow(0 18px 46px hsl(220 20% 3% / 0.5))",
@@ -31,7 +31,7 @@ const tutorialLocale = {
 
 const tutorialOptions: Partial<Options> = {
   overlayClickAction: false,
-  scrollOffset: 96,
+  scrollOffset: 72,
   showProgress: true,
   buttons: ["back", "skip", "primary"],
 };
