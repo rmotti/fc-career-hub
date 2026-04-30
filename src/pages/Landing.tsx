@@ -171,9 +171,6 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
         </div>
 
         <nav className="flex items-center gap-1">
-          <Link to="/pricing" className="rounded-xl px-4 py-2 font-display text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
-            Planos
-          </Link>
           {isAuthenticated ? (
             <Link to="/app" className="landing-btn-primary ml-2 flex items-center gap-2 rounded-xl bg-primary px-5 py-2 font-display text-sm font-bold text-primary-foreground">
               Ir para o Hub <ArrowRight size={14} />

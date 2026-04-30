@@ -197,7 +197,7 @@ function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: Cam
   const resultTotal = Math.max(matches, 1);
 
   return (
-    <section className="card-gamer relative overflow-hidden p-5 md:p-6">
+    <section data-tour="stats-campaign" className="card-gamer relative overflow-hidden p-5 md:p-6">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.035]"
         style={{
@@ -381,7 +381,7 @@ function RankingPanel({ rankings, activeRanking, onActiveRankingChange, onOpenAl
   const Icon = active.icon;
 
   return (
-    <section className="card-gamer p-5 md:p-6">
+    <section data-tour="stats-rankings" className="card-gamer p-5 md:p-6">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -778,7 +778,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
         </div>
       )}
 
-      <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
+      <div data-tour="stats-header" className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 size={15} className="text-primary" />

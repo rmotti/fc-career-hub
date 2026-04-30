@@ -129,7 +129,7 @@ const HubSidebar = ({
     <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity group-[.active]:opacity-100" />
   );
 
-  const renderSidebarContent = (contentCollapsed: boolean) => {
+  const renderSidebarContent = (contentCollapsed: boolean, enableTourTargets = false) => {
     const collapsed = contentCollapsed;
     const actionButtonClass = getActionButtonClass(collapsed);
     const primaryActionButtonClass = getPrimaryActionButtonClass(collapsed);
@@ -189,7 +189,7 @@ const HubSidebar = ({
         >
           <section className="space-y-2 overflow-x-hidden">
             <p className={sectionTitleClass}>Principal</p>
-            <nav className="space-y-1 overflow-x-hidden">
+            <nav data-tour={enableTourTargets ? "hub-navigation" : undefined} className="space-y-1 overflow-x-hidden">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -241,6 +241,7 @@ const HubSidebar = ({
                       item.label,
                       <button
                         onClick={handleNewSeason}
+                        data-tour={enableTourTargets ? "hub-new-season" : undefined}
                         className={primaryActionButtonClass}
                       >
                         <Icon size={18} className="shrink-0" />
@@ -358,7 +359,7 @@ const HubSidebar = ({
           collapsed ? "w-16" : "w-60"
         }`}
       >
-        {renderSidebarContent(collapsed)}
+        {renderSidebarContent(collapsed, true)}
       </aside>
     </>
   );

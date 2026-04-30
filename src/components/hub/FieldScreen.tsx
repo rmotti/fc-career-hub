@@ -929,7 +929,7 @@ const FieldScreen = ({ saveId }: Props) => {
       <div className="mx-auto w-full max-w-[1400px] min-w-0 space-y-4">
 
         {/* Header */}
-        <div className="flex flex-col gap-3 rounded-lg border border-border/80 bg-card/70 px-4 py-3 shadow-[0_14px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between">
+        <div data-tour="field-header" className="flex flex-col gap-3 rounded-lg border border-border/80 bg-card/70 px-4 py-3 shadow-[0_14px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Escalação</h1>
             <p className="text-sm text-muted-foreground">
@@ -963,7 +963,7 @@ const FieldScreen = ({ saveId }: Props) => {
         <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[244px_minmax(420px,820px)_360px] xl:items-stretch xl:justify-center">
           <div className="contents">
             {/* Pitch */}
-            <div className="order-1 min-w-0 overflow-hidden rounded-lg border border-emerald-400/20 bg-[#06170d] shadow-[0_18px_50px_rgba(0,0,0,0.24)] xl:order-2">
+            <div data-tour="field-pitch" className="order-1 min-w-0 overflow-hidden rounded-lg border border-emerald-400/20 bg-[#06170d] shadow-[0_18px_50px_rgba(0,0,0,0.24)] xl:order-2">
               <div
                 ref={pitchRef}
                 className="relative mx-auto w-full max-w-[820px]"
@@ -1070,7 +1070,7 @@ const FieldScreen = ({ saveId }: Props) => {
             </div>
 
             {/* Bench */}
-            <section className="order-2 min-w-0 rounded-lg border border-border bg-card/70 p-4 xl:order-1 xl:sticky xl:top-4">
+            <section data-tour="field-bench" className="order-2 min-w-0 rounded-lg border border-border bg-card/70 p-4 xl:order-1 xl:sticky xl:top-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest">
                   Banco de Reservas
@@ -1107,7 +1107,7 @@ const FieldScreen = ({ saveId }: Props) => {
           </div>
 
           {/* Reserves */}
-          <aside className="order-3 flex min-w-0 flex-col rounded-lg border border-border bg-card/70 p-4 xl:sticky xl:top-4 xl:h-full xl:max-h-[calc(100vh-2rem)]">
+          <aside data-tour="field-reserves" className="order-3 flex min-w-0 flex-col rounded-lg border border-border bg-card/70 p-4 xl:sticky xl:top-4 xl:h-full xl:max-h-[calc(100vh-2rem)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest">
                 Disponíveis

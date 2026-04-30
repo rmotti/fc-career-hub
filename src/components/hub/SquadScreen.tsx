@@ -306,7 +306,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
+      <div data-tour="squad-header" className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
         <div>
           <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
             {save?.currentClubStint?.club ?? save?.name ?? "Modo Carreira"}
@@ -332,7 +332,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         </div>
       )}
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section data-tour="squad-metrics" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SquadMetric icon={Users} label="Jogadores" value={squadSummary.totalPlayers} detail={`${squadSummary.averageAge || "-"} anos em média`} />
         <SquadMetric icon={Activity} label="OVR médio" value={squadSummary.averageOvr || "-"} detail={`${squadSummary.prospects} promessa(s)`} tone="primary" />
         <SquadMetric icon={Target} label="Produção" value={`${squadSummary.totalGoals}G`} detail={`${squadSummary.totalAssists} assistências`} tone="accent" />
@@ -376,8 +376,8 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         />
       </section>
 
-      <div className="card-gamer overflow-hidden">
-        <div className="border-b border-border p-4">
+      <div data-tour="squad-table" className="card-gamer overflow-hidden">
+        <div data-tour="squad-controls" className="border-b border-border p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap gap-2">
               {viewOptions.map((option) => {

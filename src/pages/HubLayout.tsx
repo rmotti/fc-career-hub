@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import HubSidebar from "@/components/hub/HubSidebar";
 import HubHeader from "@/components/hub/HubHeader";
 import NewSeasonModal from "@/components/modals/NewSeasonModal";
+import HubTutorial from "@/components/tutorial/HubTutorial";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/useAuth";
 import { useSave, useUpdateSave } from "@/hooks/useSaves";
@@ -24,6 +25,7 @@ const HubLayout = () => {
   const { user, signOut } = useAuth();
   const activeSaveId = user ? getStoredActiveSaveId(user.id) : null;
   const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
+  const [tutorialRequest, setTutorialRequest] = useState(0);
   const [selectedSeason, setSelectedSeason] = useState<string>("");
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem("sidebar-collapsed") === "true";
@@ -195,6 +197,7 @@ const HubLayout = () => {
           selectedSeason={statsSeason}
           onSeasonChange={setSelectedSeason}
           showSeasonSelector={isStatsRoute}
+          onStartTutorial={() => setTutorialRequest((request) => request + 1)}
         />
         <main className="min-h-0 flex-1 overflow-y-auto p-6 w-full max-w-full">
           <Outlet
@@ -216,6 +219,7 @@ const HubLayout = () => {
         currentClub={currentClub}
         onConfirm={handleNewSeason}
       />
+      <HubTutorial userId={user.id} startRequest={tutorialRequest} />
     </div>
   );
 };

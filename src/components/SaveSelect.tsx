@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRight, CheckCircle2, ChevronLeft, Loader2, Plus, Shield, Sparkles, Trash2, Trophy } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronLeft, Loader2, LogOut, Plus, Shield, Sparkles, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { extractErrorMessage, type ApiSave, type UserPlan } from "@/services/api";
 import { useClubsByLeague } from "@/hooks/useClubs";
@@ -7,6 +7,8 @@ import { useEuropeanCompetitions } from "@/hooks/useCompetitions";
 import { useDeleteSave } from "@/hooks/useSaves";
 import { parseBudgetInMillionsInput } from "@/utils/currency";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import SaveSelectTutorial from "@/components/tutorial/SaveSelectTutorial";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   userName: string;
@@ -15,6 +17,7 @@ interface Props {
   loading: boolean;
   onSelectSave: (save: ApiSave) => void;
   onCreateSave: (name: string, club: string, budget: string, europeanCompetitionId: string | null) => Promise<void>;
+  onSignOut: () => void;
   creating: boolean;
 }
 
@@ -35,7 +38,7 @@ const formatUpdatedAt = (value?: string) => {
   }).format(date);
 };
 
-const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreateSave, creating }: Props) => {
+const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreateSave, onSignOut, creating }: Props) => {
   const [showForm, setShowForm] = useState(false);
   const deleteSave = useDeleteSave();
   const [newName, setNewName] = useState("");
@@ -113,7 +116,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
       )}
 
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-8 lg:px-10">
-        <header className="flex flex-col gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <header data-tour="save-header" className="flex flex-col gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary shadow-[0_0_24px_hsl(var(--primary)/0.16)]">
               <Shield size={22} />
@@ -124,12 +127,26 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-card/70 px-4 py-2 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{userName}</span>
-            <span className="mx-2 text-border">/</span>
-            <span>Plano {userPlan}</span>
-            <span className="mx-2 text-border">/</span>
-            <span>{saveCountLabel}</span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div data-tour="save-user-summary" className="rounded-lg border border-border bg-card/70 px-4 py-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{userName}</span>
+              <span className="mx-2 text-border">/</span>
+              <span>Plano {userPlan}</span>
+              <span className="mx-2 text-border">/</span>
+              <span>{saveCountLabel}</span>
+            </div>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card/70 px-4 font-display text-sm font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              title="Sair e voltar para a tela inicial"
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
+            <div data-tour="save-help">
+              <SaveSelectTutorial />
+            </div>
           </div>
         </header>
 
@@ -178,6 +195,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             </div>
 
             <Carousel
+              data-tour="save-list"
               opts={{
                 align: "start",
                 containScroll: "trimSnaps",
@@ -209,6 +227,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             </Carousel>
 
             <button
+              data-tour="save-create-action"
               onClick={() => setShowForm(true)}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card/45 px-5 py-5 font-display text-lg font-bold text-primary transition-colors hover:border-primary/60 hover:bg-primary/5"
             >
@@ -333,7 +352,7 @@ const CreateSavePanel = ({
       </div>
     </aside>
 
-    <div className="card-gamer p-5 sm:p-7">
+    <div data-tour="save-form" className="card-gamer p-5 sm:p-7">
       <div className="grid gap-5">
         <Field label="Nome do save">
           <input
@@ -347,30 +366,51 @@ const CreateSavePanel = ({
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Liga">
-            <select
+            <Select
               value={newLeague}
-              onChange={(e) => onLeagueChange(e.target.value)}
-              className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow focus:ring-2 focus:ring-primary/50"
+              onValueChange={(value) => {
+                onLeagueChange(value);
+                onClubChange("");
+              }}
             >
-              <option value="">Selecione a liga...</option>
-              {leagueNames.map((league) => (
-                <option key={league} value={league}>{league}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-12 rounded-lg border-border bg-background/70 px-4 font-display text-sm font-semibold text-foreground transition-shadow hover:border-primary/40 focus:ring-primary/50 focus:ring-offset-0">
+                <SelectValue placeholder="Selecione a liga..." />
+              </SelectTrigger>
+              <SelectContent className="border-border bg-card text-foreground shadow-[0_18px_48px_hsl(220_20%_3%/0.55)]">
+                {leagueNames.map((league) => (
+                  <SelectItem
+                    key={league}
+                    value={league}
+                    className="font-display text-sm font-semibold focus:bg-primary focus:text-primary-foreground"
+                  >
+                    {league}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field label="Clube inicial">
-            <select
+            <Select
               value={newClub}
-              onChange={(e) => onClubChange(e.target.value)}
               disabled={!newLeague}
-              className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+              onValueChange={onClubChange}
             >
-              <option value="">Selecione o time...</option>
-              {clubsForLeague.map((club) => (
-                <option key={club} value={club}>{club}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-12 rounded-lg border-border bg-background/70 px-4 font-display text-sm font-semibold text-foreground transition-shadow hover:border-primary/40 focus:ring-primary/50 focus:ring-offset-0">
+                <SelectValue placeholder="Selecione o time..." />
+              </SelectTrigger>
+              <SelectContent className="border-border bg-card text-foreground shadow-[0_18px_48px_hsl(220_20%_3%/0.55)]">
+                {clubsForLeague.map((club) => (
+                  <SelectItem
+                    key={club}
+                    value={club}
+                    className="font-display text-sm font-semibold focus:bg-primary focus:text-primary-foreground"
+                  >
+                    {club}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
         </div>
 
@@ -391,16 +431,28 @@ const CreateSavePanel = ({
           </Field>
 
           <Field label="Competição europeia inicial">
-            <select
+            <Select
               value={newEuropeanCompetitionId}
-              onChange={(e) => onEuropeanCompetitionChange(e.target.value)}
-              className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow focus:ring-2 focus:ring-primary/50"
+              onValueChange={onEuropeanCompetitionChange}
             >
-              <option value="none">Nenhuma</option>
-              {europeanCompetitions.map((competition) => (
-                <option key={competition.id} value={competition.id}>{competition.name}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-12 rounded-lg border-border bg-background/70 px-4 font-display text-sm font-semibold text-foreground transition-shadow hover:border-primary/40 focus:ring-primary/50 focus:ring-offset-0">
+                <SelectValue placeholder="Nenhuma" />
+              </SelectTrigger>
+              <SelectContent className="border-border bg-card text-foreground shadow-[0_18px_48px_hsl(220_20%_3%/0.55)]">
+                <SelectItem value="none" className="font-display text-sm font-semibold focus:bg-primary focus:text-primary-foreground">
+                  Nenhuma
+                </SelectItem>
+                {europeanCompetitions.map((competition) => (
+                  <SelectItem
+                    key={competition.id}
+                    value={competition.id}
+                    className="font-display text-sm font-semibold focus:bg-primary focus:text-primary-foreground"
+                  >
+                    {competition.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="mt-1.5 text-xs text-muted-foreground">Opcional para a primeira temporada.</p>
           </Field>
         </div>
@@ -437,6 +489,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
         Crie seu primeiro save para registrar temporadas, elenco, mercado, estatísticas e conquistas.
       </p>
       <button
+        data-tour="save-create-action"
         onClick={onCreate}
         className="landing-btn-primary mx-auto mt-7 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-sm font-bold text-primary-foreground"
       >

@@ -178,7 +178,7 @@ const DashboardScreen = ({ saveId }: Props) => {
         </div>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.45fr_0.9fr]">
+      <section data-tour="dashboard-overview" className="grid grid-cols-1 gap-4 lg:grid-cols-[1.45fr_0.9fr]">
         <div className="card-gamer relative overflow-hidden p-6">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.035]"
@@ -310,7 +310,7 @@ const DashboardScreen = ({ saveId }: Props) => {
       </section>
 
       <section>
-        <div className={`card-gamer p-6 ${isLowBalance ? "border-destructive/50" : ""}`}>
+        <div data-tour="dashboard-finance" className={`card-gamer p-6 ${isLowBalance ? "border-destructive/50" : ""}`}>
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <CircleDollarSign size={15} className={isLowBalance ? "text-destructive" : "text-primary"} />

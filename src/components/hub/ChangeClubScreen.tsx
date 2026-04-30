@@ -152,7 +152,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   return (
     <>
       <div className="space-y-6">
-        <section className="card-gamer relative overflow-hidden p-5 md:p-6">
+        <section data-tour="change-club-hero" className="card-gamer relative overflow-hidden p-5 md:p-6">
           <div className="absolute right-0 top-0 h-36 w-36 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative grid gap-5 lg:grid-cols-[1fr_0.95fr] lg:items-end">
             <div>
@@ -183,7 +183,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)_180px]">
+        <section data-tour="change-club-filters" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)_180px]">
           <div className="card-gamer p-4">
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Buscar clube
@@ -232,7 +232,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
         </section>
 
         {groupedClubs.length > 0 ? (
-          <div className="space-y-8">
+          <div data-tour="change-club-list" className="space-y-8">
             {groupedClubs.map(({ league, clubs }) => (
               <section key={league} className="space-y-4">
                 <div className="flex items-center justify-between gap-3 border-b border-border pb-2">

@@ -126,7 +126,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // ─── Auth ───────────────────────────────────────────────────────────
 
 export const authApi = {
-  signUp: (data: { name: string; email: string; password: string }) =>
+  signUp: (data: { name: string; email: string; password: string; plan?: UserPlan }) =>
     request<AuthSuccessResponse>("/auth/sign-up/email", {
       method: "POST",
       body: JSON.stringify(data),

@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (data: { name: string; email: string; password: string }) => {
-    const authResponse = await authApi.signUp(data);
+    const authResponse = await authApi.signUp({ ...data, plan: "FREE" });
     setStoredToken(authResponse.token);
     setStoredUser(authResponse.user);
     setToken(authResponse.token);
@@ -121,6 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       await authApi.signOut();
+    } catch {
+      // Mesmo que o endpoint falhe, encerrar a sessão local completa o fluxo de logout.
     } finally {
       clearSession();
     }

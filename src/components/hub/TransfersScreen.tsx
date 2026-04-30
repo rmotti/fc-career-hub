@@ -330,7 +330,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
-      <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
+      <div data-tour="transfers-header" className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{currentClub} · {currentSeason}</p>
           <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">Central de Mercado</h2>
@@ -369,7 +369,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section data-tour="transfers-metrics" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MarketStat
           label="Saldo disponível"
           value={displayBalance}
@@ -406,7 +406,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
 
       {tab === "current" ? (
         <div className="space-y-5">
-          <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <section data-tour="transfers-current" className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <TransferColumn
               title="Entradas"
               icon={ArrowDownLeft}
@@ -449,7 +449,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
         </div>
       ) : (
         <div className="space-y-4">
-          <section className="card-gamer p-5">
+          <section data-tour="transfers-history" className="card-gamer p-5">
             <div className="mb-4 flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <Filter size={18} />

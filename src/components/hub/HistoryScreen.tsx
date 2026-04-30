@@ -232,7 +232,7 @@ const HistoryScreen = ({ saveId }: Props) => {
 
   return (
     <div className="space-y-6">
-      <section className="card-gamer relative overflow-hidden p-5 md:p-6">
+      <section data-tour="history-hero" className="card-gamer relative overflow-hidden p-5 md:p-6">
         <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-[hsl(var(--gold)/0.08)] blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
 
@@ -303,7 +303,7 @@ const HistoryScreen = ({ saveId }: Props) => {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="card-gamer p-5 md:p-6">
+        <div data-tour="history-clubs" className="card-gamer p-5 md:p-6">
           <SectionTitle icon={Footprints} kicker="Trajetória" title="Clubes gerenciados" />
 
           {sortedClubStints.length > 0 ? (
@@ -340,7 +340,7 @@ const HistoryScreen = ({ saveId }: Props) => {
           )}
         </div>
 
-        <div className="card-gamer p-5 md:p-6">
+        <div data-tour="history-trophies" className="card-gamer p-5 md:p-6">
           <SectionTitle icon={Trophy} kicker="Conquistas" title="Vitrine de títulos" />
 
           {sortedTrophies.length > 0 ? (
