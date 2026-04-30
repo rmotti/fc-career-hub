@@ -440,7 +440,7 @@ const DashboardScreen = ({ saveId }: Props) => {
         </div>
 
         <div className="card-gamer p-6">
-          <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex items-center gap-2">
               <ArrowDownRight size={15} className="text-accent" />
               <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Mercado da temporada</p>
@@ -449,7 +449,7 @@ const DashboardScreen = ({ saveId }: Props) => {
           </div>
           {transfers.length > 0 ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <CompactMetric label="Saldo" value={formatSignedCurrencyInMillions(transferNet)} tone={transferNet >= 0 ? "primary" : "destructive"} />
                 <CompactMetric label="Gasto" value={formatCurrencyInMillions(transferSpend)} tone={transferSpend > 0 ? "warning" : "muted"} />
                 <CompactMetric label="Receita" value={formatCurrencyInMillions(transferRevenue)} tone={transferRevenue > 0 ? "accent" : "muted"} />
@@ -570,9 +570,11 @@ interface CompactMetricProps {
 
 function CompactMetric({ label, value, tone }: CompactMetricProps) {
   return (
-    <div className="rounded-md border border-border bg-background/30 p-4">
+    <div className="min-w-0 rounded-md border border-border bg-background/30 p-4">
       <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-      <p className={`mt-2 font-display text-2xl font-bold leading-none ${toneClass[tone]}`}>{value}</p>
+      <p className={`mt-2 break-words font-display text-[clamp(1.25rem,5.4vw,1.5rem)] font-bold leading-none ${toneClass[tone]}`}>
+        {value}
+      </p>
     </div>
   );
 }

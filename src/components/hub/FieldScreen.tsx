@@ -284,8 +284,8 @@ const PlayerCard = ({
   positionFlag?: PositionFlag;
 }) => {
   const c = SLOT_COLORS[displayPosition] ?? SLOT_COLORS[player.position] ?? FALLBACK_COLORS;
-  const w = compact ? "w-12" : "w-[60px]";
-  const h = compact ? 60 : 72;
+  const w = compact ? "w-11" : "w-[48px]";
+  const h = compact ? 54 : 58;
   return (
     <div
       className={`${w} border ${c.border} ${c.bg} ${c.glow} rounded-lg flex flex-col items-center justify-center gap-0.5 backdrop-blur-sm select-none transition-all overflow-hidden relative ${overlay ? "rotate-2 scale-105 opacity-95" : ""} ${isSelected ? "brightness-125 scale-105" : ""}`}
@@ -311,13 +311,13 @@ const PlayerCard = ({
           !
         </span>
       )}
-      <span className={`max-w-[54px] truncate text-[8px] font-display font-bold tracking-widest leading-none px-1.5 py-0.5 rounded ${c.badge} relative z-10`}>
+      <span className={`max-w-[42px] truncate text-[7px] font-display font-bold tracking-widest leading-none px-1 py-0.5 rounded ${c.badge} relative z-10`}>
         {displayPosition}
       </span>
-      <span className={`font-display font-bold leading-none ${c.text} ${compact ? "text-base" : "text-xl"} relative z-10`}>
+      <span className={`font-display font-bold leading-none ${c.text} ${compact ? "text-sm" : "text-lg"} relative z-10`}>
         {player.ovr}
       </span>
-      <span className="text-[9px] text-white/65 font-medium leading-none max-w-[52px] text-center truncate px-0.5 relative z-10">
+      <span className="text-[8px] text-white/65 font-medium leading-none max-w-[44px] text-center truncate px-0.5 relative z-10">
         {player.name.split(" ").slice(-1)[0]}
       </span>
     </div>
@@ -365,8 +365,8 @@ interface SlotProps {
 
 const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, isSelectionActive, isValidForSelection, compact, showPosition = true, positionFlag = null, onRemove, onSlotClick, onPositionDrag, onPositionDragPreviewChange, onPositionDragPreviewMove }: SlotProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: slotId });
-  const w = compact ? "w-12" : "w-[60px]";
-  const h = compact ? 60 : 72;
+  const w = compact ? "w-11" : "w-[48px]";
+  const h = compact ? 54 : 58;
   const dragStartRef = useRef({ x: 0, y: 0, active: false, suppressClick: false });
   const canDragPosition = !!(showPosition && onPositionDrag && (!player || isSelected));
 
@@ -509,9 +509,9 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
             }}
             className="flex h-full w-full touch-none select-none flex-col items-center justify-center gap-1"
           >
-            <Plus size={compact ? 12 : 14} className="text-white/25" />
+            <Plus size={compact ? 11 : 13} className="text-white/25" />
             {showPosition && (
-              <span className="text-[8px] font-display tracking-widest text-white/25 leading-none">
+              <span className="text-[7px] font-display tracking-widest text-white/25 leading-none">
                 {position}
               </span>
             )}
@@ -529,8 +529,8 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
             }}
           >
             {isThisValid
-              ? <Plus size={compact ? 12 : 14} className={isOver ? "text-primary/80" : "text-primary/50"} />
-              : <X size={compact ? 10 : 12} className="text-white/10" />
+              ? <Plus size={compact ? 11 : 13} className={isOver ? "text-primary/80" : "text-primary/50"} />
+              : <X size={compact ? 9 : 11} className="text-white/10" />
             }
             {showPosition && isThisValid && (
               <span className={`text-[8px] font-display tracking-widest leading-none ${isOver ? "text-primary/80" : "text-primary/40"}`}>
@@ -926,7 +926,7 @@ const FieldScreen = ({ saveId }: Props) => {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="mx-auto max-w-[1400px] space-y-4">
+      <div className="mx-auto w-full max-w-[1400px] min-w-0 space-y-4">
 
         {/* Header */}
         <div className="flex flex-col gap-3 rounded-lg border border-border/80 bg-card/70 px-4 py-3 shadow-[0_14px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between">
@@ -938,8 +938,8 @@ const FieldScreen = ({ saveId }: Props) => {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Select value={state.formation} onValueChange={handleFormationChange}>
-              <SelectTrigger className="h-10 w-full bg-background/50 border-border font-display font-bold text-primary sm:w-48">
-                <span>{dynamicFormationName || state.formation}</span>
+              <SelectTrigger className="h-10 w-full min-w-0 bg-background/50 border-border font-display font-bold text-primary sm:w-48">
+                <span className="truncate">{dynamicFormationName || state.formation}</span>
               </SelectTrigger>
               <SelectContent className="font-display max-h-72">
                 {FORMATIONS.map((f) => (
@@ -960,16 +960,16 @@ const FieldScreen = ({ saveId }: Props) => {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[244px_minmax(420px,820px)_360px] xl:items-stretch xl:justify-center">
+        <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[244px_minmax(420px,820px)_360px] xl:items-stretch xl:justify-center">
           <div className="contents">
             {/* Pitch */}
-            <div className="order-1 overflow-hidden rounded-lg border border-emerald-400/20 bg-[#06170d] shadow-[0_18px_50px_rgba(0,0,0,0.24)] xl:order-2">
+            <div className="order-1 min-w-0 overflow-hidden rounded-lg border border-emerald-400/20 bg-[#06170d] shadow-[0_18px_50px_rgba(0,0,0,0.24)] xl:order-2">
               <div
                 ref={pitchRef}
-                className="relative mx-auto w-full"
+                className="relative mx-auto w-full max-w-[820px]"
                 style={{
                   width: "100%",
-                  minWidth: "min(100%, 320px)",
+                  minWidth: "min(100%, 300px)",
                   aspectRatio: "7 / 10",
                   background: "linear-gradient(180deg, #082511 0%, #0c3919 48%, #082511 100%)",
                 }}
@@ -1070,7 +1070,7 @@ const FieldScreen = ({ saveId }: Props) => {
             </div>
 
             {/* Bench */}
-            <section className="order-2 rounded-lg border border-border bg-card/70 p-4 xl:order-1 xl:sticky xl:top-4">
+            <section className="order-2 min-w-0 rounded-lg border border-border bg-card/70 p-4 xl:order-1 xl:sticky xl:top-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest">
                   Banco de Reservas
@@ -1107,7 +1107,7 @@ const FieldScreen = ({ saveId }: Props) => {
           </div>
 
           {/* Reserves */}
-          <aside className="order-3 flex rounded-lg border border-border bg-card/70 p-4 xl:sticky xl:top-4 xl:h-full xl:max-h-[calc(100vh-2rem)] xl:flex-col">
+          <aside className="order-3 flex min-w-0 flex-col rounded-lg border border-border bg-card/70 p-4 xl:sticky xl:top-4 xl:h-full xl:max-h-[calc(100vh-2rem)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest">
                 Disponíveis
@@ -1128,7 +1128,7 @@ const FieldScreen = ({ saveId }: Props) => {
                 />
               </div>
 
-              <div className="grid grid-cols-5 gap-1">
+              <div className="grid grid-cols-3 gap-1 sm:grid-cols-5">
                 {RESERVE_FILTERS.map((filter) => (
                   <button
                     key={filter.value}
@@ -1146,7 +1146,7 @@ const FieldScreen = ({ saveId }: Props) => {
               </div>
             </div>
 
-            <ScrollArea className="mt-4 xl:min-h-0 xl:flex-1" viewportClassName="xl:pr-4" scrollbars="vertical">
+            <ScrollArea className="mt-4 max-h-[420px] xl:min-h-0 xl:max-h-none xl:flex-1" viewportClassName="pr-2 xl:pr-4" scrollbars="vertical">
               {isLoading ? (
                 <p className="text-sm text-muted-foreground">Carregando...</p>
               ) : reservePlayers.length === 0 ? (
