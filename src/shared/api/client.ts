@@ -79,9 +79,9 @@ export function extractErrorMessage(err: any): string {
   const apiError = err?.data?.error || err?.response?.data?.error;
 
   if (status === 400) return apiError || err.message || "Dados inválidos. Verifique as informações e tente novamente.";
-  if (status === 401) return "Sessão expirada. Faça login novamente.";
-  if (status === 403) return "Você não tem permissão para realizar esta ação.";
-  if (status === 404) return "Recurso não encontrado.";
+  if (status === 401) return apiError || err.message || "Sessão expirada. Faça login novamente.";
+  if (status === 403) return apiError || err.message || "Você não tem permissão para realizar esta ação.";
+  if (status === 404) return apiError || err.message || "Recurso não encontrado.";
   if (status === 409) return apiError || err.message || "Conflito ao salvar os dados. Tente novamente.";
   if (status >= 500) return "Erro interno. Tente novamente em instantes.";
 
