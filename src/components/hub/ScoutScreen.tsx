@@ -1,6 +1,8 @@
 import { useMemo, useState, type ElementType, type ReactNode } from "react";
 import {
   Activity,
+  ArrowDown,
+  ArrowUp,
   BadgeEuro,
   Bot,
   Brain,
@@ -59,8 +61,24 @@ interface AttributeFilterGroupConfig {
   filters: AttributeFilterConfig[];
 }
 
+type ComparisonDirection = "higher" | "lower";
+
+interface ComparisonMetricConfig {
+  label: string;
+  render: (player: Fc26Player) => ReactNode;
+  score?: (player: Fc26Player) => number | null | undefined;
+  better?: ComparisonDirection;
+}
+
+interface PlayerComparisonGroupConfig {
+  title: string;
+  icon: ElementType;
+  metrics: ComparisonMetricConfig[];
+}
+
 type DraftFilters = {
-  positions: PlayerPosition[];
+  primaryPositions: PlayerPosition[];
+  secondaryPositions: PlayerPosition[];
   nations: string[];
   leagues: string[];
   clubs: string[];
@@ -76,6 +94,14 @@ type DraftFilters = {
   attributeRanges: AttributeRangeDraft;
   limit: string;
 };
+
+type AppliedScoutFilters = Fc26PlayerFilters & {
+  primaryPositions?: PlayerPosition[];
+  secondaryPositions?: PlayerPosition[];
+};
+
+type ScoutSortBy = NonNullable<Fc26PlayerFilters["sortBy"]>;
+type ScoutSortOrder = NonNullable<Fc26PlayerFilters["sortOrder"]>;
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
   GOL: "Goleiro",
@@ -242,7 +268,8 @@ function createDefaultAttributeRanges(): AttributeRangeDraft {
 }
 
 const createDefaultDraft = (): DraftFilters => ({
-  positions: [],
+  primaryPositions: [],
+  secondaryPositions: [],
   nations: [],
   leagues: [],
   clubs: [],
@@ -305,6 +332,163 @@ const PRESETS: Array<{
     description: "MC/MEI canhotos",
     icon: Footprints,
     filters: { positions: ["MC", "MEI"], preferredFoot: "Left", limit: 20, offset: 0 },
+  },
+];
+
+const GENERAL_RATING_FIELDS = ["pace", "shooting", "passing", "dribbling", "defending", "physic"] as const;
+const COMPARISON_RADAR_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(var(--gold))",
+  "hsl(var(--warning))",
+  "hsl(var(--destructive))",
+];
+
+const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
+  {
+    title: "Decisão rápida",
+    icon: Target,
+    metrics: [
+      { label: "OVR", render: (player) => player.ovr, score: (player) => player.ovr, better: "higher" },
+      { label: "Potencial", render: (player) => player.potential, score: (player) => player.potential, better: "higher" },
+      {
+        label: "Crescimento",
+        render: (player) => formatPotentialGrowth(player),
+        score: (player) => player.potential - player.ovr,
+        better: "higher",
+      },
+      { label: "Idade", render: (player) => `${player.age} anos` },
+      { label: "Valor", render: (player) => formatMarketValue(player.marketValue) },
+      { label: "Salário", render: (player) => formatWage(player.wage) },
+      { label: "Clube", render: (player) => player.club ?? "Sem clube" },
+      { label: "Liga", render: (player) => player.league ?? "Liga não informada" },
+    ],
+  },
+  {
+    title: "Ratings gerais",
+    icon: Activity,
+    metrics: [
+      { label: "Média técnica", render: (player) => formatAverageRating(getGeneralRatingAverage(player)), score: getGeneralRatingAverage, better: "higher" },
+      { label: "Ritmo", render: (player) => formatRating(player.pace), score: (player) => player.pace, better: "higher" },
+      { label: "Finalização", render: (player) => formatRating(player.shooting), score: (player) => player.shooting, better: "higher" },
+      { label: "Passe", render: (player) => formatRating(player.passing), score: (player) => player.passing, better: "higher" },
+      { label: "Drible", render: (player) => formatRating(player.dribbling), score: (player) => player.dribbling, better: "higher" },
+      { label: "Defesa", render: (player) => formatRating(player.defending), score: (player) => player.defending, better: "higher" },
+      { label: "Físico", render: (player) => formatRating(player.physic), score: (player) => player.physic, better: "higher" },
+    ],
+  },
+  {
+    title: "Perfil",
+    icon: UserRound,
+    metrics: [
+      { label: "Principal", render: (player) => getPrimaryPosition(player) ?? "—" },
+      { label: "Secundárias", render: (player) => getSecondaryPositions(player).join(", ") || "—" },
+      { label: "Nacionalidade", render: (player) => player.nation ?? "—" },
+      { label: "Altura", render: (player) => formatHeight(player.height), score: (player) => player.height, better: "higher" },
+      { label: "Peso", render: (player) => formatWeight(player.weight) },
+      { label: "Pé dominante", render: (player) => formatPreferredFoot(player.preferredFoot) },
+      { label: "Perna ruim", render: (player) => formatStars(player.weakFoot), score: (player) => player.weakFoot, better: "higher" },
+      { label: "Skill moves", render: (player) => formatStars(player.skillMoves), score: (player) => player.skillMoves, better: "higher" },
+      {
+        label: "Reputação",
+        render: (player) => formatStars(player.internationalReputation),
+        score: (player) => player.internationalReputation,
+        better: "higher",
+      },
+      { label: "Work rate", render: (player) => player.workRate ?? "—" },
+    ],
+  },
+  {
+    title: "Ataque",
+    icon: Target,
+    metrics: [
+      { label: "Cruzamento", render: (player) => formatRating(player.attackingCrossing), score: (player) => player.attackingCrossing, better: "higher" },
+      { label: "Finalização", render: (player) => formatRating(player.attackingFinishing), score: (player) => player.attackingFinishing, better: "higher" },
+      {
+        label: "Cabeceio",
+        render: (player) => formatRating(player.attackingHeadingAccuracy),
+        score: (player) => player.attackingHeadingAccuracy,
+        better: "higher",
+      },
+      { label: "Passe curto", render: (player) => formatRating(player.attackingShortPassing), score: (player) => player.attackingShortPassing, better: "higher" },
+      { label: "Voleios", render: (player) => formatRating(player.attackingVolleys), score: (player) => player.attackingVolleys, better: "higher" },
+    ],
+  },
+  {
+    title: "Habilidade",
+    icon: Sparkles,
+    metrics: [
+      { label: "Drible", render: (player) => formatRating(player.skillDribbling), score: (player) => player.skillDribbling, better: "higher" },
+      { label: "Curva", render: (player) => formatRating(player.skillCurve), score: (player) => player.skillCurve, better: "higher" },
+      { label: "Falta", render: (player) => formatRating(player.skillFkAccuracy), score: (player) => player.skillFkAccuracy, better: "higher" },
+      { label: "Passe longo", render: (player) => formatRating(player.skillLongPassing), score: (player) => player.skillLongPassing, better: "higher" },
+      { label: "Controle", render: (player) => formatRating(player.skillBallControl), score: (player) => player.skillBallControl, better: "higher" },
+    ],
+  },
+  {
+    title: "Movimentação",
+    icon: Footprints,
+    metrics: [
+      { label: "Aceleração", render: (player) => formatRating(player.movementAcceleration), score: (player) => player.movementAcceleration, better: "higher" },
+      { label: "Sprint", render: (player) => formatRating(player.movementSprintSpeed), score: (player) => player.movementSprintSpeed, better: "higher" },
+      { label: "Agilidade", render: (player) => formatRating(player.movementAgility), score: (player) => player.movementAgility, better: "higher" },
+      { label: "Reações", render: (player) => formatRating(player.movementReactions), score: (player) => player.movementReactions, better: "higher" },
+      { label: "Equilíbrio", render: (player) => formatRating(player.movementBalance), score: (player) => player.movementBalance, better: "higher" },
+    ],
+  },
+  {
+    title: "Força",
+    icon: Dumbbell,
+    metrics: [
+      { label: "Força do chute", render: (player) => formatRating(player.powerShotPower), score: (player) => player.powerShotPower, better: "higher" },
+      { label: "Impulsão", render: (player) => formatRating(player.powerJumping), score: (player) => player.powerJumping, better: "higher" },
+      { label: "Fôlego", render: (player) => formatRating(player.powerStamina), score: (player) => player.powerStamina, better: "higher" },
+      { label: "Força", render: (player) => formatRating(player.powerStrength), score: (player) => player.powerStrength, better: "higher" },
+      { label: "Chute longo", render: (player) => formatRating(player.powerLongShots), score: (player) => player.powerLongShots, better: "higher" },
+    ],
+  },
+  {
+    title: "Mentalidade",
+    icon: Brain,
+    metrics: [
+      { label: "Agressividade", render: (player) => formatRating(player.mentalityAggression), score: (player) => player.mentalityAggression, better: "higher" },
+      { label: "Interceptações", render: (player) => formatRating(player.mentalityInterceptions), score: (player) => player.mentalityInterceptions, better: "higher" },
+      { label: "Posicionamento", render: (player) => formatRating(player.mentalityPositioning), score: (player) => player.mentalityPositioning, better: "higher" },
+      { label: "Visão", render: (player) => formatRating(player.mentalityVision), score: (player) => player.mentalityVision, better: "higher" },
+      { label: "Pênaltis", render: (player) => formatRating(player.mentalityPenalties), score: (player) => player.mentalityPenalties, better: "higher" },
+      { label: "Compostura", render: (player) => formatRating(player.mentalityComposure), score: (player) => player.mentalityComposure, better: "higher" },
+    ],
+  },
+  {
+    title: "Defesa",
+    icon: ShieldCheck,
+    metrics: [
+      {
+        label: "Consciência",
+        render: (player) => formatRating(player.defendingMarkingAwareness),
+        score: (player) => player.defendingMarkingAwareness,
+        better: "higher",
+      },
+      {
+        label: "Carrinho em pé",
+        render: (player) => formatRating(player.defendingStandingTackle),
+        score: (player) => player.defendingStandingTackle,
+        better: "higher",
+      },
+      { label: "Carrinho", render: (player) => formatRating(player.defendingSlidingTackle), score: (player) => player.defendingSlidingTackle, better: "higher" },
+    ],
+  },
+  {
+    title: "Goleiro",
+    icon: UserRound,
+    metrics: [
+      { label: "Mergulho", render: (player) => formatRating(player.goalkeepingDiving), score: (player) => player.goalkeepingDiving, better: "higher" },
+      { label: "Manuseio", render: (player) => formatRating(player.goalkeepingHandling), score: (player) => player.goalkeepingHandling, better: "higher" },
+      { label: "Chute", render: (player) => formatRating(player.goalkeepingKicking), score: (player) => player.goalkeepingKicking, better: "higher" },
+      { label: "Posição", render: (player) => formatRating(player.goalkeepingPositioning), score: (player) => player.goalkeepingPositioning, better: "higher" },
+      { label: "Reflexos", render: (player) => formatRating(player.goalkeepingReflexes), score: (player) => player.goalkeepingReflexes, better: "higher" },
+      { label: "Velocidade", render: (player) => formatRating(player.goalkeepingSpeed), score: (player) => player.goalkeepingSpeed, better: "higher" },
+    ],
   },
 ];
 
@@ -378,7 +562,23 @@ function countAttributeFilters(filters: Fc26PlayerFilters) {
   }, 0);
 }
 
-function buildFiltersFromDraft(draft: DraftFilters): Fc26PlayerFilters | null {
+function getUniquePositions(...groups: PlayerPosition[][]) {
+  return Array.from(new Set(groups.flat()));
+}
+
+function getPrimaryPosition(player: Fc26Player) {
+  return player.positions[0] ?? null;
+}
+
+function getSecondaryPositions(player: Fc26Player) {
+  return player.positions.slice(1);
+}
+
+function hasSplitPositionFilters(filters: AppliedScoutFilters | null) {
+  return Boolean(filters?.primaryPositions?.length || filters?.secondaryPositions?.length);
+}
+
+function buildFiltersFromDraft(draft: DraftFilters): AppliedScoutFilters | null {
   const minOvr = readNumber(draft.minOvr);
   const maxOvr = readNumber(draft.maxOvr);
   const minAge = readNumber(draft.minAge);
@@ -387,6 +587,7 @@ function buildFiltersFromDraft(draft: DraftFilters): Fc26PlayerFilters | null {
   const maxPotential = readNumber(draft.maxPotential);
   const traits = [...draft.playStyles, ...draft.playStylesPlus];
   const attributeFilters = buildAttributeFilters(draft.attributeRanges);
+  const positions = getUniquePositions(draft.primaryPositions, draft.secondaryPositions);
 
   if (!validateRange("OVR", minOvr, maxOvr)) return null;
   if (!validateRange("Idade", minAge, maxAge)) return null;
@@ -394,7 +595,9 @@ function buildFiltersFromDraft(draft: DraftFilters): Fc26PlayerFilters | null {
   if (!attributeFilters) return null;
 
   return {
-    ...(draft.positions.length ? { positions: draft.positions } : {}),
+    ...(positions.length ? { positions } : {}),
+    ...(draft.primaryPositions.length ? { primaryPositions: draft.primaryPositions } : {}),
+    ...(draft.secondaryPositions.length ? { secondaryPositions: draft.secondaryPositions } : {}),
     ...(draft.nations.length ? { nations: draft.nations } : {}),
     ...(draft.leagues.length ? { leagues: draft.leagues } : {}),
     ...(draft.leagues.length && draft.clubs.length ? { clubs: draft.clubs } : {}),
@@ -412,9 +615,11 @@ function buildFiltersFromDraft(draft: DraftFilters): Fc26PlayerFilters | null {
   };
 }
 
-function hasMeaningfulFilters(filters: Fc26PlayerFilters) {
+function hasMeaningfulFilters(filters: AppliedScoutFilters) {
   return Boolean(
-    filters.positions?.length ||
+    filters.primaryPositions?.length ||
+    filters.secondaryPositions?.length ||
+    (!hasSplitPositionFilters(filters) && filters.positions?.length) ||
     filters.nations?.length ||
     filters.leagues?.length ||
     filters.clubs?.length ||
@@ -430,11 +635,12 @@ function hasMeaningfulFilters(filters: Fc26PlayerFilters) {
   );
 }
 
-function draftFromFilters(filters: Fc26PlayerFilters): DraftFilters {
+function draftFromFilters(filters: AppliedScoutFilters): DraftFilters {
   const traits = filters.traits ?? [];
 
   return {
-    positions: filters.positions ?? [],
+    primaryPositions: filters.primaryPositions ?? filters.positions ?? [],
+    secondaryPositions: filters.secondaryPositions ?? [],
     nations: filters.nations ?? [],
     leagues: filters.leagues ?? [],
     clubs: filters.clubs ?? [],
@@ -484,6 +690,22 @@ function formatStars(value: number | null | undefined) {
   return value === null || value === undefined ? "—" : `${value}/5`;
 }
 
+function formatPotentialGrowth(player: Fc26Player) {
+  const growth = player.potential - player.ovr;
+  return growth > 0 ? `+${growth}` : String(growth);
+}
+
+function getGeneralRatingAverage(player: Fc26Player) {
+  const values = GENERAL_RATING_FIELDS.map((field) => player[field]).filter((value): value is number => typeof value === "number");
+  if (!values.length) return null;
+
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function formatAverageRating(value: number | null | undefined) {
+  return value === null || value === undefined ? "—" : value.toFixed(1);
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
 
@@ -530,11 +752,35 @@ function sortLeagueOptions(leagues: string[]) {
   });
 }
 
+function getSortValue(player: Fc26Player, sortBy: ScoutSortBy) {
+  return sortBy === "potential" ? player.potential : player.ovr;
+}
+
+function sortPlayersForDisplay(players: Fc26Player[], filters: AppliedScoutFilters | null) {
+  if (!filters?.sortBy) return players;
+
+  const sortBy = filters.sortBy;
+  const direction = filters.sortOrder === "asc" ? 1 : -1;
+  const tieBreaker = sortBy === "ovr" ? "potential" : "ovr";
+
+  return [...players].sort((a, b) => {
+    const valueDiff = getSortValue(a, sortBy) - getSortValue(b, sortBy);
+    if (valueDiff !== 0) return valueDiff * direction;
+
+    const tieDiff = getSortValue(a, tieBreaker) - getSortValue(b, tieBreaker);
+    if (tieDiff !== 0) return tieDiff * direction;
+
+    return a.name.localeCompare(b.name, "pt-BR");
+  });
+}
+
 const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
   const [mode, setMode] = useState<ScoutMode>("search");
   const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
-  const [appliedFilters, setAppliedFilters] = useState<Fc26PlayerFilters | null>(null);
+  const [appliedFilters, setAppliedFilters] = useState<AppliedScoutFilters | null>(null);
   const [selectedSofifaId, setSelectedSofifaId] = useState<number | null>(null);
+  const [comparisonPlayers, setComparisonPlayers] = useState<Fc26Player[]>([]);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [showAdvancedAttributes, setShowAdvancedAttributes] = useState(false);
 
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters);
@@ -547,20 +793,24 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
   const { data: filterMetadata, isLoading: isLoadingFilters } = useFc26PlayerFilters();
 
   const hasSearched = !!appliedFilters;
-  const players = hasSearched ? data?.players ?? [] : [];
+  const apiPlayers = useMemo(() => (hasSearched ? data?.players ?? [] : []), [data?.players, hasSearched]);
+  const players = useMemo(() => sortPlayersForDisplay(apiPlayers, appliedFilters), [apiPlayers, appliedFilters]);
   const total = hasSearched ? data?.total ?? 0 : 0;
   const limit = hasSearched ? data?.limit ?? appliedFilters?.limit ?? 20 : 20;
   const offset = hasSearched ? data?.offset ?? appliedFilters?.offset ?? 0 : 0;
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.max(1, Math.ceil(total / limit));
-  const visibleStart = total === 0 ? 0 : offset + 1;
+  const visibleStart = total === 0 ? 0 : Math.min(offset + 1, total);
   const visibleEnd = total === 0 ? 0 : Math.min(offset + limit, total);
 
   const activeFilterCount = useMemo(() => {
     if (!appliedFilters) return 0;
 
     let count = 0;
-    if (appliedFilters.positions?.length) count += 1;
+    const splitPositionsApplied = hasSplitPositionFilters(appliedFilters);
+    if (appliedFilters.primaryPositions?.length) count += 1;
+    if (appliedFilters.secondaryPositions?.length) count += 1;
+    if (!splitPositionsApplied && appliedFilters.positions?.length) count += 1;
     if (appliedFilters.nations?.length) count += 1;
     if (appliedFilters.leagues?.length) count += 1;
     if (appliedFilters.clubs?.length) count += 1;
@@ -584,7 +834,18 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
     [players, selectedSofifaId]
   );
   const selectedPlayer = selectedPlayerDetails ?? selectedPlayerPreview;
-  const positionOptions = filterMetadata?.positions?.length ? filterMetadata.positions : PLAYER_POSITIONS;
+  const comparedPlayers = useMemo(
+    () =>
+      comparisonPlayers.map(
+        (selectedPlayer) => players.find((player) => player.sofifaId === selectedPlayer.sofifaId) ?? selectedPlayer
+      ),
+    [comparisonPlayers, players]
+  );
+  const comparedPlayerIds = useMemo(() => new Set(comparedPlayers.map((player) => player.sofifaId)), [comparedPlayers]);
+  const positionOptions = useMemo(
+    () => (filterMetadata?.positions?.length ? filterMetadata.positions : PLAYER_POSITIONS).filter((position) => position !== "SA"),
+    [filterMetadata?.positions]
+  );
   const nationOptions = useMemo(() => [...(filterMetadata?.nations ?? [])].sort((a, b) => a.localeCompare(b, "pt-BR")), [filterMetadata?.nations]);
   const leagueOptions = useMemo(() => sortLeagueOptions(filterMetadata?.leagues ?? []), [filterMetadata?.leagues]);
   const clubOptions = useMemo(() => {
@@ -600,12 +861,21 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
     return [...options].sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [draft.leagues, filterMetadata?.clubsByLeague]);
 
-  const togglePosition = (position: PlayerPosition) => {
+  const togglePrimaryPosition = (position: PlayerPosition) => {
     setDraft((current) => ({
       ...current,
-      positions: current.positions.includes(position)
-        ? current.positions.filter((item) => item !== position)
-        : [...current.positions, position],
+      primaryPositions: current.primaryPositions.includes(position)
+        ? current.primaryPositions.filter((item) => item !== position)
+        : [...current.primaryPositions, position],
+    }));
+  };
+
+  const toggleSecondaryPosition = (position: PlayerPosition) => {
+    setDraft((current) => ({
+      ...current,
+      secondaryPositions: current.secondaryPositions.includes(position)
+        ? current.secondaryPositions.filter((item) => item !== position)
+        : [...current.secondaryPositions, position],
     }));
   };
 
@@ -627,6 +897,8 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
     setMode("search");
     setDraft(createDefaultDraft());
     setAppliedFilters(null);
+    setComparisonPlayers([]);
+    setIsComparisonOpen(false);
   };
 
   const applyPreset = (filters: Fc26PlayerFilters) => {
@@ -641,6 +913,39 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
       ...current,
       offset: Math.max(nextOffset, 0),
     }));
+  };
+
+  const toggleSort = (sortBy: ScoutSortBy) => {
+    setAppliedFilters((current) => {
+      if (!current) return current;
+
+      const sortOrder: ScoutSortOrder =
+        current.sortBy === sortBy && current.sortOrder === "desc" ? "asc" : "desc";
+
+      return {
+        ...DEFAULT_APPLIED_FILTERS,
+        ...current,
+        sortBy,
+        sortOrder,
+        offset: 0,
+      };
+    });
+  };
+
+  const toggleComparePlayer = (player: Fc26Player) => {
+    setComparisonPlayers((current) =>
+      current.some((selectedPlayer) => selectedPlayer.sofifaId === player.sofifaId)
+        ? current.filter((selectedPlayer) => selectedPlayer.sofifaId !== player.sofifaId)
+        : [...current, player]
+    );
+  };
+
+  const removeComparedPlayer = (sofifaId: number) => {
+    setComparisonPlayers((current) => {
+      const nextPlayers = current.filter((player) => player.sofifaId !== sofifaId);
+      if (nextPlayers.length < 2) setIsComparisonOpen(false);
+      return nextPlayers;
+    });
   };
 
   return (
@@ -662,6 +967,7 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <SummaryPill label="Encontrados" value={formatInteger(total)} icon={UsersRound} />
           <SummaryPill label="Filtros ativos" value={activeFilterCount} icon={SlidersHorizontal} />
+          <SummaryPill label="Comparando" value={comparedPlayers.length} icon={Activity} />
           <SummaryPill label="Página" value={`${currentPage}/${totalPages}`} icon={Target} />
         </div>
       </div>
@@ -814,41 +1120,23 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <label className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Posições</label>
-                  {draft.positions.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setDraft((current) => ({ ...current, positions: [] }))}
-                      className="flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <X size={12} />
-                      Remover posições
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-                  {positionOptions.map((position) => {
-                    const selected = draft.positions.includes(position);
-                    return (
-                      <button
-                        key={position}
-                        type="button"
-                        onClick={() => togglePosition(position)}
-                        title={POSITION_LABELS[position]}
-                        className={`h-10 rounded-md border px-2 text-center font-display text-sm font-bold transition-colors ${
-                          selected
-                            ? "border-primary/35 bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.12)]"
-                            : "border-border bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
-                        }`}
-                      >
-                        {position}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <PositionFilterGrid
+                title="Posição principal"
+                description="Usa a primeira posição exibida no jogador."
+                positions={positionOptions}
+                selected={draft.primaryPositions}
+                onToggle={togglePrimaryPosition}
+                onClear={() => setDraft((current) => ({ ...current, primaryPositions: [] }))}
+              />
+
+              <PositionFilterGrid
+                title="Posições secundárias"
+                description="Usa as posições extras exibidas depois da principal."
+                positions={positionOptions}
+                selected={draft.secondaryPositions}
+                onToggle={toggleSecondaryPosition}
+                onClear={() => setDraft((current) => ({ ...current, secondaryPositions: [] }))}
+              />
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <FilterNumberInput label="OVR mínimo" value={draft.minOvr} min={1} max={99} onChange={(minOvr) => setDraft((current) => ({ ...current, minOvr }))} />
@@ -976,6 +1264,19 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
             </section>
           )}
 
+          {hasSearched && !isError && (players.length > 0 || comparedPlayers.length > 0) && (
+            <PlayerComparisonLauncher
+              players={comparedPlayers}
+              onClear={() => {
+                setComparisonPlayers([]);
+                setIsComparisonOpen(false);
+              }}
+              onOpenComparison={() => setIsComparisonOpen(true)}
+              onOpenDetails={(sofifaId) => setSelectedSofifaId(sofifaId)}
+              onRemove={removeComparedPlayer}
+            />
+          )}
+
           <section className="card-gamer overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1038,31 +1339,71 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
             ) : players.length === 0 ? (
               <div className="p-6 text-center">
                 <p className="font-display text-lg font-semibold text-foreground">Nenhum jogador bate com esses filtros</p>
-                <p className="mt-2 text-sm text-muted-foreground">Abra a faixa de OVR, idade ou potencial para ampliar a busca.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Abra a faixa de OVR, idade ou potencial para ampliar a busca.
+                </p>
               </div>
             ) : (
               <>
                 <ScrollArea scrollbars="horizontal" className="hidden w-full lg:block" viewportClassName="pb-3">
-                  <table className="w-full min-w-[1120px] text-left">
+                  <table className="w-full min-w-[1220px] text-left">
                     <thead className="bg-muted/35">
                       <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                         <th className="px-4 py-3 font-semibold">Jogador</th>
                         <th className="px-4 py-3 font-semibold">Posições</th>
-                        <th className="px-4 py-3 text-center font-semibold">OVR</th>
-                        <th className="px-4 py-3 text-center font-semibold">Pot.</th>
+                        <th
+                          className="px-4 py-3 text-center font-semibold"
+                          aria-sort={appliedFilters?.sortBy === "ovr" ? (appliedFilters.sortOrder === "asc" ? "ascending" : "descending") : "none"}
+                        >
+                          <SortHeaderButton
+                            label="OVR"
+                            sortBy="ovr"
+                            activeSortBy={appliedFilters?.sortBy}
+                            sortOrder={appliedFilters?.sortOrder}
+                            onSort={toggleSort}
+                          />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center font-semibold"
+                          aria-sort={appliedFilters?.sortBy === "potential" ? (appliedFilters.sortOrder === "asc" ? "ascending" : "descending") : "none"}
+                        >
+                          <SortHeaderButton
+                            label="Pot."
+                            sortBy="potential"
+                            activeSortBy={appliedFilters?.sortBy}
+                            sortOrder={appliedFilters?.sortOrder}
+                            onSort={toggleSort}
+                          />
+                        </th>
                         <th className="px-4 py-3 font-semibold">Perfil</th>
                         <th className="px-4 py-3 font-semibold">Atributos</th>
                         <th className="px-4 py-3 font-semibold">Clube</th>
                         <th className="px-4 py-3 text-right font-semibold">Valor</th>
                       </tr>
                     </thead>
-                    <tbody>{players.map((player) => <PlayerTableRow key={player.sofifaId} player={player} onSelect={() => setSelectedSofifaId(player.sofifaId)} />)}</tbody>
+                    <tbody>
+                      {players.map((player) => (
+                        <PlayerTableRow
+                          key={player.sofifaId}
+                          player={player}
+                          isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
+                          onSelect={() => setSelectedSofifaId(player.sofifaId)}
+                          onToggleCompare={() => toggleComparePlayer(player)}
+                        />
+                      ))}
+                    </tbody>
                   </table>
                 </ScrollArea>
 
                 <div className="divide-y divide-border lg:hidden">
                   {players.map((player) => (
-                    <PlayerMobileRow key={player.sofifaId} player={player} onSelect={() => setSelectedSofifaId(player.sofifaId)} />
+                    <PlayerMobileRow
+                      key={player.sofifaId}
+                      player={player}
+                      isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
+                      onSelect={() => setSelectedSofifaId(player.sofifaId)}
+                      onToggleCompare={() => toggleComparePlayer(player)}
+                    />
                   ))}
                 </div>
               </>
@@ -1078,6 +1419,18 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
           isError={isSelectedPlayerError}
           error={selectedPlayerError}
           onClose={() => setSelectedSofifaId(null)}
+        />
+      )}
+
+      {isComparisonOpen && (
+        <PlayerComparisonModal
+          players={comparedPlayers}
+          onClose={() => setIsComparisonOpen(false)}
+          onOpenDetails={(sofifaId) => {
+            setIsComparisonOpen(false);
+            setSelectedSofifaId(sofifaId);
+          }}
+          onRemove={removeComparedPlayer}
         />
       )}
     </div>
@@ -1099,6 +1452,36 @@ function SummaryPill({ label, value, icon: Icon }: SummaryPillProps) {
         <p className="truncate font-display text-base font-bold text-foreground">{value}</p>
       </div>
     </div>
+  );
+}
+
+interface SortHeaderButtonProps {
+  label: string;
+  sortBy: ScoutSortBy;
+  activeSortBy?: ScoutSortBy;
+  sortOrder?: ScoutSortOrder;
+  onSort: (sortBy: ScoutSortBy) => void;
+}
+
+function SortHeaderButton({ label, sortBy, activeSortBy, sortOrder, onSort }: SortHeaderButtonProps) {
+  const isActive = activeSortBy === sortBy;
+  const Icon = sortOrder === "asc" ? ArrowUp : ArrowDown;
+  const directionLabel = isActive && sortOrder === "asc" ? "menor primeiro" : "maior primeiro";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortBy)}
+      className={`mx-auto inline-flex h-8 min-w-[58px] items-center justify-center gap-1.5 rounded-md border px-2 font-semibold transition-colors ${
+        isActive
+          ? "border-primary/35 bg-primary/10 text-primary"
+          : "border-transparent text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
+      }`}
+      title={`Ordenar por ${label} (${directionLabel})`}
+    >
+      <span>{label}</span>
+      <Icon size={12} className={isActive ? "opacity-100" : "opacity-45"} />
+    </button>
   );
 }
 
@@ -1146,6 +1529,64 @@ function ChatBubble({ speaker, tone, children }: { speaker: string; tone: "assis
           {speaker}
         </p>
         <p className="text-sm leading-relaxed">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+function PositionFilterGrid({
+  title,
+  description,
+  positions,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  title: string;
+  description: string;
+  positions: PlayerPosition[];
+  selected: PlayerPosition[];
+  onToggle: (position: PlayerPosition) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-background/25 p-3">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <label className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{title}</label>
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        </div>
+        {selected.length > 0 && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X size={12} />
+            Remover
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+        {positions.map((position) => {
+          const isSelected = selected.includes(position);
+
+          return (
+            <button
+              key={position}
+              type="button"
+              onClick={() => onToggle(position)}
+              title={POSITION_LABELS[position]}
+              className={`h-10 rounded-md border px-2 text-center font-display text-sm font-bold transition-colors ${
+                isSelected
+                  ? "border-primary/35 bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.12)]"
+                  : "border-border bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
+              }`}
+            >
+              {position}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -1450,6 +1891,453 @@ function MultiSelectCombobox({ label, placeholder, emptyLabel, options, selected
   );
 }
 
+interface PlayerComparisonLauncherProps {
+  players: Fc26Player[];
+  onClear: () => void;
+  onOpenComparison: () => void;
+  onOpenDetails: (sofifaId: number) => void;
+  onRemove: (sofifaId: number) => void;
+}
+
+function PlayerComparisonLauncher({ players, onClear, onOpenComparison, onOpenDetails, onRemove }: PlayerComparisonLauncherProps) {
+  const hasEnoughPlayers = players.length >= 2;
+
+  return (
+    <section className="card-gamer overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-border p-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+            <UsersRound size={19} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-display text-lg font-bold leading-none">Comparar jogadores</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {hasEnoughPlayers
+                ? `${players.length} jogadores prontos para abrir no relatório comparativo.`
+                : "Selecione 2 ou mais jogadores nos resultados para comparar atributos."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {players.length > 0 && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <RotateCcw size={15} />
+              Limpar
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!hasEnoughPlayers}
+            onClick={onOpenComparison}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Eye size={15} />
+            Abrir comparação
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4 p-5">
+        {players.length > 0 ? (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {players.map((player) => (
+              <ComparedPlayerCard
+                key={player.sofifaId}
+                player={player}
+                onOpenDetails={() => onOpenDetails(player.sofifaId)}
+                onRemove={() => onRemove(player.sofifaId)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-border bg-background/25 p-6 text-center">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+              <UsersRound size={19} />
+            </div>
+            <p className="font-display text-base font-bold text-foreground">Nenhum jogador selecionado</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Use o botão Comparar nos resultados para montar uma análise lado a lado.
+            </p>
+          </div>
+        )}
+
+        {players.length === 1 && (
+          <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
+            Selecione mais um jogador para liberar a tabela completa de atributos.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PlayerComparisonModal({
+  players,
+  onClose,
+  onOpenDetails,
+  onRemove,
+}: {
+  players: Fc26Player[];
+  onClose: () => void;
+  onOpenDetails: (sofifaId: number) => void;
+  onRemove: (sofifaId: number) => void;
+}) {
+  const leaderByAverage = useMemo(() => getBestMetricPlayer(players, getGeneralRatingAverage), [players]);
+  const leaderByOvr = useMemo(() => getBestMetricPlayer(players, (player) => player.ovr), [players]);
+  const leaderByGrowth = useMemo(() => getBestMetricPlayer(players, (player) => player.potential - player.ovr), [players]);
+  const radarData = useMemo(
+    () =>
+      [
+        { label: "Ritmo", field: "pace" },
+        { label: "Final.", field: "shooting" },
+        { label: "Passe", field: "passing" },
+        { label: "Drible", field: "dribbling" },
+        { label: "Defesa", field: "defending" },
+        { label: "Físico", field: "physic" },
+      ].map((item) => ({
+        label: item.label,
+        ...Object.fromEntries(players.map((player, index) => [`player_${index}`, player[item.field as keyof Fc26Player] ?? 0])),
+      })),
+    [players]
+  );
+  const comparisonTableWidth = Math.max(820, players.length * 190 + 220);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 p-3 backdrop-blur-sm sm:p-5" role="presentation" onMouseDown={onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Comparação de jogadores"
+        onMouseDown={(event) => event.stopPropagation()}
+        className="mx-auto flex h-full max-h-[940px] w-full max-w-6xl flex-col overflow-hidden rounded-md border border-border bg-card shadow-2xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 p-4">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Relatório comparativo de scout</p>
+            <h3 className="mt-1 truncate font-display text-xl font-bold text-foreground">{players.length} jogadores selecionados</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Fechar comparação"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          {players.length < 2 ? (
+            <div className="rounded-md border border-warning/25 bg-warning/10 p-5 text-sm text-warning">
+              Selecione 2 ou mais jogadores para comparar atributos.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                {players.map((player) => (
+                  <ComparisonProfileCard
+                    key={player.sofifaId}
+                    player={player}
+                    onOpenDetails={() => onOpenDetails(player.sofifaId)}
+                    onRemove={() => onRemove(player.sofifaId)}
+                  />
+                ))}
+              </section>
+
+              <section className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                <div className="card-gamer p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Activity size={16} className="text-primary" />
+                    <p className="font-display text-sm font-bold text-foreground">Ratings gerais</p>
+                  </div>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={radarData}>
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="label" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 99]} tick={false} axisLine={false} />
+                        {players.map((player, index) => (
+                          <Radar
+                            key={player.sofifaId}
+                            dataKey={`player_${index}`}
+                            name={player.name}
+                            stroke={COMPARISON_RADAR_COLORS[index % COMPARISON_RADAR_COLORS.length]}
+                            fill={COMPARISON_RADAR_COLORS[index % COMPARISON_RADAR_COLORS.length]}
+                            fillOpacity={0.12}
+                          />
+                        ))}
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {players.map((player, index) => (
+                      <span key={player.sofifaId} className="inline-flex min-h-6 items-center gap-1.5 rounded border border-border bg-background/35 px-2 text-xs text-muted-foreground">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: COMPARISON_RADAR_COLORS[index % COMPARISON_RADAR_COLORS.length] }}
+                        />
+                        <span className="max-w-[130px] truncate">{player.name}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card-gamer p-4">
+                  <p className="mb-3 font-display text-sm font-bold text-foreground">Leitura rápida</p>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <ComparisonHighlight
+                      label="Melhor média"
+                      player={leaderByAverage}
+                      value={formatAverageRating(leaderByAverage ? getGeneralRatingAverage(leaderByAverage) : null)}
+                    />
+                    <ComparisonHighlight label="Maior OVR" player={leaderByOvr} value={leaderByOvr?.ovr ?? "—"} />
+                    <ComparisonHighlight label="Mais margem" player={leaderByGrowth} value={leaderByGrowth ? formatPotentialGrowth(leaderByGrowth) : "—"} />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {players.map((player) => (
+                      <MetricLine
+                        key={player.sofifaId}
+                        label={player.name}
+                        value={`${formatMarketValue(player.marketValue)} · ${formatWage(player.wage)}`}
+                        icon={BadgeEuro}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              <ScrollArea scrollbars="horizontal" className="rounded-md border border-border bg-background/20" viewportClassName="pb-3">
+                <div className="space-y-4 p-3" style={{ minWidth: comparisonTableWidth }}>
+                  {COMPARISON_GROUPS.map((group) => (
+                    <ComparisonGroupTable key={group.title} group={group} players={players} />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ComparisonProfileCard({
+  player,
+  onOpenDetails,
+  onRemove,
+}: {
+  player: Fc26Player;
+  onOpenDetails: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="card-gamer p-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <PlayerAvatar player={player} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h4 className="truncate font-display text-xl font-bold text-foreground">{player.name}</h4>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
+            </div>
+            <div className="text-right">
+              <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {player.positions.map((position) => (
+              <PositionBadge key={position} position={position} />
+            ))}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <MetricLine label="Potencial" value={`${player.potential} (${formatPotentialGrowth(player)})`} icon={Star} />
+            <MetricLine label="Idade" value={`${player.age} anos`} icon={Calendar} />
+            <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
+            <MetricLine label="Pé" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onOpenDetails}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+            >
+              <Eye size={15} />
+              Individual
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X size={15} />
+              Remover
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ComparedPlayerCard({
+  player,
+  onOpenDetails,
+  onRemove,
+}: {
+  player: Fc26Player;
+  onOpenDetails: () => void;
+  onRemove: () => void;
+}) {
+  const averageRating = getGeneralRatingAverage(player);
+
+  return (
+    <article className="rounded-md border border-border bg-background/35 p-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <PlayerAvatar player={player} size="sm" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
+          aria-label={`Remover ${player.name} da comparação`}
+          title="Remover da comparação"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {player.positions.map((position) => (
+          <PositionBadge key={position} position={position} />
+        ))}
+      </div>
+
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        <RatingPill label="OVR" value={player.ovr} />
+        <RatingPill label="POT" value={player.potential} />
+        <RatingPill label="AVG" value={averageRating === null ? null : Math.round(averageRating)} />
+      </div>
+
+      <button
+        type="button"
+        onClick={onOpenDetails}
+        className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+      >
+        <Eye size={14} />
+        Relatório
+      </button>
+    </article>
+  );
+}
+
+function ComparisonHighlight({ label, player, value }: { label: string; player: Fc26Player | null; value: ReactNode }) {
+  return (
+    <div className="rounded-md border border-border bg-background/35 p-3">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-2 truncate font-display text-lg font-bold text-primary">{value}</p>
+      <p className="mt-1 truncate text-xs text-muted-foreground">{player?.name ?? "—"}</p>
+    </div>
+  );
+}
+
+function ComparisonGroupTable({ group, players }: { group: PlayerComparisonGroupConfig; players: Fc26Player[] }) {
+  const Icon = group.icon;
+
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-card/55">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/25 px-3 py-2">
+        <Icon size={15} className="text-primary" />
+        <p className="font-display text-sm font-bold text-foreground">{group.title}</p>
+      </div>
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b border-border text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+            <th className="w-[220px] px-3 py-2 font-semibold">Atributo</th>
+            {players.map((player) => (
+              <th key={player.sofifaId} className="min-w-[180px] px-3 py-2 font-semibold">
+                <span className="block truncate">{player.name}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {group.metrics.map((metric) => (
+            <ComparisonMetricRow key={metric.label} metric={metric} players={players} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ComparisonMetricRow({ metric, players }: { metric: ComparisonMetricConfig; players: Fc26Player[] }) {
+  const bestScore = getComparisonBestScore(players, metric);
+
+  return (
+    <tr className="border-b border-border last:border-b-0">
+      <td className="w-[220px] px-3 py-2 text-xs font-semibold text-muted-foreground">{metric.label}</td>
+      {players.map((player) => {
+        const playerScore = metric.score?.(player);
+        const isBest = bestScore !== null && typeof playerScore === "number" && playerScore === bestScore;
+
+        return (
+          <td
+            key={player.sofifaId}
+            className={`min-w-[180px] px-3 py-2 text-sm ${
+              isBest
+                ? "bg-primary/10 font-semibold text-primary"
+                : "text-foreground"
+            }`}
+          >
+            <span className="block truncate">{metric.render(player)}</span>
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+function getComparisonBestScore(players: Fc26Player[], metric: ComparisonMetricConfig) {
+  if (!metric.score) return null;
+
+  const scores = players
+    .map((player) => metric.score?.(player))
+    .filter((score): score is number => typeof score === "number" && Number.isFinite(score));
+  const uniqueScores = new Set(scores);
+
+  if (uniqueScores.size <= 1) return null;
+
+  return metric.better === "lower" ? Math.min(...scores) : Math.max(...scores);
+}
+
+function getBestMetricPlayer(players: Fc26Player[], score: (player: Fc26Player) => number | null | undefined) {
+  return players.reduce<{ player: Fc26Player | null; score: number }>(
+    (best, player) => {
+      const value = score(player);
+
+      if (typeof value !== "number" || !Number.isFinite(value)) return best;
+      if (!best.player || value > best.score) return { player, score: value };
+
+      return best;
+    },
+    { player: null, score: Number.NEGATIVE_INFINITY }
+  ).player;
+}
+
 function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: number; onSelect: () => void }) {
   const growth = player.potential - player.ovr;
 
@@ -1487,12 +2375,22 @@ function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: 
   );
 }
 
-function PlayerTableRow({ player, onSelect }: { player: Fc26Player; onSelect: () => void }) {
+function PlayerTableRow({
+  player,
+  isCompareSelected,
+  onSelect,
+  onToggleCompare,
+}: {
+  player: Fc26Player;
+  isCompareSelected: boolean;
+  onSelect: () => void;
+  onToggleCompare: () => void;
+}) {
   const traits = player.playerTraits ?? [];
 
   return (
     <tr className="border-t border-border transition-colors hover:bg-muted/25">
-      <td className="min-w-[300px] px-4 py-3">
+      <td className="min-w-[380px] px-4 py-3">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <PlayerAvatar player={player} size="md" />
@@ -1508,15 +2406,32 @@ function PlayerTableRow({ player, onSelect }: { player: Fc26Player; onSelect: ()
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onSelect}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
-            aria-label={`Ver detalhes de ${player.name}`}
-            title="Ver detalhes"
-          >
-            <Eye size={15} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggleCompare}
+              aria-pressed={isCompareSelected}
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold transition-colors ${
+                isCompareSelected
+                  ? "border-primary/35 bg-primary/10 text-primary"
+                  : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
+              }`}
+              aria-label={`${isCompareSelected ? "Remover" : "Adicionar"} ${player.name} ${isCompareSelected ? "da" : "à"} comparação`}
+              title={isCompareSelected ? "Remover da comparação" : "Adicionar à comparação"}
+            >
+              {isCompareSelected ? <Check size={15} /> : <UsersRound size={15} />}
+              <span>{isCompareSelected ? "Selecionado" : "Comparar"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onSelect}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+              aria-label={`Ver detalhes de ${player.name}`}
+              title="Ver detalhes"
+            >
+              <Eye size={15} />
+            </button>
+          </div>
         </div>
       </td>
       <td className="min-w-[150px] px-4 py-3">
@@ -1554,11 +2469,21 @@ function PlayerTableRow({ player, onSelect }: { player: Fc26Player; onSelect: ()
   );
 }
 
-function PlayerMobileRow({ player, onSelect }: { player: Fc26Player; onSelect: () => void }) {
+function PlayerMobileRow({
+  player,
+  isCompareSelected,
+  onSelect,
+  onToggleCompare,
+}: {
+  player: Fc26Player;
+  isCompareSelected: boolean;
+  onSelect: () => void;
+  onToggleCompare: () => void;
+}) {
   const traits = player.playerTraits ?? [];
 
   return (
-    <button type="button" onClick={onSelect} className="block w-full p-4 text-left transition-colors hover:bg-muted/25">
+    <article className="p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <PlayerAvatar player={player} size="md" />
@@ -1593,7 +2518,30 @@ function PlayerMobileRow({ player, onSelect }: { player: Fc26Player; onSelect: (
           ))}
         </div>
       )}
-    </button>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={onToggleCompare}
+          aria-pressed={isCompareSelected}
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold transition-colors ${
+            isCompareSelected
+              ? "border-primary/35 bg-primary/10 text-primary"
+              : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
+          }`}
+        >
+          {isCompareSelected ? <Check size={15} /> : <UsersRound size={15} />}
+          {isCompareSelected ? "Selecionado" : "Comparar"}
+        </button>
+        <button
+          type="button"
+          onClick={onSelect}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+        >
+          <Eye size={15} />
+          Detalhes
+        </button>
+      </div>
+    </article>
   );
 }
 

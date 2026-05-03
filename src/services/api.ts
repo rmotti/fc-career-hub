@@ -310,11 +310,15 @@ type Fc26NumericFilterKey = `min${Capitalize<Fc26NumericFilterBase>}` | `max${Ca
 
 export type Fc26PlayerFilters = {
   positions?: Fc26PlayerPosition[];
+  primaryPositions?: Fc26PlayerPosition[];
+  secondaryPositions?: Fc26PlayerPosition[];
   nations?: string[];
   clubs?: string[];
   leagues?: string[];
   preferredFoot?: "Right" | "Left";
   traits?: string[];
+  sortBy?: "ovr" | "potential";
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 } & Partial<Record<Fc26NumericFilterKey, number>>;
@@ -509,6 +513,8 @@ function toFc26PlayersQuery(filters: Fc26PlayerFilters = {}) {
   const params = new URLSearchParams();
 
   appendCsvParam(params, "positions", filters.positions);
+  appendCsvParam(params, "primaryPositions", filters.primaryPositions);
+  appendCsvParam(params, "secondaryPositions", filters.secondaryPositions);
   appendCsvParam(params, "nations", filters.nations);
   appendCsvParam(params, "clubs", filters.clubs);
   appendCsvParam(params, "leagues", filters.leagues);
@@ -524,6 +530,12 @@ function toFc26PlayersQuery(filters: Fc26PlayerFilters = {}) {
     params.set("preferredFoot", filters.preferredFoot);
   }
   appendCsvParam(params, "traits", filters.traits);
+  if (filters.sortBy) {
+    params.set("sortBy", filters.sortBy);
+  }
+  if (filters.sortOrder) {
+    params.set("sortOrder", filters.sortOrder);
+  }
   appendNumberParam(params, "limit", Math.min(Math.max(filters.limit ?? 20, 1), 100));
   appendNumberParam(params, "offset", Math.max(filters.offset ?? 0, 0));
 
