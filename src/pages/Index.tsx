@@ -48,9 +48,14 @@ const Index = () => {
       setIsRedirectingToDashboard(true);
       toast.success("Save criado com sucesso!", { duration: 3000 });
       navigate("/dashboard", { replace: true });
-    } catch (err) {
+    } catch (err: any) {
       setIsRedirectingToDashboard(false);
-      toast.error(extractErrorMessage(err), { duration: 5000 });
+      const status = err?.status || err?.response?.status;
+      const message =
+        status === 409
+          ? "Você atingiu o limite de saves do seu plano. Exclua um save ou faça upgrade."
+          : extractErrorMessage(err);
+      toast.error(message, { duration: 5000 });
       throw err;
     }
   };

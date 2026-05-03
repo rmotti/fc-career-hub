@@ -115,8 +115,13 @@ export default function Login() {
       await signIn({ email, password });
       navigate("/app", { replace: true });
       toast.success("Login realizado com sucesso!");
-    } catch (error) {
-      toast.error(extractErrorMessage(error), { duration: 5000 });
+    } catch (error: any) {
+      const status = error?.status || error?.response?.status;
+      const message =
+        status === 401
+          ? "E-mail ou senha incorretos. Verifique seus dados e tente novamente."
+          : extractErrorMessage(error);
+      toast.error(message, { duration: 5000 });
     } finally {
       setSubmitting(false);
     }

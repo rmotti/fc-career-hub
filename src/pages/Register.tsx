@@ -103,8 +103,13 @@ export default function Register() {
       await signUp({ name, email, password });
       navigate("/app", { replace: true });
       toast.success("Conta criada com sucesso!");
-    } catch (error) {
-      toast.error(extractErrorMessage(error), { duration: 5000 });
+    } catch (error: any) {
+      const status = error?.status || error?.response?.status;
+      const message =
+        status === 409
+          ? "Este e-mail já está cadastrado. Tente fazer login."
+          : extractErrorMessage(error);
+      toast.error(message, { duration: 5000 });
     } finally {
       setSubmitting(false);
     }

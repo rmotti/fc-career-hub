@@ -78,12 +78,12 @@ export function extractErrorMessage(err: any): string {
   const status = err?.status || err?.response?.status;
   const apiError = err?.data?.error || err?.response?.data?.error;
 
-  if (status === 400 || status === 401 || status === 403 || status === 404 || status === 409) {
-    return apiError || err.message;
-  }
-  if (status >= 500) {
-    return "Erro interno. Tente novamente em instantes.";
-  }
+  if (status === 400) return apiError || err.message || "Dados inválidos. Verifique as informações e tente novamente.";
+  if (status === 401) return "Sessão expirada. Faça login novamente.";
+  if (status === 403) return "Você não tem permissão para realizar esta ação.";
+  if (status === 404) return "Recurso não encontrado.";
+  if (status === 409) return apiError || err.message || "Conflito ao salvar os dados. Tente novamente.";
+  if (status >= 500) return "Erro interno. Tente novamente em instantes.";
 
   return apiError || err?.message || "Erro inesperado. Tente novamente.";
 }
