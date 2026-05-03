@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute, PublicOnlyRoute, PlanRoute } from "@/features/auth/ui/AuthGuards";
 import { PRO_FEATURE_PLANS } from "@/shared/config/plans";
 import Landing from "@/pages/Landing";
@@ -42,7 +42,9 @@ export function Router() {
             <Route path="/change-club" element={<ChangeClub />} />
             <Route path="/field" element={<Field />} />
             <Route element={<PlanRoute allowedPlans={PRO_FEATURE_PLANS} />}>
-              <Route path="/scout" element={<Scout />} />
+              <Route path="/scout" element={<Navigate to="/scout/ia" replace />} />
+              <Route path="/scout/ia" element={<Scout section="ai" />} />
+              <Route path="/scout/filtros" element={<Scout section="filters" />} />
             </Route>
           </Route>
         </Route>

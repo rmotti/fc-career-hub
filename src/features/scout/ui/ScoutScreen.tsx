@@ -40,11 +40,12 @@ import { extractErrorMessage, type Fc26Player, type Fc26PlayerFilters, type Play
 import { PLAYER_POSITIONS } from "@/shared/lib/playerPositions";
 
 interface Props {
+  section: ScoutSection;
   currentClub: string;
   currentSeason: string;
 }
 
-type ScoutMode = "search" | "recommendation";
+export type ScoutSection = "ai" | "filters";
 
 type AttributeRangeDraft = Record<string, { min: string; max: string }>;
 
@@ -774,8 +775,7 @@ function sortPlayersForDisplay(players: Fc26Player[], filters: AppliedScoutFilte
   });
 }
 
-const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
-  const [mode, setMode] = useState<ScoutMode>("search");
+const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
   const [appliedFilters, setAppliedFilters] = useState<AppliedScoutFilters | null>(null);
   const [selectedSofifaId, setSelectedSofifaId] = useState<number | null>(null);
@@ -889,12 +889,10 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
       return;
     }
 
-    setMode("search");
     setAppliedFilters(nextFilters);
   };
 
   const clearFilters = () => {
-    setMode("search");
     setDraft(createDefaultDraft());
     setAppliedFilters(null);
     setComparisonPlayers([]);
@@ -902,7 +900,6 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
   };
 
   const applyPreset = (filters: Fc26PlayerFilters) => {
-    setMode("search");
     setDraft(draftFromFilters(filters));
     setAppliedFilters(filters);
   };
@@ -947,6 +944,8 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
       return nextPlayers;
     });
   };
+  const isAiSection = section === "ai";
+  const pageTitle = isAiSection ? "Scout IA" : "Buscar jogadores";
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
@@ -956,23 +955,33 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
             {currentClub} · {currentSeason} · PRO
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">Scout</h2>
+            <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{pageTitle}</h2>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              <Search size={13} />
-              Dataset FC 26
+              {isAiSection ? <Bot size={13} /> : <Search size={13} />}
+              {isAiSection ? "PRO" : "Dataset FC 26"}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-          <SummaryPill label="Encontrados" value={formatInteger(total)} icon={UsersRound} />
-          <SummaryPill label="Filtros ativos" value={activeFilterCount} icon={SlidersHorizontal} />
-          <SummaryPill label="Comparando" value={comparedPlayers.length} icon={Activity} />
-          <SummaryPill label="Página" value={`${currentPage}/${totalPages}`} icon={Target} />
+          {isAiSection ? (
+            <>
+              <SummaryPill label="Modo" value="IA" icon={Bot} />
+              <SummaryPill label="Status" value="Prévia" icon={LockKeyhole} />
+            </>
+          ) : (
+            <>
+              <SummaryPill label="Encontrados" value={formatInteger(total)} icon={UsersRound} />
+              <SummaryPill label="Filtros ativos" value={activeFilterCount} icon={SlidersHorizontal} />
+              <SummaryPill label="Comparando" value={comparedPlayers.length} icon={Activity} />
+              <SummaryPill label="Página" value={`${currentPage}/${totalPages}`} icon={Target} />
+            </>
+          )}
         </div>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <section className={isAiSection ? "max-w-3xl" : "space-y-4"}>
+        {isAiSection && (
         <aside className="card-gamer flex min-h-[620px] flex-col overflow-hidden">
           <div className="border-b border-border p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -982,29 +991,9 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
                 </div>
                 <div>
                   <h3 className="font-display text-lg font-bold leading-none">Scout IA</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">Interface mockada</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Recomendações em prévia</p>
                 </div>
               </div>
-              {isFetching && (
-                <Loader2 size={16} className="shrink-0 animate-spin text-primary" aria-label="Atualizando jogadores" />
-              )}
-            </div>
-
-            <div className="grid gap-2">
-              <ScoutModeButton
-                active={mode === "recommendation"}
-                icon={Target}
-                title="Recomendação de transferências"
-                description="Análise do elenco em breve"
-                onClick={() => setMode("recommendation")}
-              />
-              <ScoutModeButton
-                active={mode === "search"}
-                icon={Search}
-                title="Pesquisa própria de jogadores"
-                description="Busca filtrada disponível agora"
-                onClick={() => setMode("search")}
-              />
             </div>
           </div>
 
@@ -1014,52 +1003,22 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
                 speaker="Scout IA"
                 tone="assistant"
               >
-                Tenho duas rotas de trabalho: recomendar contratações pelo seu elenco ou pesquisar direto no banco FC 26.
+                Posso analisar carências do elenco e transformar o contexto da sua carreira em recomendações de mercado.
               </ChatBubble>
 
-              {mode === "recommendation" ? (
-                <>
-                  <ChatBubble speaker="Você" tone="user">Recomende contratações para o meu elenco.</ChatBubble>
-                  <ChatBubble speaker="Scout IA" tone="assistant">
-                    Esse fluxo vai cruzar carências do elenco, idade, OVR, potencial e orçamento. Por enquanto, ele fica em prévia.
-                  </ChatBubble>
-                  <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
-                    <div className="mb-2 flex items-center gap-2 font-semibold">
-                      <LockKeyhole size={15} />
-                      Recomendação em mock
-                    </div>
-                    <p className="text-warning/80">
-                      A busca filtrada já está conectada ao dataset e pronta para uso.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <ChatBubble speaker="Você" tone="user">Quero pesquisar jogadores por conta própria.</ChatBubble>
-                  <ChatBubble speaker="Scout IA" tone="assistant">
-                    Perfeito. Refine posição, OVR, idade, potencial, ritmo, altura, pé dominante, PlayStyles, PlayStyles+ e contexto de liga; eu retorno os jogadores paginados do dataset.
-                  </ChatBubble>
-                  <div className="grid gap-2">
-                    {PRESETS.map((preset) => {
-                      const Icon = preset.icon;
-                      return (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => applyPreset(preset.filters)}
-                          className="flex min-h-[58px] items-center gap-3 rounded-md border border-border bg-background/35 px-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
-                        >
-                          <Icon size={16} className="shrink-0 text-primary" />
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-foreground">{preset.label}</span>
-                            <span className="block truncate text-xs text-muted-foreground">{preset.description}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              <ChatBubble speaker="Você" tone="user">Recomende contratações para o meu elenco.</ChatBubble>
+              <ChatBubble speaker="Scout IA" tone="assistant">
+                Esse fluxo vai cruzar carências do elenco, idade, OVR, potencial e orçamento. Por enquanto, ele fica em prévia.
+              </ChatBubble>
+              <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
+                <div className="mb-2 flex items-center gap-2 font-semibold">
+                  <LockKeyhole size={15} />
+                  Recomendação em mock
+                </div>
+                <p className="text-warning/80">
+                  A busca filtrada fica em uma subseção própria do Scout.
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 rounded-md border border-border bg-background/50 p-2">
@@ -1081,16 +1040,38 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
             </div>
           </div>
         </aside>
+        )}
 
+        {!isAiSection && (
         <div className="min-w-0 space-y-4">
+          <section className="grid gap-3 lg:grid-cols-3">
+            {PRESETS.map((preset) => {
+              const Icon = preset.icon;
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => applyPreset(preset.filters)}
+                  className="flex min-h-[62px] items-center gap-3 rounded-md border border-border bg-muted/25 px-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
+                >
+                  <Icon size={16} className="shrink-0 text-primary" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-foreground">{preset.label}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{preset.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </section>
+
           <section className="card-gamer p-5">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md border border-accent/20 bg-accent/10 text-accent">
-                  <SlidersHorizontal size={19} />
+                  <Search size={19} />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold leading-none">Filtros de scout</h3>
+                  <h3 className="font-display text-lg font-bold leading-none">Buscar jogadores</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {hasSearched
                       ? `${visibleStart}-${visibleEnd} de ${formatInteger(total)} jogadores`
@@ -1410,6 +1391,7 @@ const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
             )}
           </section>
         </div>
+        )}
       </section>
 
       {selectedSofifaId && (
@@ -1481,34 +1463,6 @@ function SortHeaderButton({ label, sortBy, activeSortBy, sortOrder, onSort }: So
     >
       <span>{label}</span>
       <Icon size={12} className={isActive ? "opacity-100" : "opacity-45"} />
-    </button>
-  );
-}
-
-interface ScoutModeButtonProps {
-  active: boolean;
-  icon: ElementType;
-  title: string;
-  description: string;
-  onClick: () => void;
-}
-
-function ScoutModeButton({ active, icon: Icon, title, description, onClick }: ScoutModeButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-h-[66px] items-center gap-3 rounded-md border px-3 text-left transition-colors ${
-        active
-          ? "border-primary/35 bg-primary/10 text-primary"
-          : "border-border bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
-      }`}
-    >
-      <Icon size={17} className="shrink-0" />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold">{title}</span>
-        <span className={`block truncate text-xs ${active ? "text-primary/75" : "text-muted-foreground"}`}>{description}</span>
-      </span>
     </button>
   );
 }

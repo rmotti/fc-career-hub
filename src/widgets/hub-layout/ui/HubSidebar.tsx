@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt,
-  Trophy, BriefcaseBusiness, Shield, Search
+  Trophy, BriefcaseBusiness, Shield, Bot, Search
 } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 import { ScrollArea } from "@/shared/ui/scroll-area";
@@ -38,6 +38,11 @@ const careerItems: { type: "button" | "link"; label: string; description?: strin
   { type: "link", label: "Mudar de Clube", icon: RefreshCw, to: "/change-club" },
 ];
 
+const scoutItems: { to: string; label: string; icon: ElementType }[] = [
+  { to: "/scout/ia", label: "Scout IA", icon: Bot },
+  { to: "/scout/filtros", label: "Buscar Jogadores", icon: Search },
+];
+
 const HubSidebar = ({
   userName,
   userPlan,
@@ -54,9 +59,7 @@ const HubSidebar = ({
   const [isCollapseAnimating, setIsCollapseAnimating] = useState(false);
   const location = useLocation();
   const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
-  const visibleNavItems = canAccessProFeature(userPlan)
-    ? [...navItems, { to: "/scout", label: "Scout", icon: Search }]
-    : navItems;
+  const canUseScout = canAccessProFeature(userPlan);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -194,7 +197,7 @@ const HubSidebar = ({
           <section className="space-y-2 overflow-x-hidden">
             <p className={sectionTitleClass}>Principal</p>
             <nav data-tour={enableTourTargets ? "hub-navigation" : undefined} className="space-y-1 overflow-x-hidden">
-              {visibleNavItems.map((item) => {
+              {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Fragment key={item.to}>
@@ -214,6 +217,32 @@ const HubSidebar = ({
               })}
             </nav>
           </section>
+
+          {canUseScout && (
+            <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
+              <p className={sectionTitleClass}>Scout</p>
+              <div className="space-y-1 overflow-x-hidden">
+                {scoutItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Fragment key={item.to}>
+                      {renderSidebarTooltip(
+                        item.label,
+                        <NavLink
+                          to={item.to}
+                          className={({ isActive }) => `${navLinkClass({ isActive }, collapsed)} ${isActive ? "active" : ""}`}
+                        >
+                          {renderActiveMarker()}
+                          <Icon size={18} className="shrink-0" />
+                          {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                        </NavLink>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
             <p className={sectionTitleClass}>Carreira</p>
