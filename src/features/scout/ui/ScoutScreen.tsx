@@ -7,6 +7,8 @@ import {
   Archive,
   BadgeEuro,
   Bot,
+  BookmarkCheck,
+  BookmarkPlus,
   Brain,
   Calendar,
   Check,
@@ -19,6 +21,8 @@ import {
   Footprints,
   Folder,
   FolderOpen,
+  GitCompareArrows,
+  ListChecks,
   Loader2,
   LockKeyhole,
   MessageSquareText,
@@ -54,7 +58,7 @@ interface Props {
   currentSeason: string;
 }
 
-export type ScoutSection = "ai" | "filters" | "archive";
+export type ScoutSection = "ai" | "filters" | "archive" | "shortlist";
 
 type AttributeRangeDraft = Record<string, { min: string; max: string }>;
 
@@ -98,6 +102,8 @@ type DraftFilters = {
   maxAge: string;
   minPotential: string;
   maxPotential: string;
+  minMarketValue: string;
+  maxMarketValue: string;
   preferredFoot: "" | "Left" | "Right";
   playStyles: string[];
   playStylesPlus: string[];
@@ -123,6 +129,11 @@ interface SavedScoutQuery {
   filters: AppliedScoutFilters;
   results: Fc26Player[];
   total: number;
+}
+
+interface ShortlistPositionGroup {
+  position: PlayerPosition;
+  players: Fc26Player[];
 }
 
 interface AiCoachConversation {
@@ -311,6 +322,8 @@ const createDefaultDraft = (): DraftFilters => ({
   maxAge: "",
   minPotential: "",
   maxPotential: "",
+  minMarketValue: "",
+  maxMarketValue: "",
   preferredFoot: "",
   playStyles: [],
   playStylesPlus: [],
@@ -325,6 +338,8 @@ const DEFAULT_APPLIED_FILTERS: Fc26PlayerFilters = {
 
 const SAVED_SCOUT_QUERIES_STORAGE_KEY = "fc-career-hub.saved-scout-queries";
 const MAX_SAVED_SCOUT_QUERIES = 25;
+const SCOUT_SHORTLIST_STORAGE_KEY = "fc-career-hub.scout-shortlist";
+const MAX_SHORTLIST_PLAYERS = 80;
 
 const AI_COACH_CONVERSATION_HISTORY: AiCoachConversation[] = [
   {
@@ -512,8 +527,17 @@ const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
 
 function readNumber(value: string) {
   if (!value.trim()) return undefined;
-  const numericValue = Number(value);
+  const numericValue = Number(value.trim().replace(",", "."));
   return Number.isFinite(numericValue) ? numericValue : undefined;
+}
+
+function sanitizeNumberInput(value: string, allowDecimal: boolean) {
+  if (!allowDecimal) return value.replace(/\D/g, "");
+
+  const normalizedValue = value.replace(",", ".").replace(/[^\d.]/g, "");
+  const [integerPart, ...fractionParts] = normalizedValue.split(".");
+
+  return fractionParts.length ? `${integerPart}.${fractionParts.join("")}` : integerPart;
 }
 
 function validateRange(label: string, min?: number, max?: number) {
@@ -603,6 +627,8 @@ function buildFiltersFromDraft(draft: DraftFilters): AppliedScoutFilters | null 
   const maxAge = readNumber(draft.maxAge);
   const minPotential = readNumber(draft.minPotential);
   const maxPotential = readNumber(draft.maxPotential);
+  const minMarketValue = readNumber(draft.minMarketValue);
+  const maxMarketValue = readNumber(draft.maxMarketValue);
   const traits = [...draft.playStyles, ...draft.playStylesPlus];
   const attributeFilters = buildAttributeFilters(draft.attributeRanges);
   const positions = getUniquePositions(draft.primaryPositions, draft.secondaryPositions);
@@ -610,6 +636,7 @@ function buildFiltersFromDraft(draft: DraftFilters): AppliedScoutFilters | null 
   if (!validateRange("OVR", minOvr, maxOvr)) return null;
   if (!validateRange("Idade", minAge, maxAge)) return null;
   if (!validateRange("Potencial", minPotential, maxPotential)) return null;
+  if (!validateRange("Valor de mercado", minMarketValue, maxMarketValue)) return null;
   if (!attributeFilters) return null;
 
   return {
@@ -625,6 +652,8 @@ function buildFiltersFromDraft(draft: DraftFilters): AppliedScoutFilters | null 
     ...(typeof maxAge === "number" ? { maxAge } : {}),
     ...(typeof minPotential === "number" ? { minPotential } : {}),
     ...(typeof maxPotential === "number" ? { maxPotential } : {}),
+    ...(typeof minMarketValue === "number" ? { minMarketValue } : {}),
+    ...(typeof maxMarketValue === "number" ? { maxMarketValue } : {}),
     ...attributeFilters,
     ...(draft.preferredFoot ? { preferredFoot: draft.preferredFoot } : {}),
     ...(traits.length ? { traits } : {}),
@@ -647,6 +676,8 @@ function hasMeaningfulFilters(filters: AppliedScoutFilters) {
     typeof filters.maxAge === "number" ||
     typeof filters.minPotential === "number" ||
     typeof filters.maxPotential === "number" ||
+    typeof filters.minMarketValue === "number" ||
+    typeof filters.maxMarketValue === "number" ||
     countAttributeFilters(filters) > 0 ||
     Boolean(filters.preferredFoot) ||
     Boolean(filters.traits?.length)
@@ -668,6 +699,8 @@ function draftFromFilters(filters: AppliedScoutFilters): DraftFilters {
     maxAge: filters.maxAge ? String(filters.maxAge) : "",
     minPotential: filters.minPotential ? String(filters.minPotential) : "",
     maxPotential: filters.maxPotential ? String(filters.maxPotential) : "",
+    minMarketValue: filters.minMarketValue ? String(filters.minMarketValue) : "",
+    maxMarketValue: filters.maxMarketValue ? String(filters.maxMarketValue) : "",
     preferredFoot: filters.preferredFoot ?? "",
     playStyles: traits.filter((trait) => !isPlayStylePlus(trait)),
     playStylesPlus: traits.filter(isPlayStylePlus),
@@ -805,6 +838,19 @@ function loadSavedScoutQueries(): SavedScoutQuery[] {
   }
 }
 
+function loadShortlistPlayers(): Fc26Player[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SCOUT_SHORTLIST_STORAGE_KEY) ?? "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is Fc26Player => typeof item?.sofifaId === "number" && Array.isArray(item.positions))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function createQueryId() {
   if (typeof window !== "undefined" && window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
@@ -828,12 +874,20 @@ function formatFilterRange(label: string, min?: number, max?: number) {
   return null;
 }
 
+function formatMarketValueFilterRange(min?: number, max?: number) {
+  if (typeof min === "number" && typeof max === "number") return `Valor: ${formatMarketValue(min)}-${formatMarketValue(max)}`;
+  if (typeof min === "number") return `Valor: ${formatMarketValue(min)}+`;
+  if (typeof max === "number") return `Valor: até ${formatMarketValue(max)}`;
+  return null;
+}
+
 function getSavedQueryChips(filters: AppliedScoutFilters) {
   const chips: string[] = [];
   const positions = getFilterPositions(filters);
   const ageRange = formatFilterRange("Idade", filters.minAge, filters.maxAge);
   const ovrRange = formatFilterRange("OVR", filters.minOvr, filters.maxOvr);
   const potentialRange = formatFilterRange("Potencial", filters.minPotential, filters.maxPotential);
+  const marketValueRange = formatMarketValueFilterRange(filters.minMarketValue, filters.maxMarketValue);
 
   if (filters.primaryPositions?.length) chips.push(`Principal: ${filters.primaryPositions.join(", ")}`);
   if (filters.secondaryPositions?.length) chips.push(`Secundária: ${filters.secondaryPositions.join(", ")}`);
@@ -842,6 +896,7 @@ function getSavedQueryChips(filters: AppliedScoutFilters) {
   if (ageRange) chips.push(ageRange);
   if (ovrRange) chips.push(ovrRange);
   if (potentialRange) chips.push(potentialRange);
+  if (marketValueRange) chips.push(marketValueRange);
   if (filters.nations?.length) chips.push(`Nações: ${filters.nations.slice(0, 3).join(", ")}${filters.nations.length > 3 ? "..." : ""}`);
   if (filters.leagues?.length) chips.push(`Ligas: ${filters.leagues.slice(0, 2).join(", ")}${filters.leagues.length > 2 ? "..." : ""}`);
   if (filters.clubs?.length) chips.push(`Clubes: ${filters.clubs.slice(0, 2).join(", ")}${filters.clubs.length > 2 ? "..." : ""}`);
@@ -858,6 +913,7 @@ function createSavedQueryTitle(filters: AppliedScoutFilters) {
   if (filters.preferredFoot) titleParts.push(filters.preferredFoot === "Left" ? "canhotos" : "destros");
   if (typeof filters.maxAge === "number") titleParts.push(`sub-${filters.maxAge + 1}`);
   if (typeof filters.minPotential === "number") titleParts.push(`pot. ${filters.minPotential}+`);
+  if (typeof filters.maxMarketValue === "number") titleParts.push(`até ${formatMarketValue(filters.maxMarketValue)}`);
 
   return titleParts.length ? `Scout ${titleParts.join(" · ")}` : "Consulta de scout";
 }
@@ -874,6 +930,43 @@ function formatSavedQueryDate(value: string) {
   }).format(date);
 }
 
+function getPositionSortIndex(position: PlayerPosition) {
+  const index = PLAYER_POSITIONS.indexOf(position);
+  return index === -1 ? PLAYER_POSITIONS.length : index;
+}
+
+function groupShortlistPlayers(players: Fc26Player[]): ShortlistPositionGroup[] {
+  const groups = new Map<PlayerPosition, Fc26Player[]>();
+
+  players.forEach((player) => {
+    const position = getPrimaryPosition(player);
+    if (!position) return;
+
+    groups.set(position, [...(groups.get(position) ?? []), player]);
+  });
+
+  return [...groups.entries()]
+    .sort(([positionA], [positionB]) => getPositionSortIndex(positionA) - getPositionSortIndex(positionB))
+    .map(([position, positionPlayers]) => ({
+      position,
+      players: [...positionPlayers].sort((a, b) => {
+        const ovrDiff = b.ovr - a.ovr;
+        if (ovrDiff !== 0) return ovrDiff;
+
+        const potentialDiff = b.potential - a.potential;
+        if (potentialDiff !== 0) return potentialDiff;
+
+        return a.name.localeCompare(b.name, "pt-BR");
+      }),
+    }));
+}
+
+function getAverageOvr(players: Fc26Player[]) {
+  if (!players.length) return null;
+
+  return Math.round(players.reduce((total, player) => total + player.ovr, 0) / players.length);
+}
+
 const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
@@ -884,6 +977,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   const [showAdvancedAttributes, setShowAdvancedAttributes] = useState(false);
   const [savedQueries, setSavedQueries] = useState<SavedScoutQuery[]>(() => loadSavedScoutQueries());
   const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(() => loadSavedScoutQueries()[0]?.id ?? null);
+  const [shortlistPlayers, setShortlistPlayers] = useState<Fc26Player[]>(() => loadShortlistPlayers());
 
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters);
   const {
@@ -922,6 +1016,8 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     if (typeof appliedFilters.maxAge === "number") count += 1;
     if (typeof appliedFilters.minPotential === "number") count += 1;
     if (typeof appliedFilters.maxPotential === "number") count += 1;
+    if (typeof appliedFilters.minMarketValue === "number") count += 1;
+    if (typeof appliedFilters.maxMarketValue === "number") count += 1;
     count += countAttributeFilters(appliedFilters);
     if (appliedFilters.preferredFoot) count += 1;
     if (appliedFilters.traits?.some((trait) => !isPlayStylePlus(trait))) count += 1;
@@ -944,6 +1040,9 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     [comparisonPlayers, players]
   );
   const comparedPlayerIds = useMemo(() => new Set(comparedPlayers.map((player) => player.sofifaId)), [comparedPlayers]);
+  const shortlistedPlayerIds = useMemo(() => new Set(shortlistPlayers.map((player) => player.sofifaId)), [shortlistPlayers]);
+  const shortlistGroups = useMemo(() => groupShortlistPlayers(shortlistPlayers), [shortlistPlayers]);
+  const shortlistAverageOvr = useMemo(() => getAverageOvr(shortlistPlayers), [shortlistPlayers]);
   const selectedSavedQuery = useMemo(
     () => savedQueries.find((query) => query.id === selectedSavedQueryId) ?? savedQueries[0] ?? null,
     [savedQueries, selectedSavedQueryId]
@@ -971,6 +1070,11 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(SAVED_SCOUT_QUERIES_STORAGE_KEY, JSON.stringify(savedQueries));
   }, [savedQueries]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SCOUT_SHORTLIST_STORAGE_KEY, JSON.stringify(shortlistPlayers));
+  }, [shortlistPlayers]);
 
   useEffect(() => {
     if (selectedSavedQueryId && savedQueries.some((query) => query.id === selectedSavedQueryId)) return;
@@ -1078,6 +1182,30 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     toast.success("Consulta removida das pastas.", { duration: 3000 });
   };
 
+  const toggleShortlistPlayer = (player: Fc26Player) => {
+    const isAlreadyShortlisted = shortlistPlayers.some((shortlistedPlayer) => shortlistedPlayer.sofifaId === player.sofifaId);
+
+    if (isAlreadyShortlisted) {
+      setShortlistPlayers((current) => current.filter((shortlistedPlayer) => shortlistedPlayer.sofifaId !== player.sofifaId));
+      setComparisonPlayers((current) => current.filter((comparedPlayer) => comparedPlayer.sofifaId !== player.sofifaId));
+      toast.success("Jogador removido da Lista Final.", { duration: 2500 });
+      return;
+    }
+
+    setShortlistPlayers((current) => [player, ...current].slice(0, MAX_SHORTLIST_PLAYERS));
+    toast.success("Jogador enviado para a Lista Final.", { duration: 2500 });
+  };
+
+  const removeShortlistPlayer = (sofifaId: number) => {
+    setShortlistPlayers((current) => current.filter((player) => player.sofifaId !== sofifaId));
+    setComparisonPlayers((current) => {
+      const nextPlayers = current.filter((player) => player.sofifaId !== sofifaId);
+      if (nextPlayers.length < 2) setIsComparisonOpen(false);
+      return nextPlayers;
+    });
+    toast.success("Jogador removido da Lista Final.", { duration: 2500 });
+  };
+
   const goToOffset = (nextOffset: number) => {
     setAppliedFilters((current) => ({
       ...DEFAULT_APPLIED_FILTERS,
@@ -1118,13 +1246,24 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
       return nextPlayers;
     });
   };
+
+  const compareShortlistGroup = (players: Fc26Player[]) => {
+    if (players.length < 2) return;
+
+    setComparisonPlayers(players);
+    setIsComparisonOpen(true);
+  };
+
   const isAiSection = section === "ai";
   const isArchiveSection = section === "archive";
+  const isShortlistSection = section === "shortlist";
   const pageTitle = isAiSection
     ? "AIssistent Coach"
     : isArchiveSection
       ? "Consultas salvas"
-      : "Buscar jogadores";
+      : isShortlistSection
+        ? "Shortlist"
+        : "Buscar jogadores";
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
@@ -1136,8 +1275,8 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{pageTitle}</h2>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              {isAiSection ? <Bot size={13} /> : isArchiveSection ? <Archive size={13} /> : <Search size={13} />}
-              {isAiSection ? "PRO" : isArchiveSection ? "Arquivo de pastas" : "Dataset FC 26"}
+              {isAiSection ? <Bot size={13} /> : isArchiveSection ? <Archive size={13} /> : isShortlistSection ? <ListChecks size={13} /> : <Search size={13} />}
+              {isAiSection ? "PRO" : isArchiveSection ? "Arquivo de pastas" : isShortlistSection ? "Lista Final" : "Dataset FC 26"}
             </span>
           </div>
         </div>
@@ -1152,6 +1291,13 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
             <>
               <SummaryPill label="Pastas" value={savedQueries.length} icon={Folder} />
               <SummaryPill label="Selecionada" value={selectedSavedQuery ? selectedSavedQuery.results.length : 0} icon={UsersRound} />
+            </>
+          ) : isShortlistSection ? (
+            <>
+              <SummaryPill label="Na lista" value={shortlistPlayers.length} icon={ListChecks} />
+              <SummaryPill label="Posições" value={shortlistGroups.length} icon={Target} />
+              <SummaryPill label="Média OVR" value={shortlistAverageOvr ?? "—"} icon={Activity} />
+              <SummaryPill label="Comparando" value={comparedPlayers.length} icon={GitCompareArrows} />
             </>
           ) : (
             <>
@@ -1376,7 +1522,12 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                     </div>
                   </div>
 
-                  <SavedQueryResults query={selectedSavedQuery} onOpenDetails={setSelectedSofifaId} />
+                  <SavedQueryResults
+                    query={selectedSavedQuery}
+                    shortlistedPlayerIds={shortlistedPlayerIds}
+                    onToggleShortlist={toggleShortlistPlayer}
+                    onOpenDetails={setSelectedSofifaId}
+                  />
                 </>
               ) : (
                 <div className="p-8 text-center">
@@ -1393,7 +1544,26 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
           </>
         )}
 
-        {!isAiSection && !isArchiveSection && (
+        {isShortlistSection && (
+          <ShortlistContent
+            players={shortlistPlayers}
+            groups={shortlistGroups}
+            comparedPlayers={comparedPlayers}
+            comparedPlayerIds={comparedPlayerIds}
+            onToggleCompare={toggleComparePlayer}
+            onClearComparison={() => {
+              setComparisonPlayers([]);
+              setIsComparisonOpen(false);
+            }}
+            onOpenComparison={() => setIsComparisonOpen(true)}
+            onOpenDetails={(sofifaId) => setSelectedSofifaId(sofifaId)}
+            onRemovePlayer={removeShortlistPlayer}
+            onCompareGroup={compareShortlistGroup}
+            onGoToScout={() => navigate("/scout/filtros")}
+          />
+        )}
+
+        {!isAiSection && !isArchiveSection && !isShortlistSection && (
         <div className="min-w-0 space-y-4">
           <section className="card-gamer p-5">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -1466,9 +1636,25 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                 <FilterNumberInput label="Idade máxima" value={draft.maxAge} min={15} max={45} onChange={(maxAge) => setDraft((current) => ({ ...current, maxAge }))} />
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_160px]">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_160px]">
                 <FilterNumberInput label="Potencial mínimo" value={draft.minPotential} min={1} max={99} onChange={(minPotential) => setDraft((current) => ({ ...current, minPotential }))} />
                 <FilterNumberInput label="Potencial máximo" value={draft.maxPotential} min={1} max={99} onChange={(maxPotential) => setDraft((current) => ({ ...current, maxPotential }))} />
+                <FilterNumberInput
+                  label="Valor mínimo (€M)"
+                  value={draft.minMarketValue}
+                  min={0}
+                  placeholder="Min €M"
+                  allowDecimal
+                  onChange={(minMarketValue) => setDraft((current) => ({ ...current, minMarketValue }))}
+                />
+                <FilterNumberInput
+                  label="Valor máximo (€M)"
+                  value={draft.maxMarketValue}
+                  min={0}
+                  placeholder="Max €M"
+                  allowDecimal
+                  onChange={(maxMarketValue) => setDraft((current) => ({ ...current, maxMarketValue }))}
+                />
                 <div>
                   <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Resultados</label>
                   <select
@@ -1667,7 +1853,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
             ) : (
               <>
                 <ScrollArea scrollbars="horizontal" className="hidden w-full lg:block" viewportClassName="pb-3">
-                  <table className="w-full min-w-[1220px] text-left">
+                  <table className="w-full min-w-[1320px] text-left">
                     <thead className="bg-muted/35">
                       <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                         <th className="px-4 py-3 font-semibold">Jogador</th>
@@ -1708,8 +1894,10 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                           key={player.sofifaId}
                           player={player}
                           isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
+                          isShortlisted={shortlistedPlayerIds.has(player.sofifaId)}
                           onSelect={() => setSelectedSofifaId(player.sofifaId)}
                           onToggleCompare={() => toggleComparePlayer(player)}
+                          onToggleShortlist={() => toggleShortlistPlayer(player)}
                         />
                       ))}
                     </tbody>
@@ -1722,8 +1910,10 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                       key={player.sofifaId}
                       player={player}
                       isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
+                      isShortlisted={shortlistedPlayerIds.has(player.sofifaId)}
                       onSelect={() => setSelectedSofifaId(player.sofifaId)}
                       onToggleCompare={() => toggleComparePlayer(player)}
+                      onToggleShortlist={() => toggleShortlistPlayer(player)}
                     />
                   ))}
                 </div>
@@ -1777,7 +1967,297 @@ function SummaryPill({ label, value, icon: Icon }: SummaryPillProps) {
   );
 }
 
-function SavedQueryResults({ query, onOpenDetails }: { query: SavedScoutQuery; onOpenDetails: (sofifaId: number) => void }) {
+interface ShortlistContentProps {
+  players: Fc26Player[];
+  groups: ShortlistPositionGroup[];
+  comparedPlayers: Fc26Player[];
+  comparedPlayerIds: Set<number>;
+  onToggleCompare: (player: Fc26Player) => void;
+  onClearComparison: () => void;
+  onOpenComparison: () => void;
+  onOpenDetails: (sofifaId: number) => void;
+  onRemovePlayer: (sofifaId: number) => void;
+  onCompareGroup: (players: Fc26Player[]) => void;
+  onGoToScout: () => void;
+}
+
+function ShortlistContent({
+  players,
+  groups,
+  comparedPlayers,
+  comparedPlayerIds,
+  onToggleCompare,
+  onClearComparison,
+  onOpenComparison,
+  onOpenDetails,
+  onRemovePlayer,
+  onCompareGroup,
+  onGoToScout,
+}: ShortlistContentProps) {
+  const hasComparisonReady = comparedPlayers.length >= 2;
+  const bestGrowthPlayer = getBestMetricPlayer(players, (player) => player.potential - player.ovr);
+
+  if (players.length === 0) {
+    return (
+      <section className="card-gamer p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-primary/30 bg-primary/10 text-primary">
+          <ListChecks size={23} />
+        </div>
+        <p className="font-display text-xl font-bold text-foreground">Lista Final vazia</p>
+        <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
+          Envie jogadores dos relatórios do Scout para montar uma lista curta antes da decisão de mercado.
+        </p>
+        <button
+          type="button"
+          onClick={onGoToScout}
+          className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          <Search size={15} />
+          Buscar jogadores
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <div className="min-w-0 space-y-4">
+      <section className="card-gamer overflow-hidden">
+        <div className="flex flex-col gap-4 border-b border-border p-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+              <ListChecks size={21} />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-display text-xl font-bold leading-none text-foreground">Lista Final</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {players.length} jogador{players.length === 1 ? "" : "es"} separados por posição para decisão de compra.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onGoToScout}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Search size={15} />
+              Buscar mais
+            </button>
+            <button
+              type="button"
+              disabled={!hasComparisonReady}
+              onClick={onOpenComparison}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <GitCompareArrows size={15} />
+              Comparar seleção
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 p-5 md:grid-cols-3">
+          <ShortlistInsight label="Posições cobertas" value={groups.length} detail="Grupos por posição principal" icon={Target} />
+          <ShortlistInsight label="Maior margem" value={bestGrowthPlayer ? formatPotentialGrowth(bestGrowthPlayer) : "—"} detail={bestGrowthPlayer?.name ?? "Sem dados"} icon={Star} />
+          <ShortlistInsight label="Comparação" value={comparedPlayers.length} detail={hasComparisonReady ? "Pronta para abrir" : "Selecione 2 jogadores"} icon={GitCompareArrows} />
+        </div>
+      </section>
+
+      {comparedPlayers.length > 0 && (
+        <PlayerComparisonLauncher
+          players={comparedPlayers}
+          onClear={onClearComparison}
+          onOpenComparison={onOpenComparison}
+          onOpenDetails={onOpenDetails}
+          onRemove={(sofifaId) => {
+            const player = comparedPlayers.find((comparedPlayer) => comparedPlayer.sofifaId === sofifaId);
+            if (player) onToggleCompare(player);
+          }}
+        />
+      )}
+
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <ShortlistPositionGroupCard
+            key={group.position}
+            group={group}
+            comparedPlayerIds={comparedPlayerIds}
+            onToggleCompare={onToggleCompare}
+            onOpenDetails={onOpenDetails}
+            onRemovePlayer={onRemovePlayer}
+            onCompareGroup={onCompareGroup}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShortlistInsight({ label, value, detail, icon: Icon }: { label: string; value: ReactNode; detail: string; icon: ElementType }) {
+  return (
+    <div className="rounded-md border border-border bg-background/35 p-3">
+      <div className="mb-3 flex items-center gap-2 text-muted-foreground">
+        <Icon size={15} className="text-primary" />
+        <p className="truncate text-[10px] uppercase tracking-[0.16em]">{label}</p>
+      </div>
+      <p className="font-display text-2xl font-bold leading-none text-foreground">{value}</p>
+      <p className="mt-1 truncate text-xs text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function ShortlistPositionGroupCard({
+  group,
+  comparedPlayerIds,
+  onToggleCompare,
+  onOpenDetails,
+  onRemovePlayer,
+  onCompareGroup,
+}: {
+  group: ShortlistPositionGroup;
+  comparedPlayerIds: Set<number>;
+  onToggleCompare: (player: Fc26Player) => void;
+  onOpenDetails: (sofifaId: number) => void;
+  onRemovePlayer: (sofifaId: number) => void;
+  onCompareGroup: (players: Fc26Player[]) => void;
+}) {
+  const averageOvr = getAverageOvr(group.players);
+  const canCompareGroup = group.players.length >= 2;
+
+  return (
+    <section className="card-gamer overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-border bg-muted/20 p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent/20 bg-accent/10 text-accent">
+            <span className="font-display text-sm font-bold">{group.position}</span>
+          </div>
+          <div className="min-w-0">
+            <h4 className="truncate font-display text-lg font-bold text-foreground">{POSITION_LABELS[group.position]}</h4>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {group.players.length} jogador{group.players.length === 1 ? "" : "es"} · média OVR {averageOvr ?? "—"}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={!canCompareGroup}
+          onClick={() => onCompareGroup(group.players)}
+          className="inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <GitCompareArrows size={15} />
+          Comparar posição
+        </button>
+      </div>
+
+      <div className="divide-y divide-border">
+        {group.players.map((player) => (
+          <ShortlistPlayerRow
+            key={player.sofifaId}
+            player={player}
+            isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
+            onToggleCompare={() => onToggleCompare(player)}
+            onOpenDetails={() => onOpenDetails(player.sofifaId)}
+            onRemove={() => onRemovePlayer(player.sofifaId)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ShortlistPlayerRow({
+  player,
+  isCompareSelected,
+  onToggleCompare,
+  onOpenDetails,
+  onRemove,
+}: {
+  player: Fc26Player;
+  isCompareSelected: boolean;
+  onToggleCompare: () => void;
+  onOpenDetails: () => void;
+  onRemove: () => void;
+}) {
+  const averageRating = getGeneralRatingAverage(player);
+
+  return (
+    <article className="grid gap-3 p-4 lg:grid-cols-[minmax(280px,1.4fr)_180px_190px_180px] lg:items-center">
+      <div className="flex min-w-0 items-center gap-3">
+        <PlayerAvatar player={player} size="md" />
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <p className="truncate text-base font-semibold text-foreground">{player.name}</p>
+            <span className={`font-display text-lg font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</span>
+          </div>
+          <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "Sem clube"}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {player.positions.map((position) => (
+              <PositionBadge key={position} position={position} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <RatingPill label="OVR" value={player.ovr} />
+        <RatingPill label="POT" value={player.potential} />
+        <RatingPill label="AVG" value={averageRating === null ? null : Math.round(averageRating)} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <MetricLine label="Idade" value={`${player.age} anos`} />
+        <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={onToggleCompare}
+          aria-pressed={isCompareSelected}
+          className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border px-2 text-xs font-semibold transition-colors ${
+            isCompareSelected
+              ? "border-primary/35 bg-primary/10 text-primary"
+              : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
+          }`}
+          title={isCompareSelected ? "Remover da comparação" : "Adicionar à comparação"}
+        >
+          {isCompareSelected ? <Check size={14} /> : <UsersRound size={14} />}
+          <span className="truncate">{isCompareSelected ? "Sel." : "Comp."}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onOpenDetails}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+          title="Ver detalhes"
+        >
+          <Eye size={14} />
+          <span className="truncate">Ver</span>
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/15"
+          title="Remover da Lista Final"
+        >
+          <X size={14} />
+          <span className="truncate">Sair</span>
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function SavedQueryResults({
+  query,
+  shortlistedPlayerIds,
+  onToggleShortlist,
+  onOpenDetails,
+}: {
+  query: SavedScoutQuery;
+  shortlistedPlayerIds: Set<number>;
+  onToggleShortlist: (player: Fc26Player) => void;
+  onOpenDetails: (sofifaId: number) => void;
+}) {
   if (query.results.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -1803,44 +2283,63 @@ function SavedQueryResults({ query, onOpenDetails }: { query: SavedScoutQuery; o
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-        {query.results.map((player) => (
-          <article key={`${query.id}-${player.sofifaId}`} className="rounded-md border border-border bg-background/35 p-3">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <PlayerAvatar player={player} size="sm" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{player.club ?? "Sem clube"}</p>
+        {query.results.map((player) => {
+          const isShortlisted = shortlistedPlayerIds.has(player.sofifaId);
+
+          return (
+            <article key={`${query.id}-${player.sofifaId}`} className="rounded-md border border-border bg-background/35 p-3">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <PlayerAvatar player={player} size="sm" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{player.club ?? "Sem clube"}</p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className={`font-display text-xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-muted-foreground">OVR</p>
                 </div>
               </div>
-              <div className="shrink-0 text-right">
-                <p className={`font-display text-xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
-                <p className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-muted-foreground">OVR</p>
+
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {player.positions.map((position) => (
+                  <PositionBadge key={position} position={position} />
+                ))}
               </div>
-            </div>
 
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {player.positions.map((position) => (
-                <PositionBadge key={position} position={position} />
-              ))}
-            </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <MetricLine label="Pot." value={player.potential} />
+                <MetricLine label="Idade" value={`${player.age}`} />
+                <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} />
+              </div>
 
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <MetricLine label="Pot." value={player.potential} />
-              <MetricLine label="Idade" value={`${player.age}`} />
-              <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenDetails(player.sofifaId)}
-              className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
-            >
-              <Eye size={15} />
-              Ver detalhes
-            </button>
-          </article>
-        ))}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onToggleShortlist(player)}
+                  aria-pressed={isShortlisted}
+                  className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold transition-colors ${
+                    isShortlisted
+                      ? "border-primary/35 bg-primary/10 text-primary"
+                      : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
+                  }`}
+                >
+                  {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
+                  {isShortlisted ? "Na lista" : "Lista Final"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenDetails(player.sofifaId)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+                >
+                  <Eye size={15} />
+                  Detalhes
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );
@@ -1961,10 +2460,11 @@ interface FilterNumberInputProps {
   min?: number;
   max?: number;
   placeholder?: string;
+  allowDecimal?: boolean;
   onChange: (value: string) => void;
 }
 
-function FilterNumberInput({ label, value, min, max, placeholder, onChange }: FilterNumberInputProps) {
+function FilterNumberInput({ label, value, min, max, placeholder, allowDecimal = false, onChange }: FilterNumberInputProps) {
   const fallbackPlaceholder = label.toLocaleLowerCase("pt-BR").includes("máximo")
     ? (typeof max === "number" ? `Max ${max}` : "Max")
     : (typeof min === "number" ? `Min ${min}` : "Min");
@@ -1977,6 +2477,7 @@ function FilterNumberInput({ label, value, min, max, placeholder, onChange }: Fi
         min={min}
         max={max}
         placeholder={placeholder ?? fallbackPlaceholder}
+        allowDecimal={allowDecimal}
         onChange={onChange}
       />
     </div>
@@ -1988,6 +2489,7 @@ function NumericFilterInput({
   min,
   max,
   placeholder,
+  allowDecimal = false,
   compact = false,
   ariaLabel,
   onChange,
@@ -1996,6 +2498,7 @@ function NumericFilterInput({
   min?: number;
   max?: number;
   placeholder: string;
+  allowDecimal?: boolean;
   compact?: boolean;
   ariaLabel?: string;
   onChange: (value: string) => void;
@@ -2003,14 +2506,14 @@ function NumericFilterInput({
   return (
     <Input
       type="text"
-      inputMode="numeric"
-      pattern="[0-9]*"
+      inputMode={allowDecimal ? "decimal" : "numeric"}
+      pattern={allowDecimal ? "[0-9]*[.,]?[0-9]*" : "[0-9]*"}
       value={value}
       min={min}
       max={max}
       placeholder={placeholder}
       aria-label={ariaLabel}
-      onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))}
+      onChange={(event) => onChange(sanitizeNumberInput(event.target.value, allowDecimal))}
       className={
         compact
           ? "h-8 w-full border-border bg-muted px-2 py-1 text-[11px] font-semibold text-foreground placeholder:text-muted-foreground/70 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
@@ -2394,7 +2897,7 @@ function PlayerComparisonModal({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="p-4 sm:p-5" scrollbars="vertical">
           {players.length < 2 ? (
             <div className="rounded-md border border-warning/25 bg-warning/10 p-5 text-sm text-warning">
               Selecione 2 ou mais jogadores para comparar atributos.
@@ -2483,7 +2986,7 @@ function PlayerComparisonModal({
               </ScrollArea>
             </div>
           )}
-        </div>
+        </ScrollArea>
       </section>
     </div>
   );
@@ -2741,19 +3244,23 @@ function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: 
 function PlayerTableRow({
   player,
   isCompareSelected,
+  isShortlisted,
   onSelect,
   onToggleCompare,
+  onToggleShortlist,
 }: {
   player: Fc26Player;
   isCompareSelected: boolean;
+  isShortlisted: boolean;
   onSelect: () => void;
   onToggleCompare: () => void;
+  onToggleShortlist: () => void;
 }) {
   const traits = player.playerTraits ?? [];
 
   return (
     <tr className="border-t border-border transition-colors hover:bg-muted/25">
-      <td className="min-w-[380px] px-4 py-3">
+      <td className="min-w-[460px] px-4 py-3">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <PlayerAvatar player={player} size="md" />
@@ -2770,6 +3277,21 @@ function PlayerTableRow({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggleShortlist}
+              aria-pressed={isShortlisted}
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold transition-colors ${
+                isShortlisted
+                  ? "border-primary/35 bg-primary/10 text-primary"
+                  : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
+              }`}
+              aria-label={`${isShortlisted ? "Remover" : "Adicionar"} ${player.name} ${isShortlisted ? "da" : "à"} Lista Final`}
+              title={isShortlisted ? "Remover da Lista Final" : "Adicionar à Lista Final"}
+            >
+              {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
+              <span>{isShortlisted ? "Na lista" : "Lista"}</span>
+            </button>
             <button
               type="button"
               onClick={onToggleCompare}
@@ -2835,13 +3357,17 @@ function PlayerTableRow({
 function PlayerMobileRow({
   player,
   isCompareSelected,
+  isShortlisted,
   onSelect,
   onToggleCompare,
+  onToggleShortlist,
 }: {
   player: Fc26Player;
   isCompareSelected: boolean;
+  isShortlisted: boolean;
   onSelect: () => void;
   onToggleCompare: () => void;
+  onToggleShortlist: () => void;
 }) {
   const traits = player.playerTraits ?? [];
 
@@ -2881,7 +3407,20 @@ function PlayerMobileRow({
           ))}
         </div>
       )}
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={onToggleShortlist}
+          aria-pressed={isShortlisted}
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-md border px-2 text-sm font-semibold transition-colors ${
+            isShortlisted
+              ? "border-primary/35 bg-primary/10 text-primary"
+              : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
+          }`}
+        >
+          {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
+          <span className="truncate">{isShortlisted ? "Lista" : "Final"}</span>
+        </button>
         <button
           type="button"
           onClick={onToggleCompare}
@@ -2893,7 +3432,7 @@ function PlayerMobileRow({
           }`}
         >
           {isCompareSelected ? <Check size={15} /> : <UsersRound size={15} />}
-          {isCompareSelected ? "Selecionado" : "Comparar"}
+          <span className="truncate">{isCompareSelected ? "Sel." : "Comp."}</span>
         </button>
         <button
           type="button"
@@ -3112,7 +3651,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="p-4 sm:p-5" scrollbars="vertical">
           {isLoading && !player ? (
             <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
               <Loader2 size={20} className="animate-spin" />
@@ -3220,7 +3759,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
               </section>
             </div>
           ) : null}
-        </div>
+        </ScrollArea>
       </aside>
     </div>
   );

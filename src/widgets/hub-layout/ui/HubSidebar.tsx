@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt,
-  Trophy, BriefcaseBusiness, Shield, Bot, Search, Folder
+  Trophy, BriefcaseBusiness, Shield, Bot, Search, Folder, ListChecks
 } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 import { ScrollArea } from "@/shared/ui/scroll-area";
@@ -42,6 +42,7 @@ const scoutItems: { to: string; label: string; icon: ElementType }[] = [
   { to: "/scout/ia", label: "AIssistent Coach", icon: Bot },
   { to: "/scout/filtros", label: "Buscar Jogadores", icon: Search },
   { to: "/scout/consultas", label: "Consultas Salvas", icon: Folder },
+  { to: "/scout/shortlist", label: "Shortlist", icon: ListChecks },
 ];
 
 const HubSidebar = ({

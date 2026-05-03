@@ -257,6 +257,7 @@ const FC26_NUMERIC_FILTER_BASES = [
   "ovr",
   "age",
   "potential",
+  "marketValue",
   "height",
   "weight",
   "weakFoot",
