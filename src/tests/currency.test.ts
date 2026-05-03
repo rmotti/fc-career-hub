@@ -6,8 +6,8 @@ import {
   formatSignedCurrencyInMillions,
   normalizeStoredBudget,
   parseBudgetInMillionsInput,
-} from "@/utils/currency";
-import { formatRoundedSingleDecimal, roundToSingleDecimal } from "@/utils/rounding";
+} from "@/shared/lib/currency";
+import { formatRoundedSingleDecimal, roundToSingleDecimal } from "@/shared/lib/rounding";
 
 describe("formatCurrency", () => {
   describe("zero", () => {

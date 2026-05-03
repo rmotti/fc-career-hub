@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
-import SquadScreen from "@/components/hub/SquadScreen";
-import { type HubOutletContext } from "../HubLayout";
+﻿import { useOutletContext } from "react-router-dom";
+import SquadScreen from "@/features/squad/ui/SquadScreen";
+import { type HubOutletContext } from "@/widgets/hub-layout/ui/HubLayout";
 
 const Squad = () => {
   const { saveId, selectedSeason, currentSeason } = useOutletContext<HubOutletContext>();

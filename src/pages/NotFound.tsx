@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { ArrowRight, ArrowLeft, Compass } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
-import { useAuth } from "@/contexts/useAuth";
+import { LogoMark } from "@/shared/ui/Logo";
+import { useAuth } from "@/features/auth/model/useAuth";
 
 export default function NotFound() {
   const location = useLocation();

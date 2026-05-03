@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import SaveSelect from "@/components/SaveSelect";
-import { useAuth } from "@/contexts/useAuth";
-import { useSaves, useCreateSave } from "@/hooks/useSaves";
-import { getStoredActiveSaveId, setStoredActiveSaveId } from "@/lib/auth-storage";
-import { type ApiSave, extractErrorMessage } from "@/services/api";
-import { getTutorialPromptKey } from "@/components/tutorial/HubTutorial";
+import SaveSelect from "@/features/saves/ui/SaveSelect";
+import { useAuth } from "@/features/auth/model/useAuth";
+import { useSaves, useCreateSave } from "@/features/saves/model/useSaves";
+import { getStoredActiveSaveId, setStoredActiveSaveId } from "@/features/auth/lib/auth-storage";
+import { type ApiSave, extractErrorMessage } from "@/shared/api/client";
+import { getTutorialPromptKey } from "@/features/tutorial/ui/HubTutorial";
 
 const Index = () => {
   const navigate = useNavigate();

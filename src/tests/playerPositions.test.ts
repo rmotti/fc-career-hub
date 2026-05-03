@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getAlternativePositions, normalizeAlternativePositions, playerCanPlayPosition } from "@/utils/playerPositions";
-import type { ApiPlayer } from "@/services/api";
+import { getAlternativePositions, normalizeAlternativePositions, playerCanPlayPosition } from "@/shared/lib/playerPositions";
+import type { ApiPlayer } from "@/shared/api/client";
 
 const player = (overrides: Partial<ApiPlayer>): ApiPlayer => ({
   id: "player-1",

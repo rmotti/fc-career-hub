@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2, Trophy, ArrowLeft, BarChart2, Calendar, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { LogoMark } from "@/components/Logo";
-import { useAuth } from "@/contexts/useAuth";
-import { extractErrorMessage } from "@/services/api";
+import { LogoMark } from "@/shared/ui/Logo";
+import { useAuth } from "@/features/auth/model/useAuth";
+import { extractErrorMessage } from "@/shared/api/client";
 
 // ─── Decorative left panel ───────────────────────────────────────────────────
 

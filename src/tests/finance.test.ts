@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateBalanceFromTransfers } from "@/utils/finance";
+import { calculateBalanceFromTransfers } from "@/shared/lib/finance";
 
 describe("finance", () => {
   it("recalcula o saldo a partir do orçamento e das transferências atuais", () => {

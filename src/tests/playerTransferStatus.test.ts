@@ -3,8 +3,8 @@ import {
   getActiveSoldPlayers,
   getInactivePlayersToReactivate,
   shouldRemovePlayerFromSquad,
-} from "@/utils/playerTransferStatus";
-import type { ApiPlayer, ApiTransfer } from "@/services/api";
+} from "@/shared/lib/playerTransferStatus";
+import type { ApiPlayer, ApiTransfer } from "@/shared/api/client";
 
 function createPlayer(overrides: Partial<ApiPlayer>): ApiPlayer {
   return {

@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
-import TransfersScreen from "@/components/hub/TransfersScreen";
-import { type HubOutletContext } from "../HubLayout";
+﻿import { useOutletContext } from "react-router-dom";
+import TransfersScreen from "@/features/transfers/ui/TransfersScreen";
+import { type HubOutletContext } from "@/widgets/hub-layout/ui/HubLayout";
 
 const Transfers = () => {
   const { saveId, currentClub, currentSeason, selectedSeason } = useOutletContext<HubOutletContext>();

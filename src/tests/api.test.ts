@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ApiError, extractErrorMessage } from "@/services/api";
+import { ApiError, extractErrorMessage } from "@/shared/api/client";
 
 describe("ApiError", () => {
   it("cria erro com propriedades corretas", () => {

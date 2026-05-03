@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/useAuth";
-import { LogoMark } from "@/components/Logo";
+import { useAuth } from "@/features/auth/model/useAuth";
+import { LogoMark } from "@/shared/ui/Logo";
 import {
   Shield,
   Check,

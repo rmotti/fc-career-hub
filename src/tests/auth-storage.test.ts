@@ -6,7 +6,7 @@ import {
   getStoredUser,
   setStoredToken,
   setStoredUser,
-} from "@/lib/auth-storage";
+} from "@/features/auth/lib/auth-storage";
 
 describe("auth-storage", () => {
   beforeEach(() => {

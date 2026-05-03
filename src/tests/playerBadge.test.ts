@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getBadge } from "@/lib/playerBadge";
+import { getBadge } from "@/entities/player/model/playerBadge";
 
 const player = (ovr: number, age: number, potential?: number | null, ovrDelta?: number | null) =>
   ({ ovr, age, potential, ovrDelta });

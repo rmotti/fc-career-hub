@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { ArrowRight, Lock, ArrowLeft } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
+import { LogoMark } from "@/shared/ui/Logo";
 
 export default function Unauthorized() {
   const location = useLocation();

@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
-import StatsScreen from "@/components/hub/StatsScreen";
-import { type HubOutletContext } from "../HubLayout";
+﻿import { useOutletContext } from "react-router-dom";
+import StatsScreen from "@/features/stats/ui/StatsScreen";
+import { type HubOutletContext } from "@/widgets/hub-layout/ui/HubLayout";
 
 const Stats = () => {
   const { saveId, selectedSeason, currentSeason, currentClubStintId } = useOutletContext<HubOutletContext>();

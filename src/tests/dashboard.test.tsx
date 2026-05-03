@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import DashboardScreen from "@/components/hub/DashboardScreen";
+import DashboardScreen from "@/features/dashboard/ui/DashboardScreen";
 
-vi.mock("@/hooks/useFinancialSnapshot", () => ({
+vi.mock("@/features/dashboard/model/useFinancialSnapshot", () => ({
   useFinancialSnapshot: () => ({
     data: {
       id: "save-1",
@@ -17,19 +17,19 @@ vi.mock("@/hooks/useFinancialSnapshot", () => ({
   }),
 }));
 
-vi.mock("@/hooks/usePlayers", () => ({
+vi.mock("@/features/squad/model/usePlayers", () => ({
   usePlayers: () => ({ data: [], isLoading: true }),
 }));
 
-vi.mock("@/hooks/useTeamStats", () => ({
+vi.mock("@/features/stats/model/useTeamStats", () => ({
   useTeamStats: () => ({ data: [] }),
 }));
 
-vi.mock("@/hooks/useTransfers", () => ({
+vi.mock("@/features/transfers/model/useTransfers", () => ({
   useTransfers: () => ({ data: [] }),
 }));
 
-vi.mock("@/hooks/useTrophies", () => ({
+vi.mock("@/features/history/model/useTrophies", () => ({
   useTrophies: () => ({ data: [] }),
 }));
 

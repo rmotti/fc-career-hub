@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
-import DashboardScreen from "@/components/hub/DashboardScreen";
-import { type HubOutletContext } from "../HubLayout";
+﻿import { useOutletContext } from "react-router-dom";
+import DashboardScreen from "@/features/dashboard/ui/DashboardScreen";
+import { type HubOutletContext } from "@/widgets/hub-layout/ui/HubLayout";
 
 const Dashboard = () => {
   const { saveId } = useOutletContext<HubOutletContext>();
