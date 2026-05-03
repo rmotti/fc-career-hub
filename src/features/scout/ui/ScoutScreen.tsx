@@ -1,8 +1,10 @@
-import { useMemo, useState, type ElementType, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ElementType, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowDown,
   ArrowUp,
+  Archive,
   BadgeEuro,
   Bot,
   Brain,
@@ -11,13 +13,19 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Dumbbell,
   Eye,
   Footprints,
+  Folder,
+  FolderOpen,
   Loader2,
   LockKeyhole,
+  MessageSquareText,
+  Pencil,
   RotateCcw,
   Ruler,
+  Save,
   Search,
   Send,
   ShieldCheck,
@@ -25,6 +33,7 @@ import {
   Sparkles,
   Star,
   Target,
+  Trash2,
   UserRound,
   UsersRound,
   Weight,
@@ -36,7 +45,7 @@ import { toast } from "sonner";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
-import { extractErrorMessage, type Fc26Player, type Fc26PlayerFilters, type PlayerPosition } from "@/shared/api/client";
+import { extractErrorMessage, fc26PlayersApi, type Fc26Player, type Fc26PlayerFilters, type PlayerPosition } from "@/shared/api/client";
 import { PLAYER_POSITIONS } from "@/shared/lib/playerPositions";
 
 interface Props {
@@ -45,7 +54,7 @@ interface Props {
   currentSeason: string;
 }
 
-export type ScoutSection = "ai" | "filters";
+export type ScoutSection = "ai" | "filters" | "archive";
 
 type AttributeRangeDraft = Record<string, { min: string; max: string }>;
 
@@ -100,6 +109,28 @@ type AppliedScoutFilters = Fc26PlayerFilters & {
   primaryPositions?: PlayerPosition[];
   secondaryPositions?: PlayerPosition[];
 };
+
+type SavedScoutQuerySource = "assistant" | "manual";
+
+interface SavedScoutQuery {
+  id: string;
+  title: string;
+  description: string;
+  source: SavedScoutQuerySource;
+  club: string;
+  season: string;
+  createdAt: string;
+  filters: AppliedScoutFilters;
+  results: Fc26Player[];
+  total: number;
+}
+
+interface AiCoachConversation {
+  title: string;
+  description: string;
+  date: string;
+  filters: AppliedScoutFilters;
+}
 
 type ScoutSortBy = NonNullable<Fc26PlayerFilters["sortBy"]>;
 type ScoutSortOrder = NonNullable<Fc26PlayerFilters["sortOrder"]>;
@@ -292,47 +323,33 @@ const DEFAULT_APPLIED_FILTERS: Fc26PlayerFilters = {
   offset: 0,
 };
 
-const PRESETS: Array<{
-  label: string;
-  description: string;
-  icon: ElementType;
-  filters: Fc26PlayerFilters;
-}> = [
+const SAVED_SCOUT_QUERIES_STORAGE_KEY = "fc-career-hub.saved-scout-queries";
+const MAX_SAVED_SCOUT_QUERIES = 25;
+
+const AI_COACH_CONVERSATION_HISTORY: AiCoachConversation[] = [
   {
-    label: "Promessas sub-21",
-    description: "Potencial 85+ e idade até 21",
-    icon: Star,
-    filters: { maxAge: 21, minPotential: 85, limit: 20, offset: 0 },
+    title: "Pontas para atacar espaço",
+    description: "Perfis jovens, ritmo alto e bom potencial para rotação imediata.",
+    date: "Hoje",
+    filters: { positions: ["PE", "PD"], maxAge: 23, minPace: 85, minPotential: 78, limit: 20, offset: 0 },
   },
   {
-    label: "Meias criativos",
-    description: "MC/MEI com OVR 78+",
-    icon: Sparkles,
-    filters: { positions: ["MC", "MEI"], minOvr: 78, limit: 20, offset: 0 },
+    title: "Volantes para proteger a área",
+    description: "Busca por físico, interceptação e passe seguro para jogo grande.",
+    date: "Ontem",
+    filters: { positions: ["VOL"], minDefending: 75, minPhysic: 75, limit: 20, offset: 0 },
   },
   {
-    label: "Zaga pronta",
-    description: "ZAG até 29 anos e OVR 80+",
-    icon: ShieldCheck,
-    filters: { positions: ["ZAG"], minOvr: 80, maxAge: 29, limit: 20, offset: 0 },
+    title: "Plano de renovação do elenco",
+    description: "Leitura de idade média, contratos e posições com pouca profundidade.",
+    date: "2 dias",
+    filters: { maxAge: 22, minPotential: 82, limit: 20, offset: 0 },
   },
   {
-    label: "Pontas velozes",
-    description: "PE/PD com ritmo 85+",
-    icon: Zap,
-    filters: { positions: ["PE", "PD"], minPace: 85, limit: 20, offset: 0 },
-  },
-  {
-    label: "Zagueiros altos",
-    description: "ZAG com 190cm+",
-    icon: Ruler,
-    filters: { positions: ["ZAG"], minHeight: 190, limit: 20, offset: 0 },
-  },
-  {
-    label: "Canhotos criativos",
-    description: "MC/MEI canhotos",
-    icon: Footprints,
-    filters: { positions: ["MC", "MEI"], preferredFoot: "Left", limit: 20, offset: 0 },
+    title: "Alternativas de baixo custo",
+    description: "Sugestões de mercado com salário controlado e cláusula acessível.",
+    date: "Semana",
+    filters: { maxAge: 24, minPotential: 78, maxOvr: 76, limit: 20, offset: 0 },
   },
 ];
 
@@ -775,13 +792,98 @@ function sortPlayersForDisplay(players: Fc26Player[], filters: AppliedScoutFilte
   });
 }
 
+function loadSavedScoutQueries(): SavedScoutQuery[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SAVED_SCOUT_QUERIES_STORAGE_KEY) ?? "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => item?.id && item?.filters && Array.isArray(item.results))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function createQueryId() {
+  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `query-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getFilterPositions(filters: AppliedScoutFilters) {
+  if (hasSplitPositionFilters(filters)) {
+    return getUniquePositions(filters.primaryPositions ?? [], filters.secondaryPositions ?? []);
+  }
+
+  return filters.positions ?? [];
+}
+
+function formatFilterRange(label: string, min?: number, max?: number) {
+  if (typeof min === "number" && typeof max === "number") return `${label}: ${min}-${max}`;
+  if (typeof min === "number") return `${label}: ${min}+`;
+  if (typeof max === "number") return `${label}: até ${max}`;
+  return null;
+}
+
+function getSavedQueryChips(filters: AppliedScoutFilters) {
+  const chips: string[] = [];
+  const positions = getFilterPositions(filters);
+  const ageRange = formatFilterRange("Idade", filters.minAge, filters.maxAge);
+  const ovrRange = formatFilterRange("OVR", filters.minOvr, filters.maxOvr);
+  const potentialRange = formatFilterRange("Potencial", filters.minPotential, filters.maxPotential);
+
+  if (filters.primaryPositions?.length) chips.push(`Principal: ${filters.primaryPositions.join(", ")}`);
+  if (filters.secondaryPositions?.length) chips.push(`Secundária: ${filters.secondaryPositions.join(", ")}`);
+  if (!hasSplitPositionFilters(filters) && positions.length) chips.push(`Posições: ${positions.join(", ")}`);
+  if (filters.preferredFoot) chips.push(`Pé: ${formatPreferredFoot(filters.preferredFoot)}`);
+  if (ageRange) chips.push(ageRange);
+  if (ovrRange) chips.push(ovrRange);
+  if (potentialRange) chips.push(potentialRange);
+  if (filters.nations?.length) chips.push(`Nações: ${filters.nations.slice(0, 3).join(", ")}${filters.nations.length > 3 ? "..." : ""}`);
+  if (filters.leagues?.length) chips.push(`Ligas: ${filters.leagues.slice(0, 2).join(", ")}${filters.leagues.length > 2 ? "..." : ""}`);
+  if (filters.clubs?.length) chips.push(`Clubes: ${filters.clubs.slice(0, 2).join(", ")}${filters.clubs.length > 2 ? "..." : ""}`);
+  if (filters.traits?.length) chips.push(`PlayStyles: ${filters.traits.slice(0, 2).join(", ")}${filters.traits.length > 2 ? "..." : ""}`);
+
+  return chips;
+}
+
+function createSavedQueryTitle(filters: AppliedScoutFilters) {
+  const titleParts: string[] = [];
+  const positions = getFilterPositions(filters);
+
+  if (positions.length) titleParts.push(positions.join("/"));
+  if (filters.preferredFoot) titleParts.push(filters.preferredFoot === "Left" ? "canhotos" : "destros");
+  if (typeof filters.maxAge === "number") titleParts.push(`sub-${filters.maxAge + 1}`);
+  if (typeof filters.minPotential === "number") titleParts.push(`pot. ${filters.minPotential}+`);
+
+  return titleParts.length ? `Scout ${titleParts.join(" · ")}` : "Consulta de scout";
+}
+
+function formatSavedQueryDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indefinida";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
+  const navigate = useNavigate();
   const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
   const [appliedFilters, setAppliedFilters] = useState<AppliedScoutFilters | null>(null);
   const [selectedSofifaId, setSelectedSofifaId] = useState<number | null>(null);
   const [comparisonPlayers, setComparisonPlayers] = useState<Fc26Player[]>([]);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [showAdvancedAttributes, setShowAdvancedAttributes] = useState(false);
+  const [savedQueries, setSavedQueries] = useState<SavedScoutQuery[]>(() => loadSavedScoutQueries());
+  const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(() => loadSavedScoutQueries()[0]?.id ?? null);
 
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters);
   const {
@@ -842,6 +944,10 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     [comparisonPlayers, players]
   );
   const comparedPlayerIds = useMemo(() => new Set(comparedPlayers.map((player) => player.sofifaId)), [comparedPlayers]);
+  const selectedSavedQuery = useMemo(
+    () => savedQueries.find((query) => query.id === selectedSavedQueryId) ?? savedQueries[0] ?? null,
+    [savedQueries, selectedSavedQueryId]
+  );
   const positionOptions = useMemo(
     () => (filterMetadata?.positions?.length ? filterMetadata.positions : PLAYER_POSITIONS).filter((position) => position !== "SA"),
     [filterMetadata?.positions]
@@ -860,6 +966,16 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
 
     return [...options].sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [draft.leagues, filterMetadata?.clubsByLeague]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SAVED_SCOUT_QUERIES_STORAGE_KEY, JSON.stringify(savedQueries));
+  }, [savedQueries]);
+
+  useEffect(() => {
+    if (selectedSavedQueryId && savedQueries.some((query) => query.id === selectedSavedQueryId)) return;
+    setSelectedSavedQueryId(savedQueries[0]?.id ?? null);
+  }, [savedQueries, selectedSavedQueryId]);
 
   const togglePrimaryPosition = (position: PlayerPosition) => {
     setDraft((current) => ({
@@ -899,9 +1015,67 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     setIsComparisonOpen(false);
   };
 
-  const applyPreset = (filters: Fc26PlayerFilters) => {
-    setDraft(draftFromFilters(filters));
-    setAppliedFilters(filters);
+  const saveCurrentQuery = () => {
+    if (!appliedFilters || isLoading || isFetching || isError) {
+      toast.error("Inicie uma busca válida antes de salvar a consulta.", { duration: 4000 });
+      return;
+    }
+
+    const savedQuery: SavedScoutQuery = {
+      id: createQueryId(),
+      title: createSavedQueryTitle(appliedFilters),
+      description: `${formatInteger(total)} jogador${total === 1 ? "" : "es"} encontrados no dataset FC 26.`,
+      source: "manual",
+      club: currentClub,
+      season: currentSeason,
+      createdAt: new Date().toISOString(),
+      filters: { ...appliedFilters, offset: 0 },
+      results: players,
+      total,
+    };
+
+    setSavedQueries((current) => [savedQuery, ...current].slice(0, MAX_SAVED_SCOUT_QUERIES));
+    setSelectedSavedQueryId(savedQuery.id);
+    toast.success("Consulta salva nas pastas do Scout.", { duration: 3000 });
+  };
+
+  const saveAssistantQuery = async (conversation: AiCoachConversation) => {
+    const filters = { ...conversation.filters, limit: conversation.filters.limit ?? 20, offset: 0 };
+
+    try {
+      const response = await fc26PlayersApi.list(filters);
+      const savedQuery: SavedScoutQuery = {
+        id: createQueryId(),
+        title: conversation.title,
+        description: `${formatInteger(response.total)} jogador${response.total === 1 ? "" : "es"} encontrados pelo AIssistent Coach.`,
+        source: "assistant",
+        club: currentClub,
+        season: currentSeason,
+        createdAt: new Date().toISOString(),
+        filters,
+        results: response.players,
+        total: response.total,
+      };
+
+      setSavedQueries((current) => [savedQuery, ...current].slice(0, MAX_SAVED_SCOUT_QUERIES));
+      setSelectedSavedQueryId(savedQuery.id);
+      toast.success("Consulta do AIssistent Coach salva nas pastas.", { duration: 3000 });
+    } catch (err) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+    }
+  };
+
+  const editSavedQuery = (query: SavedScoutQuery) => {
+    setDraft(draftFromFilters(query.filters));
+    setAppliedFilters({ ...query.filters, offset: 0 });
+    setComparisonPlayers([]);
+    setIsComparisonOpen(false);
+    navigate("/scout/filtros");
+  };
+
+  const removeSavedQuery = (queryId: string) => {
+    setSavedQueries((current) => current.filter((query) => query.id !== queryId));
+    toast.success("Consulta removida das pastas.", { duration: 3000 });
   };
 
   const goToOffset = (nextOffset: number) => {
@@ -945,7 +1119,12 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     });
   };
   const isAiSection = section === "ai";
-  const pageTitle = isAiSection ? "Scout IA" : "Buscar jogadores";
+  const isArchiveSection = section === "archive";
+  const pageTitle = isAiSection
+    ? "AIssistent Coach"
+    : isArchiveSection
+      ? "Consultas salvas"
+      : "Buscar jogadores";
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
@@ -957,8 +1136,8 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{pageTitle}</h2>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              {isAiSection ? <Bot size={13} /> : <Search size={13} />}
-              {isAiSection ? "PRO" : "Dataset FC 26"}
+              {isAiSection ? <Bot size={13} /> : isArchiveSection ? <Archive size={13} /> : <Search size={13} />}
+              {isAiSection ? "PRO" : isArchiveSection ? "Arquivo de pastas" : "Dataset FC 26"}
             </span>
           </div>
         </div>
@@ -966,8 +1145,13 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           {isAiSection ? (
             <>
-              <SummaryPill label="Modo" value="IA" icon={Bot} />
+              <SummaryPill label="Modo" value="Coach" icon={Bot} />
               <SummaryPill label="Status" value="Prévia" icon={LockKeyhole} />
+            </>
+          ) : isArchiveSection ? (
+            <>
+              <SummaryPill label="Pastas" value={savedQueries.length} icon={Folder} />
+              <SummaryPill label="Selecionada" value={selectedSavedQuery ? selectedSavedQuery.results.length : 0} icon={UsersRound} />
             </>
           ) : (
             <>
@@ -980,7 +1164,15 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
         </div>
       </div>
 
-      <section className={isAiSection ? "max-w-3xl" : "space-y-4"}>
+      <section
+        className={
+          isAiSection
+            ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start"
+            : isArchiveSection
+              ? "grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)] xl:items-start"
+              : "space-y-4"
+        }
+      >
         {isAiSection && (
         <aside className="card-gamer flex min-h-[620px] flex-col overflow-hidden">
           <div className="border-b border-border p-5">
@@ -990,7 +1182,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                   <Bot size={20} />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold leading-none">Scout IA</h3>
+                  <h3 className="font-display text-lg font-bold leading-none">AIssistent Coach</h3>
                   <p className="mt-1 text-xs text-muted-foreground">Recomendações em prévia</p>
                 </div>
               </div>
@@ -1000,14 +1192,14 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
           <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 p-5">
             <div className="space-y-3">
               <ChatBubble
-                speaker="Scout IA"
+                speaker="AIssistent Coach"
                 tone="assistant"
               >
                 Posso analisar carências do elenco e transformar o contexto da sua carreira em recomendações de mercado.
               </ChatBubble>
 
               <ChatBubble speaker="Você" tone="user">Recomende contratações para o meu elenco.</ChatBubble>
-              <ChatBubble speaker="Scout IA" tone="assistant">
+              <ChatBubble speaker="AIssistent Coach" tone="assistant">
                 Esse fluxo vai cruzar carências do elenco, idade, OVR, potencial e orçamento. Por enquanto, ele fica em prévia.
               </ChatBubble>
               <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
@@ -1042,28 +1234,167 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
         </aside>
         )}
 
-        {!isAiSection && (
-        <div className="min-w-0 space-y-4">
-          <section className="grid gap-3 lg:grid-cols-3">
-            {PRESETS.map((preset) => {
-              const Icon = preset.icon;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => applyPreset(preset.filters)}
-                  className="flex min-h-[62px] items-center gap-3 rounded-md border border-border bg-muted/25 px-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
-                >
-                  <Icon size={16} className="shrink-0 text-primary" />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-foreground">{preset.label}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{preset.description}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </section>
+        {isAiSection && (
+          <section className="card-gamer overflow-hidden">
+            <div className="border-b border-border p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                  <MessageSquareText size={19} />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold leading-none">Histórico de conversas</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Conversas mockadas</p>
+                </div>
+              </div>
+            </div>
 
+            <div className="divide-y divide-border">
+              {AI_COACH_CONVERSATION_HISTORY.map((conversation, index) => (
+                <article
+                  key={conversation.title}
+                  className={`p-4 transition-colors ${index === 0 ? "bg-primary/5" : "bg-transparent"}`}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate text-sm font-semibold text-foreground">{conversation.title}</p>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-background/45 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      <Clock3 size={11} />
+                      {conversation.date}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">{conversation.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => void saveAssistantQuery(conversation)}
+                    className="mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
+                  >
+                    <Save size={13} />
+                    Salvar pasta
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isArchiveSection && (
+          <>
+            <section className="card-gamer overflow-hidden">
+              <div className="border-b border-border p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                    <Folder size={19} />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-bold leading-none">Arquivo de pastas</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Consultas salvas do Scout</p>
+                  </div>
+                </div>
+              </div>
+
+              {savedQueries.length === 0 ? (
+                <div className="p-5 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
+                    <Folder size={20} />
+                  </div>
+                  <p className="font-display text-base font-semibold text-foreground">Nenhuma pasta salva</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Aplique uma busca em Buscar jogadores e salve a consulta para ela aparecer aqui.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {savedQueries.map((query) => {
+                    const isSelected = selectedSavedQuery?.id === query.id;
+                    const Icon = isSelected ? FolderOpen : Folder;
+
+                    return (
+                      <button
+                        key={query.id}
+                        type="button"
+                        onClick={() => setSelectedSavedQueryId(query.id)}
+                        className={`flex w-full items-start gap-3 p-4 text-left transition-colors ${
+                          isSelected ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/25"
+                        }`}
+                      >
+                        <Icon size={18} className="mt-0.5 shrink-0" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{query.title}</span>
+                          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{query.description}</span>
+                          <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded border border-border bg-background/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                              {query.source === "assistant" ? "AI" : "Busca"}
+                            </span>
+                            <span className="rounded border border-border bg-background/45 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                              {formatSavedQueryDate(query.createdAt)}
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="card-gamer min-w-0 overflow-hidden">
+              {selectedSavedQuery ? (
+                <>
+                  <div className="flex flex-col gap-3 border-b border-border p-5 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        {selectedSavedQuery.club} · {selectedSavedQuery.season}
+                      </p>
+                      <h3 className="truncate font-display text-xl font-bold leading-tight text-foreground">{selectedSavedQuery.title}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{selectedSavedQuery.description}</p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => editSavedQuery(selectedSavedQuery)}
+                        className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                      >
+                        <Pencil size={15} />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSavedQuery(selectedSavedQuery.id)}
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/15"
+                      >
+                        <Trash2 size={15} />
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-b border-border p-5">
+                    <div className="flex flex-wrap gap-1.5">
+                      {getSavedQueryChips(selectedSavedQuery.filters).map((chip) => (
+                        <InfoChip key={chip}>{chip}</InfoChip>
+                      ))}
+                    </div>
+                  </div>
+
+                  <SavedQueryResults query={selectedSavedQuery} onOpenDetails={setSelectedSofifaId} />
+                </>
+              ) : (
+                <div className="p-8 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
+                    <Archive size={20} />
+                  </div>
+                  <p className="font-display text-lg font-semibold text-foreground">Escolha uma pasta</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    As consultas salvas aparecem como pastas com filtros e snapshot de resultados.
+                  </p>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {!isAiSection && !isArchiveSection && (
+        <div className="min-w-0 space-y-4">
           <section className="card-gamer p-5">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
@@ -1088,6 +1419,15 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                 >
                   <RotateCcw size={15} />
                   Limpar
+                </button>
+                <button
+                  type="button"
+                  disabled={!hasSearched || isLoading || isFetching || isError}
+                  onClick={saveCurrentQuery}
+                  className="flex h-9 items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <Save size={15} />
+                  Salvar
                 </button>
                 <button
                   type="button"
@@ -1432,6 +1772,75 @@ function SummaryPill({ label, value, icon: Icon }: SummaryPillProps) {
       <div className="min-w-0">
         <p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
         <p className="truncate font-display text-base font-bold text-foreground">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function SavedQueryResults({ query, onOpenDetails }: { query: SavedScoutQuery; onOpenDetails: (sofifaId: number) => void }) {
+  if (query.results.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <p className="font-display text-lg font-semibold text-foreground">Consulta salva sem resultados</p>
+        <p className="mt-2 text-sm text-muted-foreground">Edite a consulta para abrir mais a faixa de filtros.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h4 className="font-display text-base font-bold text-foreground">Resultados da consulta</h4>
+          <p className="text-sm text-muted-foreground">
+            Snapshot com {query.results.length} de {formatInteger(query.total)} jogador{query.total === 1 ? "" : "es"} encontrados.
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded border border-border bg-background/45 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+          <Archive size={13} />
+          Pasta salva
+        </span>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+        {query.results.map((player) => (
+          <article key={`${query.id}-${player.sofifaId}`} className="rounded-md border border-border bg-background/35 p-3">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <PlayerAvatar player={player} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{player.club ?? "Sem clube"}</p>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className={`font-display text-xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
+                <p className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-muted-foreground">OVR</p>
+              </div>
+            </div>
+
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {player.positions.map((position) => (
+                <PositionBadge key={position} position={position} />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <MetricLine label="Pot." value={player.potential} />
+              <MetricLine label="Idade" value={`${player.age}`} />
+              <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onOpenDetails(player.sofifaId)}
+              className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+            >
+              <Eye size={15} />
+              Ver detalhes
+            </button>
+          </article>
+        ))}
       </div>
     </div>
   );

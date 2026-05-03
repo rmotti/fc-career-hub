@@ -45,6 +45,7 @@ export function Router() {
               <Route path="/scout" element={<Navigate to="/scout/ia" replace />} />
               <Route path="/scout/ia" element={<Scout section="ai" />} />
               <Route path="/scout/filtros" element={<Scout section="filters" />} />
+              <Route path="/scout/consultas" element={<Scout section="archive" />} />
             </Route>
           </Route>
         </Route>
