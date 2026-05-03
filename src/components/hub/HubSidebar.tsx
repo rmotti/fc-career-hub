@@ -4,11 +4,12 @@ import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt,
-  Trophy, BriefcaseBusiness, Shield
+  Trophy, BriefcaseBusiness, Shield, Search
 } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { canAccessProFeature } from "@/utils/plans";
 
 interface HubSidebarProps {
   userName: string;
@@ -53,6 +54,9 @@ const HubSidebar = ({
   const [isCollapseAnimating, setIsCollapseAnimating] = useState(false);
   const location = useLocation();
   const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
+  const visibleNavItems = canAccessProFeature(userPlan)
+    ? [...navItems, { to: "/scout", label: "Scout", icon: Search }]
+    : navItems;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -190,7 +194,7 @@ const HubSidebar = ({
           <section className="space-y-2 overflow-x-hidden">
             <p className={sectionTitleClass}>Principal</p>
             <nav data-tour={enableTourTargets ? "hub-navigation" : undefined} className="space-y-1 overflow-x-hidden">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Fragment key={item.to}>

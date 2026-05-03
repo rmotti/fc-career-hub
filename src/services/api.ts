@@ -173,6 +173,159 @@ export interface ApiClubStint {
 
 export type PlayerPosition = "GOL" | "LD" | "LE" | "ZAG" | "VOL" | "MC" | "ME" | "MD" | "MEI" | "PE" | "PD" | "SA" | "ATA";
 
+export type Fc26PlayerPosition = PlayerPosition;
+
+export interface Fc26Player {
+  id: number;
+  sofifaId: number;
+  name: string;
+  positions: Fc26PlayerPosition[];
+  age: number;
+  ovr: number;
+  potential: number;
+  marketValue: number | null;
+  nation: string | null;
+  club: string | null;
+  league: string | null;
+  wage: number | null;
+  longName: string | null;
+  dob: string | null;
+  height: number | null;
+  weight: number | null;
+  playerFaceUrl: string | null;
+  contractUntil: number | null;
+  releaseClause: number | null;
+  preferredFoot: "Right" | "Left" | null;
+  weakFoot: number | null;
+  skillMoves: number | null;
+  internationalReputation: number | null;
+  workRate: string | null;
+  bodyType: string | null;
+  playerTags: string[];
+  playerTraits: string[];
+  pace: number | null;
+  shooting: number | null;
+  passing: number | null;
+  dribbling: number | null;
+  defending: number | null;
+  physic: number | null;
+  attackingCrossing: number | null;
+  attackingFinishing: number | null;
+  attackingHeadingAccuracy: number | null;
+  attackingShortPassing: number | null;
+  attackingVolleys: number | null;
+  skillDribbling: number | null;
+  skillCurve: number | null;
+  skillFkAccuracy: number | null;
+  skillLongPassing: number | null;
+  skillBallControl: number | null;
+  movementAcceleration: number | null;
+  movementSprintSpeed: number | null;
+  movementAgility: number | null;
+  movementReactions: number | null;
+  movementBalance: number | null;
+  powerShotPower: number | null;
+  powerJumping: number | null;
+  powerStamina: number | null;
+  powerStrength: number | null;
+  powerLongShots: number | null;
+  mentalityAggression: number | null;
+  mentalityInterceptions: number | null;
+  mentalityPositioning: number | null;
+  mentalityVision: number | null;
+  mentalityPenalties: number | null;
+  mentalityComposure: number | null;
+  defendingMarkingAwareness: number | null;
+  defendingStandingTackle: number | null;
+  defendingSlidingTackle: number | null;
+  goalkeepingDiving: number | null;
+  goalkeepingHandling: number | null;
+  goalkeepingKicking: number | null;
+  goalkeepingPositioning: number | null;
+  goalkeepingReflexes: number | null;
+  goalkeepingSpeed: number | null;
+}
+
+export interface Fc26PlayersResponse {
+  players: Fc26Player[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+const FC26_NUMERIC_FILTER_BASES = [
+  "ovr",
+  "age",
+  "potential",
+  "height",
+  "weight",
+  "weakFoot",
+  "skillMoves",
+  "internationalReputation",
+  "pace",
+  "shooting",
+  "passing",
+  "dribbling",
+  "defending",
+  "physic",
+  "attackingCrossing",
+  "attackingFinishing",
+  "attackingHeadingAccuracy",
+  "attackingShortPassing",
+  "attackingVolleys",
+  "skillDribbling",
+  "skillCurve",
+  "skillFkAccuracy",
+  "skillLongPassing",
+  "skillBallControl",
+  "movementAcceleration",
+  "movementSprintSpeed",
+  "movementAgility",
+  "movementReactions",
+  "movementBalance",
+  "powerShotPower",
+  "powerJumping",
+  "powerStamina",
+  "powerStrength",
+  "powerLongShots",
+  "mentalityAggression",
+  "mentalityInterceptions",
+  "mentalityPositioning",
+  "mentalityVision",
+  "mentalityPenalties",
+  "mentalityComposure",
+  "defendingMarkingAwareness",
+  "defendingStandingTackle",
+  "defendingSlidingTackle",
+  "goalkeepingDiving",
+  "goalkeepingHandling",
+  "goalkeepingKicking",
+  "goalkeepingPositioning",
+  "goalkeepingReflexes",
+  "goalkeepingSpeed",
+] as const;
+
+type Fc26NumericFilterBase = typeof FC26_NUMERIC_FILTER_BASES[number];
+type Fc26NumericFilterKey = `min${Capitalize<Fc26NumericFilterBase>}` | `max${Capitalize<Fc26NumericFilterBase>}`;
+
+export type Fc26PlayerFilters = {
+  positions?: Fc26PlayerPosition[];
+  nations?: string[];
+  clubs?: string[];
+  leagues?: string[];
+  preferredFoot?: "Right" | "Left";
+  traits?: string[];
+  limit?: number;
+  offset?: number;
+} & Partial<Record<Fc26NumericFilterKey, number>>;
+
+export interface Fc26PlayerFilterMetadata {
+  positions: Fc26PlayerPosition[];
+  nations: string[];
+  leagues: string[];
+  clubsByLeague: Record<string, string[]>;
+}
+
 export interface ApiPlayerAlternativePosition {
   positions: PlayerPosition[];
 }
@@ -331,6 +484,61 @@ export const playersApi = {
     request<ApiPlayerSeasonStats>(`/saves/${saveId}/players/${playerId}/stats`, { method: "PATCH", body: JSON.stringify(data) }),
   release: (saveId: string, playerId: string) =>
     request<void>(`/saves/${saveId}/players/${playerId}/release`, { method: "DELETE" }),
+};
+
+// ─── FC26 Players Dataset ───────────────────────────────────────────
+
+function appendNumberParam(params: URLSearchParams, key: string, value: number | undefined) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    params.set(key, String(value));
+  }
+}
+
+function appendCsvParam(params: URLSearchParams, key: string, values: readonly string[] | undefined) {
+  const normalizedValues = values?.map((value) => value.trim()).filter(Boolean);
+  if (normalizedValues?.length) {
+    params.set(key, normalizedValues.join(","));
+  }
+}
+
+function toRangeParamKey(prefix: "min" | "max", base: Fc26NumericFilterBase): Fc26NumericFilterKey {
+  return `${prefix}${base.charAt(0).toUpperCase()}${base.slice(1)}` as Fc26NumericFilterKey;
+}
+
+function toFc26PlayersQuery(filters: Fc26PlayerFilters = {}) {
+  const params = new URLSearchParams();
+
+  appendCsvParam(params, "positions", filters.positions);
+  appendCsvParam(params, "nations", filters.nations);
+  appendCsvParam(params, "clubs", filters.clubs);
+  appendCsvParam(params, "leagues", filters.leagues);
+
+  FC26_NUMERIC_FILTER_BASES.forEach((base) => {
+    const minKey = toRangeParamKey("min", base);
+    const maxKey = toRangeParamKey("max", base);
+    appendNumberParam(params, minKey, filters[minKey]);
+    appendNumberParam(params, maxKey, filters[maxKey]);
+  });
+
+  if (filters.preferredFoot) {
+    params.set("preferredFoot", filters.preferredFoot);
+  }
+  appendCsvParam(params, "traits", filters.traits);
+  appendNumberParam(params, "limit", Math.min(Math.max(filters.limit ?? 20, 1), 100));
+  appendNumberParam(params, "offset", Math.max(filters.offset ?? 0, 0));
+
+  return params.toString();
+}
+
+export const fc26PlayersApi = {
+  list: (filters?: Fc26PlayerFilters) => {
+    const qs = toFc26PlayersQuery(filters);
+    return request<Fc26PlayersResponse>(`/fc26-players${qs ? `?${qs}` : ""}`);
+  },
+  filters: () =>
+    request<Fc26PlayerFilterMetadata>("/fc26-players/filters"),
+  get: (sofifaId: number) =>
+    request<Fc26Player>(`/fc26-players/${sofifaId}`),
 };
 
 // ─── Team Stats ─────────────────────────────────────────────────────

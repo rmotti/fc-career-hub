@@ -1,5 +1,6 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
+import type { UserPlan } from "@/services/api";
 
 function FullScreenLoader({ message }: { message: string }) {
   return (
@@ -36,4 +37,20 @@ export function PublicOnlyRoute() {
   }
 
   return <Outlet />;
+}
+
+export function PlanRoute({ allowedPlans, redirectTo = "/pricing" }: { allowedPlans: UserPlan[]; redirectTo?: string }) {
+  const { isLoading, user } = useAuth();
+  const location = useLocation();
+  const parentOutletContext = useOutletContext();
+
+  if (isLoading) {
+    return <FullScreenLoader message="Validando plano..." />;
+  }
+
+  if (!user || !allowedPlans.includes(user.plan)) {
+    return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
+  }
+
+  return <Outlet context={parentOutletContext} />;
 }

@@ -4,7 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute, PublicOnlyRoute } from "@/components/AuthGuards";
+import { PlanRoute, ProtectedRoute, PublicOnlyRoute } from "@/components/AuthGuards";
+import { PRO_FEATURE_PLANS } from "@/utils/plans";
 import Landing from "./pages/Landing.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import Index from "./pages/Index.tsx";
@@ -16,6 +17,7 @@ import History from "./pages/hub/History.tsx";
 import Transfers from "./pages/hub/Transfers.tsx";
 import ChangeClub from "./pages/hub/ChangeClub.tsx";
 import Field from "./pages/hub/Field.tsx";
+import Scout from "./pages/hub/Scout.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Unauthorized from "./pages/Unauthorized.tsx";
@@ -50,6 +52,9 @@ const App = () => (
                 <Route path="/transfers" element={<Transfers />} />
                 <Route path="/change-club" element={<ChangeClub />} />
                 <Route path="/field" element={<Field />} />
+                <Route element={<PlanRoute allowedPlans={PRO_FEATURE_PLANS} />}>
+                  <Route path="/scout" element={<Scout />} />
+                </Route>
               </Route>
             </Route>
 

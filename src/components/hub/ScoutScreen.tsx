@@ -1,0 +1,1967 @@
+import { useMemo, useState, type ElementType, type ReactNode } from "react";
+import {
+  Activity,
+  BadgeEuro,
+  Bot,
+  Brain,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Eye,
+  Footprints,
+  Loader2,
+  LockKeyhole,
+  RotateCcw,
+  Ruler,
+  Search,
+  Send,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  Target,
+  UserRound,
+  UsersRound,
+  Weight,
+  X,
+  Zap,
+} from "lucide-react";
+import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from "recharts";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/hooks/useFc26Players";
+import { extractErrorMessage, type Fc26Player, type Fc26PlayerFilters, type PlayerPosition } from "@/services/api";
+import { PLAYER_POSITIONS } from "@/utils/playerPositions";
+
+interface Props {
+  currentClub: string;
+  currentSeason: string;
+}
+
+type ScoutMode = "search" | "recommendation";
+
+type AttributeRangeDraft = Record<string, { min: string; max: string }>;
+
+interface AttributeFilterConfig {
+  field: string;
+  label: string;
+  min: number;
+  max: number;
+}
+
+interface AttributeFilterGroupConfig {
+  title: string;
+  icon: ElementType;
+  filters: AttributeFilterConfig[];
+}
+
+type DraftFilters = {
+  positions: PlayerPosition[];
+  nations: string[];
+  leagues: string[];
+  clubs: string[];
+  minOvr: string;
+  maxOvr: string;
+  minAge: string;
+  maxAge: string;
+  minPotential: string;
+  maxPotential: string;
+  preferredFoot: "" | "Left" | "Right";
+  playStyles: string[];
+  playStylesPlus: string[];
+  attributeRanges: AttributeRangeDraft;
+  limit: string;
+};
+
+const POSITION_LABELS: Record<PlayerPosition, string> = {
+  GOL: "Goleiro",
+  ZAG: "Zagueiro",
+  LE: "Lateral Esquerdo",
+  LD: "Lateral Direito",
+  VOL: "Volante",
+  MC: "Meia Central",
+  ME: "Meia Esquerda",
+  MD: "Meia Direita",
+  MEI: "Meia Atacante",
+  PE: "Ponta Esquerda",
+  PD: "Ponta Direita",
+  SA: "Segundo Atacante",
+  ATA: "Atacante",
+};
+
+const LIMIT_OPTIONS = ["20", "40", "60", "100"];
+
+const FOOT_LABELS: Record<"Left" | "Right", string> = {
+  Left: "Canhoto",
+  Right: "Destro",
+};
+
+const PLAYSTYLE_OPTIONS = [
+  "Acrobatic",
+  "Aerial",
+  "Anticipate",
+  "Block",
+  "Bruiser",
+  "Chip Shot",
+  "Dead Ball",
+  "Finesse Shot",
+  "First Touch",
+  "Flair",
+  "Incisive Pass",
+  "Intercept",
+  "Jockey",
+  "Long Ball Pass",
+  "Long Throw",
+  "Pinged Pass",
+  "Power Header",
+  "Power Shot",
+  "Press Proven",
+  "Quick Step",
+  "Rapid",
+  "Relentless",
+  "Slide Tackle",
+  "Technical",
+  "Tiki Taka",
+  "Trivela",
+  "Whipped Pass",
+];
+
+const PLAYSTYLE_PLUS_OPTIONS = PLAYSTYLE_OPTIONS.map((playStyle) => `${playStyle} +`);
+
+const ATTRIBUTE_FILTER_GROUPS: AttributeFilterGroupConfig[] = [
+  {
+    title: "Perfil",
+    icon: UserRound,
+    filters: [
+      { field: "height", label: "Altura", min: 150, max: 230 },
+      { field: "weight", label: "Peso", min: 45, max: 120 },
+      { field: "weakFoot", label: "Perna ruim", min: 1, max: 5 },
+      { field: "skillMoves", label: "Skill moves", min: 1, max: 5 },
+      { field: "internationalReputation", label: "Reputação", min: 1, max: 5 },
+    ],
+  },
+  {
+    title: "Ratings gerais",
+    icon: Activity,
+    filters: [
+      { field: "pace", label: "Ritmo", min: 1, max: 99 },
+      { field: "shooting", label: "Finalização", min: 1, max: 99 },
+      { field: "passing", label: "Passe", min: 1, max: 99 },
+      { field: "dribbling", label: "Drible", min: 1, max: 99 },
+      { field: "defending", label: "Defesa", min: 1, max: 99 },
+      { field: "physic", label: "Físico", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Ataque",
+    icon: Target,
+    filters: [
+      { field: "attackingCrossing", label: "Cruzamento", min: 1, max: 99 },
+      { field: "attackingFinishing", label: "Finalização", min: 1, max: 99 },
+      { field: "attackingHeadingAccuracy", label: "Cabeceio", min: 1, max: 99 },
+      { field: "attackingShortPassing", label: "Passe curto", min: 1, max: 99 },
+      { field: "attackingVolleys", label: "Voleios", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Habilidade",
+    icon: Sparkles,
+    filters: [
+      { field: "skillDribbling", label: "Drible", min: 1, max: 99 },
+      { field: "skillCurve", label: "Curva", min: 1, max: 99 },
+      { field: "skillFkAccuracy", label: "Falta", min: 1, max: 99 },
+      { field: "skillLongPassing", label: "Passe longo", min: 1, max: 99 },
+      { field: "skillBallControl", label: "Controle", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Movimentação",
+    icon: Footprints,
+    filters: [
+      { field: "movementAcceleration", label: "Aceleração", min: 1, max: 99 },
+      { field: "movementSprintSpeed", label: "Sprint", min: 1, max: 99 },
+      { field: "movementAgility", label: "Agilidade", min: 1, max: 99 },
+      { field: "movementReactions", label: "Reações", min: 1, max: 99 },
+      { field: "movementBalance", label: "Equilíbrio", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Força",
+    icon: Dumbbell,
+    filters: [
+      { field: "powerShotPower", label: "Força do chute", min: 1, max: 99 },
+      { field: "powerJumping", label: "Impulsão", min: 1, max: 99 },
+      { field: "powerStamina", label: "Fôlego", min: 1, max: 99 },
+      { field: "powerStrength", label: "Força", min: 1, max: 99 },
+      { field: "powerLongShots", label: "Chute longo", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Mentalidade",
+    icon: Brain,
+    filters: [
+      { field: "mentalityAggression", label: "Agressividade", min: 1, max: 99 },
+      { field: "mentalityInterceptions", label: "Interceptações", min: 1, max: 99 },
+      { field: "mentalityPositioning", label: "Posicionamento", min: 1, max: 99 },
+      { field: "mentalityVision", label: "Visão", min: 1, max: 99 },
+      { field: "mentalityPenalties", label: "Pênaltis", min: 1, max: 99 },
+      { field: "mentalityComposure", label: "Compostura", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Defesa",
+    icon: ShieldCheck,
+    filters: [
+      { field: "defendingMarkingAwareness", label: "Consciência", min: 1, max: 99 },
+      { field: "defendingStandingTackle", label: "Carrinho em pé", min: 1, max: 99 },
+      { field: "defendingSlidingTackle", label: "Carrinho", min: 1, max: 99 },
+    ],
+  },
+  {
+    title: "Goleiro",
+    icon: UserRound,
+    filters: [
+      { field: "goalkeepingDiving", label: "Mergulho", min: 1, max: 99 },
+      { field: "goalkeepingHandling", label: "Manuseio", min: 1, max: 99 },
+      { field: "goalkeepingKicking", label: "Chute", min: 1, max: 99 },
+      { field: "goalkeepingPositioning", label: "Posição", min: 1, max: 99 },
+      { field: "goalkeepingReflexes", label: "Reflexos", min: 1, max: 99 },
+      { field: "goalkeepingSpeed", label: "Velocidade", min: 1, max: 99 },
+    ],
+  },
+];
+
+const ATTRIBUTE_FILTER_FIELDS = ATTRIBUTE_FILTER_GROUPS.flatMap((group) => group.filters);
+
+function createDefaultAttributeRanges(): AttributeRangeDraft {
+  return Object.fromEntries(ATTRIBUTE_FILTER_FIELDS.map((filter) => [filter.field, { min: "", max: "" }]));
+}
+
+const createDefaultDraft = (): DraftFilters => ({
+  positions: [],
+  nations: [],
+  leagues: [],
+  clubs: [],
+  minOvr: "",
+  maxOvr: "",
+  minAge: "",
+  maxAge: "",
+  minPotential: "",
+  maxPotential: "",
+  preferredFoot: "",
+  playStyles: [],
+  playStylesPlus: [],
+  attributeRanges: createDefaultAttributeRanges(),
+  limit: "20",
+});
+
+const DEFAULT_APPLIED_FILTERS: Fc26PlayerFilters = {
+  limit: 20,
+  offset: 0,
+};
+
+const PRESETS: Array<{
+  label: string;
+  description: string;
+  icon: ElementType;
+  filters: Fc26PlayerFilters;
+}> = [
+  {
+    label: "Promessas sub-21",
+    description: "Potencial 85+ e idade até 21",
+    icon: Star,
+    filters: { maxAge: 21, minPotential: 85, limit: 20, offset: 0 },
+  },
+  {
+    label: "Meias criativos",
+    description: "MC/MEI com OVR 78+",
+    icon: Sparkles,
+    filters: { positions: ["MC", "MEI"], minOvr: 78, limit: 20, offset: 0 },
+  },
+  {
+    label: "Zaga pronta",
+    description: "ZAG até 29 anos e OVR 80+",
+    icon: ShieldCheck,
+    filters: { positions: ["ZAG"], minOvr: 80, maxAge: 29, limit: 20, offset: 0 },
+  },
+  {
+    label: "Pontas velozes",
+    description: "PE/PD com ritmo 85+",
+    icon: Zap,
+    filters: { positions: ["PE", "PD"], minPace: 85, limit: 20, offset: 0 },
+  },
+  {
+    label: "Zagueiros altos",
+    description: "ZAG com 190cm+",
+    icon: Ruler,
+    filters: { positions: ["ZAG"], minHeight: 190, limit: 20, offset: 0 },
+  },
+  {
+    label: "Canhotos criativos",
+    description: "MC/MEI canhotos",
+    icon: Footprints,
+    filters: { positions: ["MC", "MEI"], preferredFoot: "Left", limit: 20, offset: 0 },
+  },
+];
+
+function readNumber(value: string) {
+  if (!value.trim()) return undefined;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : undefined;
+}
+
+function validateRange(label: string, min?: number, max?: number) {
+  if (typeof min === "number" && typeof max === "number" && min > max) {
+    toast.error(`${label}: o mínimo não pode ser maior que o máximo.`, { duration: 4000 });
+    return false;
+  }
+
+  return true;
+}
+
+function isPlayStylePlus(playStyle: string) {
+  return playStyle.trim().endsWith("+");
+}
+
+function toFilterParamKey(prefix: "min" | "max", field: string) {
+  return `${prefix}${field.charAt(0).toUpperCase()}${field.slice(1)}`;
+}
+
+function buildAttributeFilters(ranges: AttributeRangeDraft): Partial<Fc26PlayerFilters> | null {
+  const filters: Record<string, number> = {};
+
+  for (const attribute of ATTRIBUTE_FILTER_FIELDS) {
+    const range = ranges[attribute.field] ?? { min: "", max: "" };
+    const min = readNumber(range.min);
+    const max = readNumber(range.max);
+
+    if (!validateRange(attribute.label, min, max)) return null;
+
+    if (typeof min === "number") {
+      filters[toFilterParamKey("min", attribute.field)] = min;
+    }
+
+    if (typeof max === "number") {
+      filters[toFilterParamKey("max", attribute.field)] = max;
+    }
+  }
+
+  return filters as Partial<Fc26PlayerFilters>;
+}
+
+function getAttributeRangeFromFilters(filters: Fc26PlayerFilters, field: string) {
+  const min = filters[toFilterParamKey("min", field) as keyof Fc26PlayerFilters];
+  const max = filters[toFilterParamKey("max", field) as keyof Fc26PlayerFilters];
+
+  return {
+    min: typeof min === "number" ? String(min) : "",
+    max: typeof max === "number" ? String(max) : "",
+  };
+}
+
+function countAttributeFiltersInDraft(ranges: AttributeRangeDraft) {
+  return ATTRIBUTE_FILTER_FIELDS.reduce((count, attribute) => {
+    const range = ranges[attribute.field];
+    return range?.min || range?.max ? count + 1 : count;
+  }, 0);
+}
+
+function countAttributeFilters(filters: Fc26PlayerFilters) {
+  return ATTRIBUTE_FILTER_FIELDS.reduce((count, attribute) => {
+    const min = filters[toFilterParamKey("min", attribute.field) as keyof Fc26PlayerFilters];
+    const max = filters[toFilterParamKey("max", attribute.field) as keyof Fc26PlayerFilters];
+    return typeof min === "number" || typeof max === "number" ? count + 1 : count;
+  }, 0);
+}
+
+function buildFiltersFromDraft(draft: DraftFilters): Fc26PlayerFilters | null {
+  const minOvr = readNumber(draft.minOvr);
+  const maxOvr = readNumber(draft.maxOvr);
+  const minAge = readNumber(draft.minAge);
+  const maxAge = readNumber(draft.maxAge);
+  const minPotential = readNumber(draft.minPotential);
+  const maxPotential = readNumber(draft.maxPotential);
+  const traits = [...draft.playStyles, ...draft.playStylesPlus];
+  const attributeFilters = buildAttributeFilters(draft.attributeRanges);
+
+  if (!validateRange("OVR", minOvr, maxOvr)) return null;
+  if (!validateRange("Idade", minAge, maxAge)) return null;
+  if (!validateRange("Potencial", minPotential, maxPotential)) return null;
+  if (!attributeFilters) return null;
+
+  return {
+    ...(draft.positions.length ? { positions: draft.positions } : {}),
+    ...(draft.nations.length ? { nations: draft.nations } : {}),
+    ...(draft.leagues.length ? { leagues: draft.leagues } : {}),
+    ...(draft.leagues.length && draft.clubs.length ? { clubs: draft.clubs } : {}),
+    ...(typeof minOvr === "number" ? { minOvr } : {}),
+    ...(typeof maxOvr === "number" ? { maxOvr } : {}),
+    ...(typeof minAge === "number" ? { minAge } : {}),
+    ...(typeof maxAge === "number" ? { maxAge } : {}),
+    ...(typeof minPotential === "number" ? { minPotential } : {}),
+    ...(typeof maxPotential === "number" ? { maxPotential } : {}),
+    ...attributeFilters,
+    ...(draft.preferredFoot ? { preferredFoot: draft.preferredFoot } : {}),
+    ...(traits.length ? { traits } : {}),
+    limit: Number(draft.limit) || 20,
+    offset: 0,
+  };
+}
+
+function hasMeaningfulFilters(filters: Fc26PlayerFilters) {
+  return Boolean(
+    filters.positions?.length ||
+    filters.nations?.length ||
+    filters.leagues?.length ||
+    filters.clubs?.length ||
+    typeof filters.minOvr === "number" ||
+    typeof filters.maxOvr === "number" ||
+    typeof filters.minAge === "number" ||
+    typeof filters.maxAge === "number" ||
+    typeof filters.minPotential === "number" ||
+    typeof filters.maxPotential === "number" ||
+    countAttributeFilters(filters) > 0 ||
+    Boolean(filters.preferredFoot) ||
+    Boolean(filters.traits?.length)
+  );
+}
+
+function draftFromFilters(filters: Fc26PlayerFilters): DraftFilters {
+  const traits = filters.traits ?? [];
+
+  return {
+    positions: filters.positions ?? [],
+    nations: filters.nations ?? [],
+    leagues: filters.leagues ?? [],
+    clubs: filters.clubs ?? [],
+    minOvr: filters.minOvr ? String(filters.minOvr) : "",
+    maxOvr: filters.maxOvr ? String(filters.maxOvr) : "",
+    minAge: filters.minAge ? String(filters.minAge) : "",
+    maxAge: filters.maxAge ? String(filters.maxAge) : "",
+    minPotential: filters.minPotential ? String(filters.minPotential) : "",
+    maxPotential: filters.maxPotential ? String(filters.maxPotential) : "",
+    preferredFoot: filters.preferredFoot ?? "",
+    playStyles: traits.filter((trait) => !isPlayStylePlus(trait)),
+    playStylesPlus: traits.filter(isPlayStylePlus),
+    attributeRanges: Object.fromEntries(
+      ATTRIBUTE_FILTER_FIELDS.map((attribute) => [attribute.field, getAttributeRangeFromFilters(filters, attribute.field)])
+    ),
+    limit: String(filters.limit ?? 20),
+  };
+}
+
+function formatMarketValue(value: number | null) {
+  if (value === null || value === undefined) return "—";
+  return `€${value.toFixed(value >= 100 ? 0 : 1)}M`;
+}
+
+function formatWage(value: number | null) {
+  if (value === null || value === undefined) return "—";
+  return `€${Math.round(value)}K/sem`;
+}
+
+function formatRating(value: number | null | undefined) {
+  return value === null || value === undefined ? "—" : value;
+}
+
+function formatHeight(value: number | null | undefined) {
+  return value === null || value === undefined ? "—" : `${value} cm`;
+}
+
+function formatWeight(value: number | null | undefined) {
+  return value === null || value === undefined ? "—" : `${value} kg`;
+}
+
+function formatPreferredFoot(value: Fc26Player["preferredFoot"]) {
+  return value ? FOOT_LABELS[value] : "—";
+}
+
+function formatStars(value: number | null | undefined) {
+  return value === null || value === undefined ? "—" : `${value}/5`;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatInteger(value: number) {
+  return value.toLocaleString("pt-BR");
+}
+
+function getOvrClass(ovr: number) {
+  if (ovr >= 88) return "text-gold";
+  if (ovr >= 82) return "text-primary";
+  if (ovr >= 76) return "text-accent";
+  return "text-foreground";
+}
+
+function normalizeOption(value: string) {
+  return value.trim().toLocaleLowerCase("pt-BR");
+}
+
+function getPriorityLeagueRank(league: string) {
+  const normalizedLeague = normalizeOption(league);
+  const priorityMap: Record<string, number> = {
+    "premier league": 0,
+    "la liga": 1,
+    "laliga ea sports": 1,
+    "bundesliga": 2,
+    "serie a": 3,
+    "ligue 1": 4,
+  };
+
+  return priorityMap[normalizedLeague] ?? 99;
+}
+
+function sortLeagueOptions(leagues: string[]) {
+  return [...leagues].sort((a, b) => {
+    const priorityDiff = getPriorityLeagueRank(a) - getPriorityLeagueRank(b);
+    if (priorityDiff !== 0) return priorityDiff;
+    return a.localeCompare(b, "pt-BR");
+  });
+}
+
+const ScoutScreen = ({ currentClub, currentSeason }: Props) => {
+  const [mode, setMode] = useState<ScoutMode>("search");
+  const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
+  const [appliedFilters, setAppliedFilters] = useState<Fc26PlayerFilters | null>(null);
+  const [selectedSofifaId, setSelectedSofifaId] = useState<number | null>(null);
+  const [showAdvancedAttributes, setShowAdvancedAttributes] = useState(false);
+
+  const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters);
+  const {
+    data: selectedPlayerDetails,
+    isError: isSelectedPlayerError,
+    isLoading: isLoadingSelectedPlayer,
+    error: selectedPlayerError,
+  } = useFc26Player(selectedSofifaId);
+  const { data: filterMetadata, isLoading: isLoadingFilters } = useFc26PlayerFilters();
+
+  const hasSearched = !!appliedFilters;
+  const players = hasSearched ? data?.players ?? [] : [];
+  const total = hasSearched ? data?.total ?? 0 : 0;
+  const limit = hasSearched ? data?.limit ?? appliedFilters?.limit ?? 20 : 20;
+  const offset = hasSearched ? data?.offset ?? appliedFilters?.offset ?? 0 : 0;
+  const currentPage = Math.floor(offset / limit) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const visibleStart = total === 0 ? 0 : offset + 1;
+  const visibleEnd = total === 0 ? 0 : Math.min(offset + limit, total);
+
+  const activeFilterCount = useMemo(() => {
+    if (!appliedFilters) return 0;
+
+    let count = 0;
+    if (appliedFilters.positions?.length) count += 1;
+    if (appliedFilters.nations?.length) count += 1;
+    if (appliedFilters.leagues?.length) count += 1;
+    if (appliedFilters.clubs?.length) count += 1;
+    if (typeof appliedFilters.minOvr === "number") count += 1;
+    if (typeof appliedFilters.maxOvr === "number") count += 1;
+    if (typeof appliedFilters.minAge === "number") count += 1;
+    if (typeof appliedFilters.maxAge === "number") count += 1;
+    if (typeof appliedFilters.minPotential === "number") count += 1;
+    if (typeof appliedFilters.maxPotential === "number") count += 1;
+    count += countAttributeFilters(appliedFilters);
+    if (appliedFilters.preferredFoot) count += 1;
+    if (appliedFilters.traits?.some((trait) => !isPlayStylePlus(trait))) count += 1;
+    if (appliedFilters.traits?.some(isPlayStylePlus)) count += 1;
+    return count;
+  }, [appliedFilters]);
+  const draftAttributeFilterCount = useMemo(() => countAttributeFiltersInDraft(draft.attributeRanges), [draft.attributeRanges]);
+
+  const featuredPlayers = players.slice(0, 3);
+  const selectedPlayerPreview = useMemo(
+    () => players.find((player) => player.sofifaId === selectedSofifaId) ?? null,
+    [players, selectedSofifaId]
+  );
+  const selectedPlayer = selectedPlayerDetails ?? selectedPlayerPreview;
+  const positionOptions = filterMetadata?.positions?.length ? filterMetadata.positions : PLAYER_POSITIONS;
+  const nationOptions = useMemo(() => [...(filterMetadata?.nations ?? [])].sort((a, b) => a.localeCompare(b, "pt-BR")), [filterMetadata?.nations]);
+  const leagueOptions = useMemo(() => sortLeagueOptions(filterMetadata?.leagues ?? []), [filterMetadata?.leagues]);
+  const clubOptions = useMemo(() => {
+    if (draft.leagues.length === 0) return [];
+
+    const clubsByLeague = filterMetadata?.clubsByLeague ?? {};
+    const options = new Set<string>();
+
+    draft.leagues.forEach((league) => {
+      clubsByLeague[league]?.forEach((club) => options.add(club));
+    });
+
+    return [...options].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [draft.leagues, filterMetadata?.clubsByLeague]);
+
+  const togglePosition = (position: PlayerPosition) => {
+    setDraft((current) => ({
+      ...current,
+      positions: current.positions.includes(position)
+        ? current.positions.filter((item) => item !== position)
+        : [...current.positions, position],
+    }));
+  };
+
+  const applyFilters = () => {
+    const nextFilters = buildFiltersFromDraft(draft);
+    if (!nextFilters) return;
+
+    if (!hasMeaningfulFilters(nextFilters)) {
+      setAppliedFilters(null);
+      toast.error("Escolha pelo menos um filtro para iniciar o scout.", { duration: 4000 });
+      return;
+    }
+
+    setMode("search");
+    setAppliedFilters(nextFilters);
+  };
+
+  const clearFilters = () => {
+    setMode("search");
+    setDraft(createDefaultDraft());
+    setAppliedFilters(null);
+  };
+
+  const applyPreset = (filters: Fc26PlayerFilters) => {
+    setMode("search");
+    setDraft(draftFromFilters(filters));
+    setAppliedFilters(filters);
+  };
+
+  const goToOffset = (nextOffset: number) => {
+    setAppliedFilters((current) => ({
+      ...DEFAULT_APPLIED_FILTERS,
+      ...current,
+      offset: Math.max(nextOffset, 0),
+    }));
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-[1500px] space-y-5">
+      <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            {currentClub} · {currentSeason} · PRO
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">Scout</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+              <Search size={13} />
+              Dataset FC 26
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <SummaryPill label="Encontrados" value={formatInteger(total)} icon={UsersRound} />
+          <SummaryPill label="Filtros ativos" value={activeFilterCount} icon={SlidersHorizontal} />
+          <SummaryPill label="Página" value={`${currentPage}/${totalPages}`} icon={Target} />
+        </div>
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <aside className="card-gamer flex min-h-[620px] flex-col overflow-hidden">
+          <div className="border-b border-border p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                  <Bot size={20} />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold leading-none">Scout IA</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Interface mockada</p>
+                </div>
+              </div>
+              {isFetching && (
+                <Loader2 size={16} className="shrink-0 animate-spin text-primary" aria-label="Atualizando jogadores" />
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <ScoutModeButton
+                active={mode === "recommendation"}
+                icon={Target}
+                title="Recomendação de transferências"
+                description="Análise do elenco em breve"
+                onClick={() => setMode("recommendation")}
+              />
+              <ScoutModeButton
+                active={mode === "search"}
+                icon={Search}
+                title="Pesquisa própria de jogadores"
+                description="Busca filtrada disponível agora"
+                onClick={() => setMode("search")}
+              />
+            </div>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 p-5">
+            <div className="space-y-3">
+              <ChatBubble
+                speaker="Scout IA"
+                tone="assistant"
+              >
+                Tenho duas rotas de trabalho: recomendar contratações pelo seu elenco ou pesquisar direto no banco FC 26.
+              </ChatBubble>
+
+              {mode === "recommendation" ? (
+                <>
+                  <ChatBubble speaker="Você" tone="user">Recomende contratações para o meu elenco.</ChatBubble>
+                  <ChatBubble speaker="Scout IA" tone="assistant">
+                    Esse fluxo vai cruzar carências do elenco, idade, OVR, potencial e orçamento. Por enquanto, ele fica em prévia.
+                  </ChatBubble>
+                  <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
+                    <div className="mb-2 flex items-center gap-2 font-semibold">
+                      <LockKeyhole size={15} />
+                      Recomendação em mock
+                    </div>
+                    <p className="text-warning/80">
+                      A busca filtrada já está conectada ao dataset e pronta para uso.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ChatBubble speaker="Você" tone="user">Quero pesquisar jogadores por conta própria.</ChatBubble>
+                  <ChatBubble speaker="Scout IA" tone="assistant">
+                    Perfeito. Refine posição, OVR, idade, potencial, ritmo, altura, pé dominante, PlayStyles, PlayStyles+ e contexto de liga; eu retorno os jogadores paginados do dataset.
+                  </ChatBubble>
+                  <div className="grid gap-2">
+                    {PRESETS.map((preset) => {
+                      const Icon = preset.icon;
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => applyPreset(preset.filters)}
+                          className="flex min-h-[58px] items-center gap-3 rounded-md border border-border bg-background/35 px-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
+                        >
+                          <Icon size={16} className="shrink-0 text-primary" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-foreground">{preset.label}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{preset.description}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 rounded-md border border-border bg-background/50 p-2">
+              <input
+                value=""
+                disabled
+                readOnly
+                placeholder="Chat em breve"
+                className="min-w-0 flex-1 bg-transparent px-2 text-sm text-muted-foreground outline-none disabled:cursor-not-allowed"
+              />
+              <button
+                type="button"
+                disabled
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+                aria-label="Enviar mensagem"
+              >
+                <Send size={15} />
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <div className="min-w-0 space-y-4">
+          <section className="card-gamer p-5">
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-accent/20 bg-accent/10 text-accent">
+                  <SlidersHorizontal size={19} />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold leading-none">Filtros de scout</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {hasSearched
+                      ? `${visibleStart}-${visibleEnd} de ${formatInteger(total)} jogadores`
+                      : "Defina filtros para iniciar a busca"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="flex h-9 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <RotateCcw size={15} />
+                  Limpar
+                </button>
+                <button
+                  type="button"
+                  onClick={applyFilters}
+                  className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <Search size={15} />
+                  Buscar
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Posições</label>
+                  {draft.positions.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDraft((current) => ({ ...current, positions: [] }))}
+                      className="flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <X size={12} />
+                      Remover posições
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                  {positionOptions.map((position) => {
+                    const selected = draft.positions.includes(position);
+                    return (
+                      <button
+                        key={position}
+                        type="button"
+                        onClick={() => togglePosition(position)}
+                        title={POSITION_LABELS[position]}
+                        className={`h-10 rounded-md border px-2 text-center font-display text-sm font-bold transition-colors ${
+                          selected
+                            ? "border-primary/35 bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.12)]"
+                            : "border-border bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
+                        }`}
+                      >
+                        {position}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <FilterNumberInput label="OVR mínimo" value={draft.minOvr} min={1} max={99} onChange={(minOvr) => setDraft((current) => ({ ...current, minOvr }))} />
+                <FilterNumberInput label="OVR máximo" value={draft.maxOvr} min={1} max={99} onChange={(maxOvr) => setDraft((current) => ({ ...current, maxOvr }))} />
+                <FilterNumberInput label="Idade mínima" value={draft.minAge} min={15} max={45} onChange={(minAge) => setDraft((current) => ({ ...current, minAge }))} />
+                <FilterNumberInput label="Idade máxima" value={draft.maxAge} min={15} max={45} onChange={(maxAge) => setDraft((current) => ({ ...current, maxAge }))} />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_160px]">
+                <FilterNumberInput label="Potencial mínimo" value={draft.minPotential} min={1} max={99} onChange={(minPotential) => setDraft((current) => ({ ...current, minPotential }))} />
+                <FilterNumberInput label="Potencial máximo" value={draft.maxPotential} min={1} max={99} onChange={(maxPotential) => setDraft((current) => ({ ...current, maxPotential }))} />
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Resultados</label>
+                  <select
+                    value={draft.limit}
+                    onChange={(event) => setDraft((current) => ({ ...current, limit: event.target.value }))}
+                    className="h-10 w-full rounded-md border border-border bg-muted px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    {LIMIT_OPTIONS.map((option) => (
+                      <option key={option} value={option}>{option} por página</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]">
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Pé dominante</label>
+                  <select
+                    value={draft.preferredFoot}
+                    onChange={(event) => setDraft((current) => ({ ...current, preferredFoot: event.target.value as DraftFilters["preferredFoot"] }))}
+                    className="h-10 w-full rounded-md border border-border bg-muted px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">Qualquer pé</option>
+                    <option value="Left">Canhoto</option>
+                    <option value="Right">Destro</option>
+                  </select>
+                </div>
+                <MultiSelectCombobox
+                  label="PlayStyles"
+                  placeholder="Selecionar PlayStyles..."
+                  emptyLabel="Nenhum PlayStyle encontrado"
+                  options={PLAYSTYLE_OPTIONS}
+                  selected={draft.playStyles}
+                  onChange={(playStyles) => setDraft((current) => ({ ...current, playStyles }))}
+                />
+                <MultiSelectCombobox
+                  label="PlayStyles+"
+                  placeholder="Selecionar PlayStyles+..."
+                  emptyLabel="Nenhum PlayStyle+ encontrado"
+                  options={PLAYSTYLE_PLUS_OPTIONS}
+                  selected={draft.playStylesPlus}
+                  onChange={(playStylesPlus) => setDraft((current) => ({ ...current, playStylesPlus }))}
+                />
+              </div>
+
+              <AdvancedAttributeFilters
+                open={showAdvancedAttributes}
+                activeCount={draftAttributeFilterCount}
+                ranges={draft.attributeRanges}
+                onToggle={() => setShowAdvancedAttributes((current) => !current)}
+                onClear={() => setDraft((current) => ({ ...current, attributeRanges: createDefaultAttributeRanges() }))}
+                onChange={(field, side, value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    attributeRanges: {
+                      ...current.attributeRanges,
+                      [field]: {
+                        ...(current.attributeRanges[field] ?? { min: "", max: "" }),
+                        [side]: value,
+                      },
+                    },
+                  }))
+                }
+              />
+
+              <div className="grid gap-3 lg:grid-cols-3">
+                <MultiSelectCombobox
+                  label="Nacionalidades"
+                  placeholder="Buscar nacionalidade..."
+                  emptyLabel={isLoadingFilters ? "Carregando nacionalidades..." : "Nenhuma nacionalidade encontrada"}
+                  options={nationOptions}
+                  selected={draft.nations}
+                  onChange={(nations) => setDraft((current) => ({ ...current, nations }))}
+                />
+                <MultiSelectCombobox
+                  label="Ligas"
+                  placeholder="Buscar liga..."
+                  emptyLabel={isLoadingFilters ? "Carregando ligas..." : "Nenhuma liga encontrada"}
+                  options={leagueOptions}
+                  selected={draft.leagues}
+                  onChange={(leagues) => {
+                    const nextClubOptions = new Set<string>();
+                    const clubsByLeague = filterMetadata?.clubsByLeague ?? {};
+
+                    leagues.forEach((league) => {
+                      clubsByLeague[league]?.forEach((club) => nextClubOptions.add(club));
+                    });
+
+                    setDraft((current) => ({
+                      ...current,
+                      leagues,
+                      clubs: current.clubs.filter((club) => nextClubOptions.has(club)),
+                    }));
+                  }}
+                />
+                <MultiSelectCombobox
+                  label="Clubes"
+                  placeholder={draft.leagues.length ? "Buscar clube da liga..." : "Selecione uma liga primeiro"}
+                  emptyLabel={isLoadingFilters ? "Carregando clubes..." : "Nenhum clube encontrado"}
+                  options={clubOptions}
+                  selected={draft.clubs}
+                  onChange={(clubs) => setDraft((current) => ({ ...current, clubs }))}
+                  disabled={draft.leagues.length === 0}
+                />
+              </div>
+            </div>
+          </section>
+
+          {hasSearched && featuredPlayers.length > 0 && !isError && (
+            <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              {featuredPlayers.map((player, index) => (
+                <FeaturedPlayer key={player.sofifaId} player={player} rank={index + 1} onSelect={() => setSelectedSofifaId(player.sofifaId)} />
+              ))}
+            </section>
+          )}
+
+          <section className="card-gamer overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-display text-lg font-bold leading-none">Jogadores encontrados</h3>
+                {hasSearched && (
+                  <p className="mt-1 text-sm text-muted-foreground">Compare os perfis encontrados e abra o detalhe para ver o relatório completo.</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={offset <= 0 || isFetching}
+                  onClick={() => goToOffset(offset - limit)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="min-w-[92px] text-center font-display text-sm font-bold text-foreground">
+                  {currentPage}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={offset + limit >= total || isFetching}
+                  onClick={() => goToOffset(offset + limit)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Próxima página"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+
+            {!hasSearched ? (
+              <div className="p-6 text-center">
+                <p className="font-display text-lg font-semibold text-foreground">Nenhum scout iniciado</p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                  A lista fica vazia até você aplicar filtros de posição, OVR, idade, potencial, ritmo, altura, PlayStyles, PlayStyles+, nacionalidade, liga ou clube.
+                </p>
+              </div>
+            ) : isLoading ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+                <Loader2 size={20} className="animate-spin" />
+                Carregando jogadores...
+              </div>
+            ) : isError ? (
+              <div className="p-6 text-center">
+                <p className="font-display text-lg font-semibold text-foreground">Não foi possível carregar o scout</p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{extractErrorMessage(error)}</p>
+                <button
+                  type="button"
+                  onClick={() => void refetch()}
+                  className="mt-5 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <RotateCcw size={15} />
+                  Tentar novamente
+                </button>
+              </div>
+            ) : players.length === 0 ? (
+              <div className="p-6 text-center">
+                <p className="font-display text-lg font-semibold text-foreground">Nenhum jogador bate com esses filtros</p>
+                <p className="mt-2 text-sm text-muted-foreground">Abra a faixa de OVR, idade ou potencial para ampliar a busca.</p>
+              </div>
+            ) : (
+              <>
+                <ScrollArea scrollbars="horizontal" className="hidden w-full lg:block" viewportClassName="pb-3">
+                  <table className="w-full min-w-[1120px] text-left">
+                    <thead className="bg-muted/35">
+                      <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        <th className="px-4 py-3 font-semibold">Jogador</th>
+                        <th className="px-4 py-3 font-semibold">Posições</th>
+                        <th className="px-4 py-3 text-center font-semibold">OVR</th>
+                        <th className="px-4 py-3 text-center font-semibold">Pot.</th>
+                        <th className="px-4 py-3 font-semibold">Perfil</th>
+                        <th className="px-4 py-3 font-semibold">Atributos</th>
+                        <th className="px-4 py-3 font-semibold">Clube</th>
+                        <th className="px-4 py-3 text-right font-semibold">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>{players.map((player) => <PlayerTableRow key={player.sofifaId} player={player} onSelect={() => setSelectedSofifaId(player.sofifaId)} />)}</tbody>
+                  </table>
+                </ScrollArea>
+
+                <div className="divide-y divide-border lg:hidden">
+                  {players.map((player) => (
+                    <PlayerMobileRow key={player.sofifaId} player={player} onSelect={() => setSelectedSofifaId(player.sofifaId)} />
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      </section>
+
+      {selectedSofifaId && (
+        <PlayerDetailDrawer
+          player={selectedPlayer}
+          isLoading={isLoadingSelectedPlayer}
+          isError={isSelectedPlayerError}
+          error={selectedPlayerError}
+          onClose={() => setSelectedSofifaId(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+interface SummaryPillProps {
+  label: string;
+  value: string | number;
+  icon: ElementType;
+}
+
+function SummaryPill({ label, value, icon: Icon }: SummaryPillProps) {
+  return (
+    <div className="flex min-h-[46px] min-w-0 items-center gap-2 rounded-md border border-border bg-muted/35 px-3">
+      <Icon size={15} className="shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+        <p className="truncate font-display text-base font-bold text-foreground">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+interface ScoutModeButtonProps {
+  active: boolean;
+  icon: ElementType;
+  title: string;
+  description: string;
+  onClick: () => void;
+}
+
+function ScoutModeButton({ active, icon: Icon, title, description, onClick }: ScoutModeButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-[66px] items-center gap-3 rounded-md border px-3 text-left transition-colors ${
+        active
+          ? "border-primary/35 bg-primary/10 text-primary"
+          : "border-border bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
+      }`}
+    >
+      <Icon size={17} className="shrink-0" />
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold">{title}</span>
+        <span className={`block truncate text-xs ${active ? "text-primary/75" : "text-muted-foreground"}`}>{description}</span>
+      </span>
+    </button>
+  );
+}
+
+function ChatBubble({ speaker, tone, children }: { speaker: string; tone: "assistant" | "user"; children: ReactNode }) {
+  const isUser = tone === "user";
+
+  return (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[92%] rounded-md border px-3 py-2 ${
+          isUser
+            ? "border-primary/25 bg-primary/10 text-primary"
+            : "border-border bg-background/45 text-foreground"
+        }`}
+      >
+        <p className={`mb-1 text-[10px] uppercase tracking-[0.16em] ${isUser ? "text-primary/70" : "text-muted-foreground"}`}>
+          {speaker}
+        </p>
+        <p className="text-sm leading-relaxed">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+interface FilterNumberInputProps {
+  label: string;
+  value: string;
+  min?: number;
+  max?: number;
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+function FilterNumberInput({ label, value, min, max, placeholder, onChange }: FilterNumberInputProps) {
+  const fallbackPlaceholder = label.toLocaleLowerCase("pt-BR").includes("máximo")
+    ? (typeof max === "number" ? `Max ${max}` : "Max")
+    : (typeof min === "number" ? `Min ${min}` : "Min");
+
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</label>
+      <NumericFilterInput
+        value={value}
+        min={min}
+        max={max}
+        placeholder={placeholder ?? fallbackPlaceholder}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
+
+function NumericFilterInput({
+  value,
+  min,
+  max,
+  placeholder,
+  compact = false,
+  ariaLabel,
+  onChange,
+}: {
+  value: string;
+  min?: number;
+  max?: number;
+  placeholder: string;
+  compact?: boolean;
+  ariaLabel?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={value}
+      min={min}
+      max={max}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))}
+      className={
+        compact
+          ? "h-8 w-full border-border bg-muted px-2 py-1 text-[11px] font-semibold text-foreground placeholder:text-muted-foreground/70 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+          : "h-10 w-full border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+      }
+    />
+  );
+}
+
+interface AdvancedAttributeFiltersProps {
+  open: boolean;
+  activeCount: number;
+  ranges: AttributeRangeDraft;
+  onToggle: () => void;
+  onClear: () => void;
+  onChange: (field: string, side: "min" | "max", value: string) => void;
+}
+
+function AdvancedAttributeFilters({ open, activeCount, ranges, onToggle, onClear, onChange }: AdvancedAttributeFiltersProps) {
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-background/30">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex min-h-[58px] w-full items-center justify-between gap-3 px-4 text-left transition-colors hover:bg-muted/25"
+        aria-expanded={open}
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+            <SlidersHorizontal size={16} />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-display text-sm font-bold text-foreground">Filtros avançados</span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {activeCount > 0 ? `${activeCount} atributo${activeCount === 1 ? "" : "s"} filtrado${activeCount === 1 ? "" : "s"}` : "Ritmo, finalização, passe, defesa, físico, mentalidade e goleiro"}
+            </span>
+          </span>
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="border-t border-border p-4">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">Defina valores mínimos e máximos só nos atributos que importam para o perfil.</p>
+            {activeCount > 0 && (
+              <button
+                type="button"
+                onClick={onClear}
+                className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <RotateCcw size={13} />
+                Limpar atributos
+              </button>
+            )}
+          </div>
+
+          <ScrollArea className="h-[min(58vh,520px)]" viewportClassName="pr-4" scrollbars="vertical">
+            <div className="grid gap-3 xl:grid-cols-2">
+              {ATTRIBUTE_FILTER_GROUPS.map((group) => {
+                const Icon = group.icon;
+
+                return (
+                  <div key={group.title} className="rounded-md border border-border bg-card/45 p-3">
+                    <div className="mb-3 flex items-center gap-2">
+                      <Icon size={15} className="text-primary" />
+                      <p className="font-display text-sm font-bold text-foreground">{group.title}</p>
+                    </div>
+                    <div className="grid gap-2">
+                      {group.filters.map((filter) => (
+                        <AttributeRangeFilter
+                          key={filter.field}
+                          label={filter.label}
+                          min={filter.min}
+                          max={filter.max}
+                          value={ranges[filter.field] ?? { min: "", max: "" }}
+                          onChange={(side, value) => onChange(filter.field, side, value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AttributeRangeFilter({
+  label,
+  min,
+  max,
+  value,
+  onChange,
+}: {
+  label: string;
+  min: number;
+  max: number;
+  value: { min: string; max: string };
+  onChange: (side: "min" | "max", value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_78px_78px] items-center gap-2 rounded-md border border-border bg-background/35 px-3 py-2">
+      <label className="truncate text-[11px] font-semibold text-foreground">{label}</label>
+      <NumericFilterInput
+        compact
+        value={value.min}
+        min={min}
+        max={max}
+        placeholder={`Min ${min}`}
+        ariaLabel={`${label} mínimo`}
+        onChange={(value) => onChange("min", value)}
+      />
+      <NumericFilterInput
+        compact
+        value={value.max}
+        min={min}
+        max={max}
+        placeholder={`Max ${max}`}
+        ariaLabel={`${label} máximo`}
+        onChange={(value) => onChange("max", value)}
+      />
+    </div>
+  );
+}
+
+interface MultiSelectComboboxProps {
+  label: string;
+  placeholder: string;
+  emptyLabel: string;
+  options: string[];
+  selected: string[];
+  onChange: (value: string[]) => void;
+  disabled?: boolean;
+}
+
+function MultiSelectCombobox({ label, placeholder, emptyLabel, options, selected, onChange, disabled = false }: MultiSelectComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredOptions = useMemo(() => {
+    const term = normalizeOption(searchTerm);
+    const selectedKeys = new Set(selected.map(normalizeOption));
+
+    return options
+      .filter((option) => !term || normalizeOption(option).includes(term))
+      .slice(0, 80)
+      .map((option) => ({ option, selected: selectedKeys.has(normalizeOption(option)) }));
+  }, [options, searchTerm, selected]);
+
+  const toggleOption = (option: string) => {
+    const optionKey = normalizeOption(option);
+    const isSelected = selected.some((item) => normalizeOption(item) === optionKey);
+
+    if (isSelected) {
+      onChange(selected.filter((item) => normalizeOption(item) !== optionKey));
+      return;
+    }
+
+    if (disabled) return;
+
+    onChange([...selected, option]);
+  };
+
+  return (
+    <div className={`relative ${disabled ? "opacity-70" : ""}`}>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <label className="block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</label>
+        {selected.length > 0 && !disabled && (
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Limpar
+          </button>
+        )}
+      </div>
+      <div className="relative">
+        <input
+          type="text"
+          value={searchTerm}
+          placeholder={placeholder}
+          disabled={disabled}
+          onFocus={() => !disabled && setOpen(true)}
+          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            setOpen(true);
+          }}
+          className="h-10 w-full rounded-md border border-border bg-muted px-3 pr-9 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:text-muted-foreground"
+        />
+        <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      </div>
+
+      {selected.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {selected.map((item) => (
+            <button
+              key={item}
+              type="button"
+              disabled={disabled}
+              onClick={() => toggleOption(item)}
+              className="inline-flex min-h-7 max-w-full items-center gap-1 rounded border border-primary/25 bg-primary/10 px-2 text-xs font-semibold text-primary disabled:cursor-not-allowed"
+            >
+              <span className="truncate">{item}</span>
+              <X size={12} className="shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-md border border-border bg-popover shadow-xl">
+          <ScrollArea className="h-56" viewportClassName="py-1 pr-3" scrollbars="vertical">
+            {filteredOptions.length === 0 ? (
+              <p className="px-3 py-3 text-sm text-muted-foreground">{emptyLabel}</p>
+            ) : filteredOptions.map(({ option, selected }) => (
+              <button
+                key={option}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => toggleOption(option)}
+                className={`flex min-h-9 w-full items-center justify-between gap-3 px-3 text-left text-sm transition-colors ${
+                  selected
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted"
+                }`}
+              >
+                <span className="truncate">{option}</span>
+                {selected && <Check size={14} className="shrink-0" />}
+              </button>
+            ))}
+          </ScrollArea>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: number; onSelect: () => void }) {
+  const growth = player.potential - player.ovr;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="card-gamer block w-full p-4 text-left transition-colors hover:border-primary/35 hover:bg-primary/5"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 font-display text-sm font-bold text-primary">
+            {rank}
+          </span>
+          <PlayerAvatar player={player} size="sm" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
+          </div>
+        </div>
+        <span className={`font-display text-2xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {player.positions.map((position) => (
+          <PositionBadge key={position} position={position} />
+        ))}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <MetricLine label="Potencial" value={`${player.potential}${growth > 0 ? ` (+${growth})` : ""}`} />
+        <MetricLine label="Ritmo" value={formatRating(player.pace)} icon={Zap} />
+        <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
+        <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+      </div>
+    </button>
+  );
+}
+
+function PlayerTableRow({ player, onSelect }: { player: Fc26Player; onSelect: () => void }) {
+  const traits = player.playerTraits ?? [];
+
+  return (
+    <tr className="border-t border-border transition-colors hover:bg-muted/25">
+      <td className="min-w-[300px] px-4 py-3">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <PlayerAvatar player={player} size="md" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.longName ?? player.nation ?? "Perfil FC26"}</p>
+              {traits.length > 0 && (
+                <div className="mt-2 flex max-w-[210px] gap-1 overflow-hidden">
+                  {traits.slice(0, 2).map((trait) => (
+                    <InfoChip key={trait}>{trait}</InfoChip>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onSelect}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+            aria-label={`Ver detalhes de ${player.name}`}
+            title="Ver detalhes"
+          >
+            <Eye size={15} />
+          </button>
+        </div>
+      </td>
+      <td className="min-w-[150px] px-4 py-3">
+        <div className="flex flex-wrap gap-1.5">
+          {player.positions.map((position) => (
+            <PositionBadge key={position} position={position} />
+          ))}
+        </div>
+      </td>
+      <td className={`px-4 py-3 text-center font-display text-xl font-bold ${getOvrClass(player.ovr)}`}>{player.ovr}</td>
+      <td className="px-4 py-3 text-center font-display text-xl font-bold text-foreground">{player.potential}</td>
+      <td className="min-w-[180px] px-4 py-3">
+        <p className="text-sm text-foreground">{player.age} anos</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {formatHeight(player.height)} · {formatWeight(player.weight)}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{formatPreferredFoot(player.preferredFoot)}</p>
+      </td>
+      <td className="min-w-[170px] px-4 py-3">
+        <div className="grid grid-cols-3 gap-1.5">
+          <RatingPill label="PAC" value={player.pace} />
+          <RatingPill label="DRI" value={player.dribbling} />
+          <RatingPill label="PHY" value={player.physic} />
+        </div>
+      </td>
+      <td className="min-w-[190px] px-4 py-3">
+        <p className="truncate text-sm text-foreground">{player.club ?? "Sem clube"}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.league ?? player.nation ?? "Liga não informada"}</p>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-right">
+        <p className="font-display text-sm font-bold text-primary">{formatMarketValue(player.marketValue)}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{formatWage(player.wage)}</p>
+      </td>
+    </tr>
+  );
+}
+
+function PlayerMobileRow({ player, onSelect }: { player: Fc26Player; onSelect: () => void }) {
+  const traits = player.playerTraits ?? [];
+
+  return (
+    <button type="button" onClick={onSelect} className="block w-full p-4 text-left transition-colors hover:bg-muted/25">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <PlayerAvatar player={player} size="md" />
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-foreground">{player.name}</p>
+            <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "Sem clube"}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.league ?? player.nation ?? "Liga não informada"}</p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={`font-display text-3xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+        </div>
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {player.positions.map((position) => (
+          <PositionBadge key={position} position={position} />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <MetricLine label="Potencial" value={player.potential} />
+        <MetricLine label="Idade" value={`${player.age} anos`} />
+        <MetricLine label="Ritmo" value={formatRating(player.pace)} icon={Zap} />
+        <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
+        <MetricLine label="Pé" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
+        <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+      </div>
+      {traits.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {traits.slice(0, 3).map((trait) => (
+            <InfoChip key={trait}>{trait}</InfoChip>
+          ))}
+        </div>
+      )}
+    </button>
+  );
+}
+
+function PlayerAvatar({ player, size }: { player: Fc26Player; size: "sm" | "md" | "lg" }) {
+  const sizeClass = {
+    sm: "h-10 w-10",
+    md: "h-12 w-12",
+    lg: "h-24 w-24",
+  }[size];
+  const initials = player.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <div className={`${sizeClass} relative shrink-0 overflow-hidden rounded-md border border-border bg-muted`}>
+      <div className="absolute inset-0 flex items-center justify-center font-display text-sm font-bold text-muted-foreground">
+        {initials || <UserRound size={18} />}
+      </div>
+      {player.playerFaceUrl && (
+        <img
+          src={player.playerFaceUrl}
+          alt={player.name}
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+          className="relative h-full w-full object-cover"
+        />
+      )}
+    </div>
+  );
+}
+
+function RatingPill({ label, value }: { label: string; value: number | null }) {
+  return (
+    <div className="rounded border border-border bg-background/45 px-2 py-1 text-center">
+      <p className="text-[9px] font-semibold text-muted-foreground">{label}</p>
+      <p className="font-display text-sm font-bold text-foreground">{formatRating(value)}</p>
+    </div>
+  );
+}
+
+function PositionBadge({ position }: { position: PlayerPosition }) {
+  return (
+    <span
+      title={POSITION_LABELS[position]}
+      className="inline-flex h-6 items-center rounded border border-accent/20 bg-accent/10 px-2 font-display text-xs font-bold text-accent"
+    >
+      {position}
+    </span>
+  );
+}
+
+function InfoChip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex min-h-6 max-w-full items-center rounded border border-primary/20 bg-primary/10 px-2 text-xs font-semibold text-primary">
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
+
+function MetricLine({ label, value, icon: Icon }: { label: string; value: ReactNode; icon?: ElementType }) {
+  return (
+    <div className="min-w-0 rounded-md border border-border bg-background/35 px-3 py-2">
+      <p className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        {Icon && <Icon size={11} />}
+        {label}
+      </p>
+      <p className="truncate font-display text-sm font-bold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+interface PlayerDetailDrawerProps {
+  player: Fc26Player | null | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+  onClose: () => void;
+}
+
+function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: PlayerDetailDrawerProps) {
+  const generalRatings = player
+    ? [
+        { label: "Ritmo", value: player.pace },
+        { label: "Final.", value: player.shooting },
+        { label: "Passe", value: player.passing },
+        { label: "Drible", value: player.dribbling },
+        { label: "Defesa", value: player.defending },
+        { label: "Físico", value: player.physic },
+      ]
+    : [];
+  const hasGeneralRatings = generalRatings.some((item) => item.value !== null && item.value !== undefined);
+  const radarData = generalRatings.map((item) => ({ ...item, value: item.value ?? 0 }));
+  const attributeGroups = player
+    ? [
+        {
+          title: "Ataque",
+          icon: Target,
+          attributes: [
+            { label: "Cruzamento", value: player.attackingCrossing },
+            { label: "Finalização", value: player.attackingFinishing },
+            { label: "Cabeceio", value: player.attackingHeadingAccuracy },
+            { label: "Passe curto", value: player.attackingShortPassing },
+            { label: "Voleios", value: player.attackingVolleys },
+          ],
+        },
+        {
+          title: "Habilidade",
+          icon: Sparkles,
+          attributes: [
+            { label: "Drible", value: player.skillDribbling },
+            { label: "Curva", value: player.skillCurve },
+            { label: "Falta", value: player.skillFkAccuracy },
+            { label: "Passe longo", value: player.skillLongPassing },
+            { label: "Controle", value: player.skillBallControl },
+          ],
+        },
+        {
+          title: "Movimentação",
+          icon: Footprints,
+          attributes: [
+            { label: "Aceleração", value: player.movementAcceleration },
+            { label: "Sprint", value: player.movementSprintSpeed },
+            { label: "Agilidade", value: player.movementAgility },
+            { label: "Reações", value: player.movementReactions },
+            { label: "Equilíbrio", value: player.movementBalance },
+          ],
+        },
+        {
+          title: "Força",
+          icon: Dumbbell,
+          attributes: [
+            { label: "Força do chute", value: player.powerShotPower },
+            { label: "Impulsão", value: player.powerJumping },
+            { label: "Fôlego", value: player.powerStamina },
+            { label: "Força", value: player.powerStrength },
+            { label: "Chute longo", value: player.powerLongShots },
+          ],
+        },
+        {
+          title: "Mentalidade",
+          icon: Brain,
+          attributes: [
+            { label: "Agressividade", value: player.mentalityAggression },
+            { label: "Interceptações", value: player.mentalityInterceptions },
+            { label: "Posicionamento", value: player.mentalityPositioning },
+            { label: "Visão", value: player.mentalityVision },
+            { label: "Pênaltis", value: player.mentalityPenalties },
+            { label: "Compostura", value: player.mentalityComposure },
+          ],
+        },
+        {
+          title: "Defesa",
+          icon: ShieldCheck,
+          attributes: [
+            { label: "Consciência", value: player.defendingMarkingAwareness },
+            { label: "Carrinho em pé", value: player.defendingStandingTackle },
+            { label: "Carrinho", value: player.defendingSlidingTackle },
+          ],
+        },
+        {
+          title: "Goleiro",
+          icon: UserRound,
+          attributes: [
+            { label: "Mergulho", value: player.goalkeepingDiving },
+            { label: "Manuseio", value: player.goalkeepingHandling },
+            { label: "Chute", value: player.goalkeepingKicking },
+            { label: "Posição", value: player.goalkeepingPositioning },
+            { label: "Reflexos", value: player.goalkeepingReflexes },
+            { label: "Velocidade", value: player.goalkeepingSpeed },
+          ],
+        },
+      ]
+    : [];
+  const playerPlayStyles = player?.playerTraits ?? [];
+  const basePlayStyles = playerPlayStyles.filter((playStyle) => !isPlayStylePlus(playStyle));
+  const plusPlayStyles = playerPlayStyles.filter(isPlayStylePlus);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" role="presentation" onMouseDown={onClose}>
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={player ? `Detalhes de ${player.name}` : "Detalhes do jogador"}
+        onMouseDown={(event) => event.stopPropagation()}
+        className="ml-auto flex h-full w-full max-w-4xl flex-col overflow-hidden border-l border-border bg-card shadow-2xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 p-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Relatório de scout</p>
+            <h3 className="mt-1 font-display text-xl font-bold text-foreground">{player?.name ?? "Carregando jogador"}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Fechar detalhes"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          {isLoading && !player ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 size={20} className="animate-spin" />
+              Carregando detalhes...
+            </div>
+          ) : isError && !player ? (
+            <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive">
+              {extractErrorMessage(error)}
+            </div>
+          ) : player ? (
+            <div className="space-y-4">
+              <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="card-gamer p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <PlayerAvatar player={player} size="lg" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h4 className="truncate font-display text-2xl font-bold text-foreground">{player.name}</h4>
+                          <p className="mt-1 truncate text-sm text-muted-foreground">{player.longName ?? "Nome completo não informado"}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
+                          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {player.positions.map((position) => (
+                          <PositionBadge key={position} position={position} />
+                        ))}
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <MetricLine label="Potencial" value={player.potential} icon={Star} />
+                        <MetricLine label="Idade" value={`${player.age} anos`} icon={Calendar} />
+                        <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
+                        <MetricLine label="Pé" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card-gamer p-4">
+                  <p className="mb-3 font-display text-sm font-bold text-foreground">Mercado</p>
+                  <div className="grid gap-2">
+                    <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+                    <MetricLine label="Salário" value={formatWage(player.wage)} />
+                    <MetricLine label="Contrato" value={player.contractUntil ?? "—"} />
+                    <MetricLine label="Cláusula" value={formatMarketValue(player.releaseClause)} icon={BadgeEuro} />
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                <div className="card-gamer p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Activity size={16} className="text-primary" />
+                    <p className="font-display text-sm font-bold text-foreground">Ratings gerais</p>
+                  </div>
+                  {hasGeneralRatings ? (
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData}>
+                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarAngleAxis dataKey="label" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 99]} tick={false} axisLine={false} />
+                          <Radar dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.24} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="rounded-md border border-border bg-background/35 p-4 text-sm text-muted-foreground">
+                      Ratings gerais não informados para este perfil.
+                    </p>
+                  )}
+                </div>
+
+                <div className="card-gamer p-4">
+                  <p className="mb-3 font-display text-sm font-bold text-foreground">Resumo técnico</p>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {generalRatings.map((rating) => (
+                      <AttributeMeter key={rating.label} label={rating.label} value={rating.value} />
+                    ))}
+                    <MetricLine label="Perna ruim" value={formatStars(player.weakFoot)} icon={Footprints} />
+                    <MetricLine label="Skill moves" value={formatStars(player.skillMoves)} icon={Sparkles} />
+                    <MetricLine label="Reputação" value={formatStars(player.internationalReputation)} icon={Star} />
+                    <MetricLine label="Work rate" value={player.workRate ?? "—"} />
+                    <MetricLine label="Tipo físico" value={player.bodyType ?? "—"} icon={Weight} />
+                    <MetricLine label="Nascimento" value={formatDate(player.dob)} icon={Calendar} />
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-4 lg:grid-cols-3">
+                <ChipPanel title="Tags de estilo" items={player.playerTags ?? []} emptyLabel="Sem tags registradas" />
+                <ChipPanel title="PlayStyles" items={basePlayStyles} emptyLabel="Sem PlayStyles registrados" />
+                <ChipPanel title="PlayStyles+" items={plusPlayStyles} emptyLabel="Sem PlayStyles+ registrados" />
+              </section>
+
+              <section className="grid gap-4 lg:grid-cols-2">
+                {attributeGroups.map((group) => (
+                  <AttributeGroup key={group.title} title={group.title} icon={group.icon} attributes={group.attributes} />
+                ))}
+              </section>
+            </div>
+          ) : null}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function ChipPanel({ title, items, emptyLabel }: { title: string; items: string[]; emptyLabel: string }) {
+  return (
+    <div className="card-gamer p-4">
+      <p className="mb-3 font-display text-sm font-bold text-foreground">{title}</p>
+      {items.length ? (
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((item) => (
+            <InfoChip key={item}>{item}</InfoChip>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+      )}
+    </div>
+  );
+}
+
+function AttributeGroup({ title, icon: Icon, attributes }: { title: string; icon: ElementType; attributes: Array<{ label: string; value: number | null }> }) {
+  return (
+    <div className="card-gamer p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Icon size={16} className="text-primary" />
+        <p className="font-display text-sm font-bold text-foreground">{title}</p>
+      </div>
+      <div className="grid gap-2">
+        {attributes.map((attribute) => (
+          <AttributeMeter key={attribute.label} label={attribute.label} value={attribute.value} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AttributeMeter({ label, value }: { label: string; value: number | null }) {
+  const normalizedValue = Math.min(Math.max(value ?? 0, 0), 99);
+
+  return (
+    <div className="rounded-md border border-border bg-background/35 px-3 py-2">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
+        <p className="font-display text-sm font-bold text-foreground">{formatRating(value)}</p>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${normalizedValue}%` }} />
+      </div>
+    </div>
+  );
+}
+
+export default ScoutScreen;
