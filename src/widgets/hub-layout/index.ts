@@ -1,3 +1,3 @@
 export { default as HubLayout } from './ui/HubLayout'
-export { HubHeader } from './ui/HubHeader'
-export { HubSidebar } from './ui/HubSidebar'
+export { default as HubHeader } from './ui/HubHeader'
+export { default as HubSidebar } from './ui/HubSidebar'

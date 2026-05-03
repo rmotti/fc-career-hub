@@ -1,1 +1,2 @@
-export { getPlayerBadge, BADGE_CONFIG } from './model/playerBadge'
+export { getBadge } from './model/playerBadge'
+export type { PlayerBadge, SquadRole } from './model/playerBadge'

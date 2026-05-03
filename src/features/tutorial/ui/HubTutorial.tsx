@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Joyride, STATUS, type EventData, type Step } from "react-joyride";
 import { useLocation } from "react-router-dom";
 import { Sparkles } from "lucide-react";
@@ -14,9 +14,7 @@ import { getHubTutorialSteps } from "@/features/tutorial/model/hubTutorialSteps"
 import TutorialTooltip from "@/features/tutorial/ui/TutorialTooltip";
 import { tutorialJoyrideStyles, tutorialLocale, tutorialOptions } from "@/features/tutorial/model/tutorialStyles";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
-import { getResponsiveTutorialSteps, resolveVisibleSteps } from "@/features/tutorial/model/tutorialUtils";
-
-const promptKey = (userId: string) => `fcch:tutorial-prompt:${userId}`;
+import { getResponsiveTutorialSteps, getTutorialPromptKey, resolveVisibleSteps } from "@/features/tutorial/model/tutorialUtils";
 
 interface HubTutorialProps {
   userId: string;
@@ -32,38 +30,34 @@ const HubTutorial = ({ userId, startRequest }: HubTutorialProps) => {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(promptKey(userId)) === "1") {
+    if (localStorage.getItem(getTutorialPromptKey(userId)) === "1") {
       setShowPrompt(true);
     }
   }, [userId]);
+
+  const startTutorial = useCallback(() => {
+    localStorage.removeItem(getTutorialPromptKey(userId));
+    setShowPrompt(false);
+
+    setRun(false);
+    window.setTimeout(() => {
+      const nextSteps = resolveVisibleSteps(getResponsiveTutorialSteps(getHubTutorialSteps(location.pathname), isMobile));
+      if (nextSteps.length === 0) return;
+
+      setActiveSteps(nextSteps);
+      setTourKey((key) => key + 1);
+      setRun(true);
+    }, 220);
+  }, [userId, location.pathname, isMobile]);
 
   useEffect(() => {
     if (startRequest > 0) {
       startTutorial();
     }
-  }, [startRequest]);
-
-  const startTutorial = () => {
-    localStorage.removeItem(promptKey(userId));
-    setShowPrompt(false);
-
-    const launch = () => {
-      setRun(false);
-      window.setTimeout(() => {
-        const nextSteps = resolveVisibleSteps(getResponsiveTutorialSteps(getHubTutorialSteps(location.pathname), isMobile));
-        if (nextSteps.length === 0) return;
-
-        setActiveSteps(nextSteps);
-        setTourKey((key) => key + 1);
-        setRun(true);
-      }, 220);
-    };
-
-    launch();
-  };
+  }, [startRequest, startTutorial]);
 
   const skipTutorial = () => {
-    localStorage.removeItem(promptKey(userId));
+    localStorage.removeItem(getTutorialPromptKey(userId));
     setShowPrompt(false);
   };
 
@@ -120,5 +114,4 @@ const HubTutorial = ({ userId, startRequest }: HubTutorialProps) => {
   );
 };
 
-export { promptKey as getTutorialPromptKey };
 export default HubTutorial;

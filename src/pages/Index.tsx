@@ -6,7 +6,7 @@ import { useAuth } from "@/features/auth/model/useAuth";
 import { useSaves, useCreateSave } from "@/features/saves/model/useSaves";
 import { getStoredActiveSaveId, setStoredActiveSaveId } from "@/features/auth/lib/auth-storage";
 import { type ApiSave, extractErrorMessage } from "@/shared/api/client";
-import { getTutorialPromptKey } from "@/features/tutorial/ui/HubTutorial";
+import { getTutorialPromptKey } from "@/features/tutorial/model/tutorialUtils";
 
 const Index = () => {
   const navigate = useNavigate();

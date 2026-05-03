@@ -64,3 +64,5 @@ const getResponsiveTutorialSteps = (tourSteps: Step[], isMobile: boolean) => {
 };
 
 export { getResponsiveTutorialSteps, resolveVisibleSteps };
+
+export const getTutorialPromptKey = (userId: string) => `fcch:tutorial-prompt:${userId}`;
