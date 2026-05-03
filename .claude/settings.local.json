@@ -3,7 +3,31 @@
     "allow": [
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(cp components/ui/*.tsx shared/ui/)",
+      "Bash(cp components/ui/*.ts shared/ui/)",
+      "Bash(cp services/api.ts shared/api/client.ts)",
+      "Bash(cp lib/utils.ts shared/lib/utils.ts)",
+      "Bash(cp utils/currency.ts shared/lib/currency.ts)",
+      "Bash(cp utils/rounding.ts shared/lib/rounding.ts)",
+      "Bash(cp utils/countries.ts shared/lib/countries.ts)",
+      "Bash(cp contexts/AuthContext.tsx features/auth/model/AuthContext.tsx)",
+      "Bash(cp contexts/auth-context-core.ts features/auth/model/auth-context-core.ts)",
+      "Bash(cp contexts/useAuth.ts features/auth/model/useAuth.ts)",
+      "Bash(cp lib/auth-storage.ts features/auth/lib/auth-storage.ts)",
+      "Bash(cp components/AuthGuards.tsx features/auth/ui/AuthGuards.tsx)",
+      "Bash(cp components/hub/DashboardScreen.tsx features/dashboard/ui/DashboardScreen.tsx)",
+      "Bash(cp components/hub/StatCard.tsx features/dashboard/ui/StatCard.tsx)",
+      "Bash(cp hooks/useFinancialSnapshot.ts features/dashboard/model/useFinancialSnapshot.ts)",
+      "Bash(cp components/hub/SquadScreen.tsx features/squad/ui/SquadScreen.tsx)",
+      "Bash(cp components/modals/PlayerModal.tsx features/squad/ui/PlayerModal.tsx)",
+      "Bash(cp pages/HubLayout.tsx widgets/hub-layout/ui/HubLayout.tsx)",
+      "Bash(cp components/hub/HubHeader.tsx widgets/hub-layout/ui/HubHeader.tsx)",
+      "Bash(cp components/hub/HubSidebar.tsx widgets/hub-layout/ui/HubSidebar.tsx)",
+      "Bash(cp lib/playerBadge.ts entities/player/model/playerBadge.ts)",
+      "Bash(cp components/Logo.tsx shared/ui/Logo.tsx)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)"
     ]
   }
 }
