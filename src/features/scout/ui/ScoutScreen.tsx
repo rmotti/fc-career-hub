@@ -2123,11 +2123,24 @@ function ShortlistPositionGroupCard({
 }) {
   const averageOvr = getAverageOvr(group.players);
   const canCompareGroup = group.players.length >= 2;
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const playersListId = `shortlist-position-${group.position}`;
 
   return (
     <section className="card-gamer overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-border bg-muted/20 p-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
+      <div
+        className={`flex flex-col gap-3 bg-muted/20 p-4 lg:flex-row lg:items-center lg:justify-between ${
+          isCollapsed ? "" : "border-b border-border"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((current) => !current)}
+          aria-expanded={!isCollapsed}
+          aria-controls={playersListId}
+          className="group flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          title={isCollapsed ? "Abrir posição" : "Minimizar posição"}
+        >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent/20 bg-accent/10 text-accent">
             <span className="font-display text-sm font-bold">{group.position}</span>
           </div>
@@ -2137,7 +2150,13 @@ function ShortlistPositionGroupCard({
               {group.players.length} jogador{group.players.length === 1 ? "" : "es"} · média OVR {averageOvr ?? "—"}
             </p>
           </div>
-        </div>
+          <ChevronDown
+            size={18}
+            className={`ml-auto shrink-0 text-muted-foreground transition-transform duration-200 group-hover:text-foreground ${
+              isCollapsed ? "-rotate-90" : ""
+            }`}
+          />
+        </button>
         <button
           type="button"
           disabled={!canCompareGroup}
@@ -2149,7 +2168,7 @@ function ShortlistPositionGroupCard({
         </button>
       </div>
 
-      <div className="divide-y divide-border">
+      <div id={playersListId} hidden={isCollapsed} className="divide-y divide-border">
         {group.players.map((player) => (
           <ShortlistPlayerRow
             key={player.sofifaId}
