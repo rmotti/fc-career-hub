@@ -41,6 +41,7 @@ const STATUS_LABELS: Record<string, string> = {
   Role: "Rotação",
   Sporadic: "Esporádico",
   Promising: "Promissor",
+  Loan: "Emprestado",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -49,6 +50,7 @@ const STATUS_COLORS: Record<string, string> = {
   Role: "bg-muted text-muted-foreground border-border",
   Sporadic: "bg-muted text-muted-foreground border-border",
   Promising: "bg-warning/15 text-warning border-warning/30",
+  Loan: "bg-warning/15 text-warning border-warning/30",
 };
 
 const POSITION_COLORS: Record<string, string> = {

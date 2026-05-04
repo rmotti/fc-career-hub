@@ -344,16 +344,18 @@ export interface ApiPlayer {
   position: PlayerPosition;
   alternativePosition?: ApiPlayerAlternativePosition;
   age: number;
-  status: "Crucial" | "Important" | "Role" | "Sporadic" | "Promising";
+  status: "Crucial" | "Important" | "Role" | "Sporadic" | "Promising" | "Loan";
   ovr: number;
-  salary?: number;
-  salaryFormatted?: string;
-  marketValue?: number;
-  marketValueFormatted?: string;
+  salary?: number | null;
+  salaryFormatted?: string | null;
+  marketValue?: number | null;
+  marketValueFormatted?: string | null;
   potential?: number | null;
   shirtNumber?: number | null;
   ovrDelta?: number | null;
   marketValueDelta?: number | null;
+  loanedTo?: string | null;
+  loanSeason?: string | null;
   ovrHistory?: Array<{ season: string; ovr: number; marketValue?: number }>;
   isActive: boolean;
   currentSeasonStats?: ApiPlayerSeasonStats;
@@ -362,9 +364,9 @@ export interface ApiPlayer {
 }
 
 export interface ApiPlayerSeasonStats {
-  id: string;
-  playerId: string;
-  season: string;
+  id?: string;
+  playerId?: string;
+  season?: string;
   goals: number;
   assists: number;
   yellowCards: number;
@@ -472,9 +474,10 @@ export const clubStintsApi = {
 // ─── Players ────────────────────────────────────────────────────────
 
 export const playersApi = {
-  list: (saveId: string, active?: boolean, season?: string) => {
+  list: (saveId: string, active?: boolean, season?: string, loaned?: boolean) => {
     const params = new URLSearchParams();
     if (active) params.append("active", "true");
+    if (loaned) params.append("loaned", "true");
     if (season) params.append("season", season);
     const qs = params.toString();
     return request<ApiPlayer[]>(`/saves/${saveId}/players${qs ? `?${qs}` : ""}`);

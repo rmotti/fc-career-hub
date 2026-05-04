@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import {
   Activity,
+  ArrowRightLeft,
   BarChart3,
   CircleDollarSign,
   Dumbbell,
@@ -36,6 +37,8 @@ interface Props {
 type SortKey = "name" | "position" | "age" | "ovr" | "potential" | "matches" | "goals" | "assists" | "goalContributions" | "cleanSheets" | "salary" | "marketValue";
 type SquadView = "all" | "management" | "stats" | "market" | "development";
 type SquadFilter = "all" | "attack" | "midfield" | "defense" | "prospects" | "incomplete";
+type SquadColumn = { key: SortKey; label: string; align?: "right" };
+type SquadViewColumn = SquadColumn & { views: SquadView[] };
 
 const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
@@ -91,6 +94,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
   const { data: save } = useSave(saveId);
   const { data: players = [], isLoading } = usePlayers(saveId, true);
+  const { data: loanedPlayers = [], isLoading: isLoadingLoanedPlayers } = usePlayers(saveId, undefined, undefined, true);
 
   const squadRoles = useMemo(() => {
     const roles = new Map<string, SquadRole>();
@@ -164,6 +168,19 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
     return { impactPlayer, growthPlayer, valuePlayer, agingCore };
   }, [players]);
+
+  const loanedSummary = useMemo(() => {
+    const destinationCount = new Set(loanedPlayers.map((player) => player.loanedTo).filter(Boolean)).size;
+    const withoutStats = loanedPlayers.filter((player) => {
+      const stats = player.currentSeasonStats || player.totalStats;
+      return !stats || ((stats.matches ?? 0) === 0 && stats.goals === 0 && stats.assists === 0 && stats.cleanSheets === 0);
+    }).length;
+    const averageOvr = loanedPlayers.length > 0
+      ? Math.round((loanedPlayers.reduce((sum, player) => sum + player.ovr, 0) / loanedPlayers.length) * 10) / 10
+      : 0;
+
+    return { destinationCount, withoutStats, averageOvr };
+  }, [loanedPlayers]);
 
   const filteredPlayers = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
@@ -263,7 +280,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     });
   };
 
-  const allColumns: { key: SortKey; label: string; views: SquadView[]; align?: "right" }[] = [
+  const allColumns: SquadViewColumn[] = [
     { key: "name", label: "Nome", views: ["all", "management", "stats", "market", "development"] },
     { key: "position", label: "Pos", views: ["all", "management", "stats", "market", "development"] },
     { key: "age", label: "Idade", views: ["all", "management", "market", "development"] },
@@ -278,6 +295,20 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     { key: "marketValue", label: "Valor", views: ["all", "market"], align: "right" },
   ];
   const columns = allColumns.filter((column) => column.views.includes(activeView));
+  const loanedBaseColumns: SquadColumn[] = [
+    { key: "name", label: "Nome" },
+    { key: "position", label: "Pos" },
+    { key: "age", label: "Idade" },
+    { key: "ovr", label: "OVR" },
+    { key: "potential", label: "POT" },
+    { key: "matches", label: "Part." },
+    { key: "goals", label: "Gols" },
+    { key: "assists", label: "Assist." },
+    { key: "goalContributions", label: "Partic." },
+    { key: "cleanSheets", label: "CS" },
+    { key: "salary", label: "Salário", align: "right" },
+    { key: "marketValue", label: "Valor", align: "right" },
+  ];
 
   const viewOptions: Array<{ key: SquadView; label: string; icon: React.ElementType }> = [
     { key: "all", label: "Todos", icon: Users },
@@ -449,102 +480,9 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
               </tr>
             </thead>
             <tbody>
-              {sortedPlayers.map((p) => {
-                const stats = p.currentSeasonStats || p.totalStats;
-                return (
+              {sortedPlayers.map((p) => (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  {columns.map((col) => {
-                    if (col.key === "name") {
-                      return (
-                  <td key={col.key} className="min-w-[230px] px-4 py-3 font-medium">
-                    <div>
-                      <span className="flex items-center gap-2">
-                        {p.name}
-                        {p.shirtNumber != null && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
-                            #{p.shirtNumber}
-                            {p.nation && (
-                              <Flag code={p.nation} style={{ width: 16, height: 11, borderRadius: 2, objectFit: "cover" }} />
-                            )}
-                          </span>
-                        )}
-                      </span>
-                      {(() => {
-                        const badge = getBadge(p, squadRoles.get(p.id));
-                        return badge ? (
-                          <span
-                            className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-xs font-semibold"
-                            style={{ backgroundColor: badge.color + "22", color: badge.color, border: `1px solid ${badge.color}44` }}
-                          >
-                            {badge.icon} {badge.label}
-                          </span>
-                        ) : null;
-                      })()}
-                    </div>
-                  </td>
-                      );
-                    }
-                    if (col.key === "position") {
-                      const alternativePositions = getAlternativePositions(p);
-                      return (
-                  <td key={col.key} className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${positionColor[p.position]}`}>{p.position}</span>
-                      {alternativePositions.map((position) => (
-                        <span key={position} className="rounded border border-border bg-muted/35 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                          {position}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                      );
-                    }
-                    if (col.key === "age") return <td key={col.key} className="px-4 py-3 text-muted-foreground">{p.age}</td>;
-                    if (col.key === "ovr") {
-                      return (
-                  <td key={col.key} className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`font-display font-bold ${p.ovr >= 83 ? "text-primary" : p.ovr >= 80 ? "text-accent" : "text-foreground"}`}>
-                        {p.ovr}
-                      </span>
-                      {p.ovrDelta != null && (
-                        <span className={`text-xs font-bold ${p.ovrDelta > 0 ? "text-green-500" : p.ovrDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                          {p.ovrDelta > 0 ? `▲${p.ovrDelta}` : p.ovrDelta < 0 ? `▼${Math.abs(p.ovrDelta)}` : "—"}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                      );
-                    }
-                    if (col.key === "potential") return <td key={col.key} className="px-4 py-3 text-muted-foreground">{p.potential ?? "—"}</td>;
-                    if (col.key === "matches") return <td key={col.key} className="px-4 py-3 font-display">{stats?.matches ?? 0}</td>;
-                    if (col.key === "goals") return <td key={col.key} className="px-4 py-3 font-display font-bold">{stats?.goals ?? 0}</td>;
-                    if (col.key === "assists") return <td key={col.key} className="px-4 py-3 font-display">{stats?.assists ?? 0}</td>;
-                    if (col.key === "goalContributions") return <td key={col.key} className="px-4 py-3 font-display text-primary">{stats?.goalContributions ?? 0}</td>;
-                    if (col.key === "cleanSheets") {
-                      return (
-                  <td key={col.key} className="px-4 py-3 font-display text-accent">
-                    {CLEAN_SHEETS_POSITIONS.has(p.position) ? (stats?.cleanSheets ?? 0) : "—"}
-                  </td>
-                      );
-                    }
-                    if (col.key === "salary") return <td key={col.key} className="px-4 py-3 text-right text-muted-foreground">{p.salary != null ? formatCurrencyInThousands(p.salary) : "—"}</td>;
-                    if (col.key === "marketValue") {
-                      return (
-                  <td key={col.key} className="px-4 py-3 text-right text-muted-foreground">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <span>{p.marketValue != null ? formatCurrencyInMillions(p.marketValue) : "—"}</span>
-                      {p.marketValueDelta != null && (
-                        <span className={`text-xs font-bold ${p.marketValueDelta > 0 ? "text-green-500" : p.marketValueDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                          {p.marketValueDelta > 0 ? `▲${formatCurrencyInMillions(p.marketValueDelta)}` : p.marketValueDelta < 0 ? `▼${formatCurrencyInMillions(Math.abs(p.marketValueDelta))}` : "—"}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                      );
-                    }
-                    return null;
-                  })}
+                  <PlayerTableCells columns={columns} player={p} squadRole={squadRoles.get(p.id)} />
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -577,8 +515,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                     </div>
                   </td>
                 </tr>
-                );
-              })}
+              ))}
               {players.length === 0 && (
                 <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador no elenco.</td></tr>
               )}
@@ -589,6 +526,79 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
           </table>
         </ScrollArea>
       </div>
+
+      <section className="card-gamer overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-warning/25 bg-warning/10 text-warning">
+              <ArrowRightLeft size={18} />
+            </span>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Fora do elenco ativo</p>
+              <h3 className="font-display text-xl font-bold leading-none text-foreground">Jogadores emprestados</h3>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs font-semibold">
+            <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
+              {loanedPlayers.length} jogador{loanedPlayers.length === 1 ? "" : "es"}
+            </span>
+            <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
+              OVR médio {loanedSummary.averageOvr || "—"}
+            </span>
+            <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
+              {loanedSummary.destinationCount} destino{loanedSummary.destinationCount === 1 ? "" : "s"}
+            </span>
+            <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
+              {loanedSummary.withoutStats} sem stats
+            </span>
+          </div>
+        </div>
+
+        <ScrollArea scrollbars="horizontal" className="w-full">
+          <table className="min-w-[1380px] w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                {loanedBaseColumns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={`px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground ${col.align === "right" ? "text-right" : "text-left"}`}
+                  >
+                    {col.label}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Emprestado para</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Temporada</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoadingLoanedPlayers && (
+                <tr>
+                  <td colSpan={loanedBaseColumns.length + 2} className="px-4 py-8 text-center text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> Carregando emprestados...
+                    </span>
+                  </td>
+                </tr>
+              )}
+              {!isLoadingLoanedPlayers && loanedPlayers.map((player) => (
+                <tr key={player.id} className="border-b border-border/50 transition-colors hover:bg-muted/30">
+                  <PlayerTableCells columns={loanedBaseColumns} player={player} />
+                  <td className="min-w-[180px] px-4 py-3 font-medium text-foreground">{player.loanedTo ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{player.loanSeason ?? "—"}</td>
+                </tr>
+              ))}
+              {!isLoadingLoanedPlayers && loanedPlayers.length === 0 && (
+                <tr>
+                  <td colSpan={loanedBaseColumns.length + 2} className="px-4 py-8 text-center text-muted-foreground">
+                    Nenhum jogador emprestado pelo clube atual.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </ScrollArea>
+      </section>
 
       <PlayerModal
         open={modalOpen}
@@ -617,6 +627,125 @@ const toneClass: Record<Tone, string> = {
   warning: "text-[hsl(var(--warning))]",
   muted: "text-muted-foreground",
 };
+
+interface PlayerTableCellsProps {
+  columns: SquadColumn[];
+  player: ApiPlayer;
+  squadRole?: SquadRole;
+}
+
+function PlayerTableCells({ columns, player, squadRole }: PlayerTableCellsProps) {
+  const stats = player.currentSeasonStats || player.totalStats;
+  const salaryLabel = player.salaryFormatted || (player.salary != null ? formatCurrencyInThousands(player.salary) : "—");
+  const marketValueLabel = player.marketValueFormatted || (player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—");
+
+  return (
+    <>
+      {columns.map((col) => {
+        if (col.key === "name") {
+          const badge = getBadge(player, squadRole);
+
+          return (
+            <td key={col.key} className="min-w-[230px] px-4 py-3 font-medium">
+              <div>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate">{player.name}</span>
+                  {(player.shirtNumber != null || player.nation) && (
+                    <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-muted-foreground">
+                      {player.shirtNumber != null && `#${player.shirtNumber}`}
+                      {player.nation && (
+                        <Flag code={player.nation} style={{ width: 16, height: 11, borderRadius: 2, objectFit: "cover" }} />
+                      )}
+                    </span>
+                  )}
+                </span>
+                {badge && (
+                  <span
+                    className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: badge.color + "22", color: badge.color, border: `1px solid ${badge.color}44` }}
+                  >
+                    {badge.icon} {badge.label}
+                  </span>
+                )}
+              </div>
+            </td>
+          );
+        }
+
+        if (col.key === "position") {
+          const alternativePositions = getAlternativePositions(player);
+
+          return (
+            <td key={col.key} className="px-4 py-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className={`rounded px-2 py-0.5 text-xs font-bold ${positionColor[player.position] ?? "bg-muted text-muted-foreground"}`}>{player.position}</span>
+                {alternativePositions.map((position) => (
+                  <span key={position} className="rounded border border-border bg-muted/35 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    {position}
+                  </span>
+                ))}
+              </div>
+            </td>
+          );
+        }
+
+        if (col.key === "age") return <td key={col.key} className="px-4 py-3 text-muted-foreground">{player.age}</td>;
+
+        if (col.key === "ovr") {
+          return (
+            <td key={col.key} className="px-4 py-3">
+              <div className="flex items-center gap-1.5">
+                <span className={`font-display font-bold ${player.ovr >= 83 ? "text-primary" : player.ovr >= 80 ? "text-accent" : "text-foreground"}`}>
+                  {player.ovr}
+                </span>
+                {player.ovrDelta != null && (
+                  <span className={`text-xs font-bold ${player.ovrDelta > 0 ? "text-green-500" : player.ovrDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    {player.ovrDelta > 0 ? `▲${player.ovrDelta}` : player.ovrDelta < 0 ? `▼${Math.abs(player.ovrDelta)}` : "—"}
+                  </span>
+                )}
+              </div>
+            </td>
+          );
+        }
+
+        if (col.key === "potential") return <td key={col.key} className="px-4 py-3 text-muted-foreground">{player.potential ?? "—"}</td>;
+        if (col.key === "matches") return <td key={col.key} className="px-4 py-3 font-display">{stats?.matches ?? 0}</td>;
+        if (col.key === "goals") return <td key={col.key} className="px-4 py-3 font-display font-bold">{stats?.goals ?? 0}</td>;
+        if (col.key === "assists") return <td key={col.key} className="px-4 py-3 font-display">{stats?.assists ?? 0}</td>;
+        if (col.key === "goalContributions") return <td key={col.key} className="px-4 py-3 font-display text-primary">{stats?.goalContributions ?? 0}</td>;
+
+        if (col.key === "cleanSheets") {
+          return (
+            <td key={col.key} className="px-4 py-3 font-display text-accent">
+              {CLEAN_SHEETS_POSITIONS.has(player.position) ? (stats?.cleanSheets ?? 0) : "—"}
+            </td>
+          );
+        }
+
+        if (col.key === "salary") {
+          return <td key={col.key} className="px-4 py-3 text-right text-muted-foreground">{salaryLabel}</td>;
+        }
+
+        if (col.key === "marketValue") {
+          return (
+            <td key={col.key} className="px-4 py-3 text-right text-muted-foreground">
+              <div className="flex items-center justify-end gap-1.5">
+                <span>{marketValueLabel}</span>
+                {player.marketValueDelta != null && (
+                  <span className={`text-xs font-bold ${player.marketValueDelta > 0 ? "text-green-500" : player.marketValueDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    {player.marketValueDelta > 0 ? `▲${formatCurrencyInMillions(player.marketValueDelta)}` : player.marketValueDelta < 0 ? `▼${formatCurrencyInMillions(Math.abs(player.marketValueDelta))}` : "—"}
+                  </span>
+                )}
+              </div>
+            </td>
+          );
+        }
+
+        return null;
+      })}
+    </>
+  );
+}
 
 interface SquadMetricProps {
   icon: React.ElementType;
