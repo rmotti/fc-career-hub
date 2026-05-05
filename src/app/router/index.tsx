@@ -13,6 +13,7 @@ import Transfers from "@/pages/hub/Transfers";
 import ChangeClub from "@/pages/hub/ChangeClub";
 import Field from "@/pages/hub/Field";
 import Scout from "@/pages/hub/Scout";
+import Playbooks from "@/pages/hub/Playbooks";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Unauthorized from "@/pages/Unauthorized";
@@ -47,6 +48,7 @@ export function Router() {
               <Route path="/scout/filtros" element={<Scout section="filters" />} />
               <Route path="/scout/shortlist" element={<Scout section="shortlist" />} />
               <Route path="/scout/consultas" element={<Scout section="archive" />} />
+              <Route path="/scout/playbooks" element={<Playbooks />} />
             </Route>
           </Route>
         </Route>

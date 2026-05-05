@@ -597,6 +597,79 @@ export const transfersApi = {
     request<void>(`/saves/${saveId}/transfers/${transferId}`, { method: "DELETE" }),
 };
 
+// ─── Scout Playbooks ────────────────────────────────────────────────
+
+export type PlaybookObjective = "balanced" | "title" | "youth" | "rebuild";
+export type ScoutScoreConfidence = "high" | "medium" | "low" | "fallback";
+
+export interface PlaybookWeights {
+  overall?: number;
+  age?: number;
+  historicalFit?: number;
+  potential?: number;
+  marketValue?: number;
+  wage?: number;
+}
+
+export interface PlaybookPreferences {
+  objective?: PlaybookObjective;
+  idealAgeMin?: number;
+  idealAgeMax?: number;
+  maxMarketValue?: number;
+  maxWage?: number;
+}
+
+export interface ApiPlaybook {
+  id: string | null;
+  saveId: string | null;
+  name: string;
+  weights: PlaybookWeights;
+  preferences: PlaybookPreferences;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PlaybooksListResponse {
+  defaultPlaybook: ApiPlaybook;
+  playbooks: ApiPlaybook[];
+}
+
+export interface ScoutScoreBreakdownItem {
+  key: string;
+  label: string;
+  weight: number;
+  score: number | null;
+  value: number | null;
+  available: boolean;
+  weightedScore?: number;
+  confidence?: string;
+  profileSize?: number;
+  reason?: string;
+}
+
+export const playbooksApi = {
+  list: (saveId: string) =>
+    request<PlaybooksListResponse>(`/scout/playbooks?saveId=${saveId}`),
+  get: (playbookId: string) =>
+    request<ApiPlaybook>(`/scout/playbooks/${playbookId}`),
+  create: (data: {
+    saveId: string;
+    name: string;
+    weights: PlaybookWeights;
+    preferences?: PlaybookPreferences;
+    isDefault?: boolean;
+  }) =>
+    request<ApiPlaybook>("/scout/playbooks", { method: "POST", body: JSON.stringify(data) }),
+  update: (
+    playbookId: string,
+    data: { name?: string; weights?: PlaybookWeights; preferences?: PlaybookPreferences; isDefault?: boolean },
+  ) =>
+    request<ApiPlaybook>(`/scout/playbooks/${playbookId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (playbookId: string) =>
+    request<void>(`/scout/playbooks/${playbookId}`, { method: "DELETE" }),
+};
+
 // ─── Trophies ───────────────────────────────────────────────────────
 
 export const trophiesApi = {
