@@ -50,9 +50,11 @@ import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
 import { filterOutCurrentClubPlayers, isSameClubName } from "@/features/scout/model/currentClubFilter";
+import { usePlaybooks } from "@/features/playbooks/model/usePlaybooks";
 import {
   extractErrorMessage,
   fc26PlayersApi,
+  type ApiPlaybook,
   type Fc26FitConfidence,
   type Fc26FitObjective,
   type Fc26Player,
@@ -1098,6 +1100,56 @@ function getAverageOvr(players: Fc26Player[]) {
   return Math.round(players.reduce((total, player) => total + player.ovr, 0) / players.length);
 }
 
+const SHORTLIST_OBJECTIVE_AGE_DEFAULTS: Record<string, { min: number; max: number }> = {
+  balanced: { min: 21, max: 29 },
+  title:    { min: 24, max: 31 },
+  youth:    { min: 16, max: 23 },
+  rebuild:  { min: 18, max: 25 },
+};
+
+function computeScoutScore(player: Fc26Player, playbook: ApiPlaybook | null | undefined): number | null {
+  if (!playbook) return null;
+  const weights = playbook.weights ?? {};
+  const prefs = playbook.preferences ?? {};
+  const objective = prefs.objective ?? "balanced";
+  const ageDef = SHORTLIST_OBJECTIVE_AGE_DEFAULTS[objective] ?? SHORTLIST_OBJECTIVE_AGE_DEFAULTS.balanced;
+  const ageMin = prefs.idealAgeMin ?? ageDef.min;
+  const ageMax = prefs.idealAgeMax ?? ageDef.max;
+
+  const components: { weight: number; score: number }[] = [];
+
+  if ((weights.overall ?? 0) > 0) {
+    components.push({ weight: weights.overall!, score: player.ovr });
+  }
+  if ((weights.potential ?? 0) > 0 && player.potential != null) {
+    components.push({ weight: weights.potential!, score: player.potential });
+  }
+  if ((weights.age ?? 0) > 0) {
+    let ageScore = 100;
+    if (player.age < ageMin) ageScore = Math.max(0, 100 + (player.age - ageMin) * 8);
+    else if (player.age > ageMax) ageScore = Math.max(0, 100 - (player.age - ageMax) * 8);
+    components.push({ weight: weights.age!, score: ageScore });
+  }
+  if ((weights.historicalFit ?? 0) > 0 && player.fitScore != null) {
+    const fitScore100 = Math.round(Math.min(Math.max(player.fitScore, 0), 1) * 100);
+    components.push({ weight: weights.historicalFit!, score: fitScore100 });
+  }
+  if ((weights.marketValue ?? 0) > 0 && prefs.maxMarketValue && player.marketValue != null) {
+    const maxMv = prefs.maxMarketValue * 1_000_000;
+    const score = player.marketValue <= maxMv ? 100 : Math.max(0, 100 - ((player.marketValue - maxMv) / maxMv) * 100);
+    components.push({ weight: weights.marketValue!, score });
+  }
+  if ((weights.wage ?? 0) > 0 && prefs.maxWage && player.wage != null) {
+    const score = player.wage <= prefs.maxWage ? 100 : Math.max(0, 100 - ((player.wage - prefs.maxWage) / prefs.maxWage) * 100);
+    components.push({ weight: weights.wage!, score });
+  }
+
+  if (components.length === 0) return null;
+  const totalWeight = components.reduce((s, c) => s + c.weight, 0);
+  const weightedSum = components.reduce((s, c) => s + c.weight * c.score, 0);
+  return Math.round(weightedSum / totalWeight);
+}
+
 const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
@@ -1109,6 +1161,10 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const [savedQueries, setSavedQueries] = useState<SavedScoutQuery[]>(() => loadSavedScoutQueries());
   const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(() => loadSavedScoutQueries()[0]?.id ?? null);
   const [shortlistPlayers, setShortlistPlayers] = useState<Fc26Player[]>(() => loadShortlistPlayers());
+
+  const { data: playbooksData } = usePlaybooks(saveId ?? null);
+  const activePlaybook =
+    playbooksData?.playbooks.find((p) => p.isDefault) ?? playbooksData?.defaultPlaybook ?? null;
 
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters, saveId);
   const {
@@ -1717,6 +1773,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
             groups={shortlistGroups}
             comparedPlayers={comparedPlayers}
             comparedPlayerIds={comparedPlayerIds}
+            activePlaybook={activePlaybook}
             onToggleCompare={toggleComparePlayer}
             onClearComparison={() => {
               setComparisonPlayers([]);
@@ -1955,6 +2012,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
           {hasSearched && !isError && (players.length > 0 || comparedPlayers.length > 0) && (
             <PlayerComparisonLauncher
               players={comparedPlayers}
+              activePlaybook={activePlaybook}
               onClear={() => {
                 setComparisonPlayers([]);
                 setIsComparisonOpen(false);
@@ -2169,6 +2227,7 @@ interface ShortlistContentProps {
   groups: ShortlistPositionGroup[];
   comparedPlayers: Fc26Player[];
   comparedPlayerIds: Set<number>;
+  activePlaybook: ApiPlaybook | null;
   onToggleCompare: (player: Fc26Player) => void;
   onClearComparison: () => void;
   onOpenComparison: () => void;
@@ -2183,6 +2242,7 @@ function ShortlistContent({
   groups,
   comparedPlayers,
   comparedPlayerIds,
+  activePlaybook,
   onToggleCompare,
   onClearComparison,
   onOpenComparison,
@@ -2263,6 +2323,7 @@ function ShortlistContent({
       {comparedPlayers.length > 0 && (
         <PlayerComparisonLauncher
           players={comparedPlayers}
+          activePlaybook={activePlaybook}
           onClear={onClearComparison}
           onOpenComparison={onOpenComparison}
           onOpenDetails={onOpenDetails}
@@ -2279,6 +2340,7 @@ function ShortlistContent({
             key={group.position}
             group={group}
             comparedPlayerIds={comparedPlayerIds}
+            activePlaybook={activePlaybook}
             onToggleCompare={onToggleCompare}
             onOpenDetails={onOpenDetails}
             onRemovePlayer={onRemovePlayer}
@@ -2306,6 +2368,7 @@ function ShortlistInsight({ label, value, detail, icon: Icon }: { label: string;
 function ShortlistPositionGroupCard({
   group,
   comparedPlayerIds,
+  activePlaybook,
   onToggleCompare,
   onOpenDetails,
   onRemovePlayer,
@@ -2313,6 +2376,7 @@ function ShortlistPositionGroupCard({
 }: {
   group: ShortlistPositionGroup;
   comparedPlayerIds: Set<number>;
+  activePlaybook: ApiPlaybook | null;
   onToggleCompare: (player: Fc26Player) => void;
   onOpenDetails: (sofifaId: number) => void;
   onRemovePlayer: (sofifaId: number) => void;
@@ -2370,6 +2434,7 @@ function ShortlistPositionGroupCard({
           <ShortlistPlayerRow
             key={player.sofifaId}
             player={player}
+            activePlaybook={activePlaybook}
             isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
             onToggleCompare={() => onToggleCompare(player)}
             onOpenDetails={() => onOpenDetails(player.sofifaId)}
@@ -2383,21 +2448,23 @@ function ShortlistPositionGroupCard({
 
 function ShortlistPlayerRow({
   player,
+  activePlaybook,
   isCompareSelected,
   onToggleCompare,
   onOpenDetails,
   onRemove,
 }: {
   player: Fc26Player;
+  activePlaybook: ApiPlaybook | null;
   isCompareSelected: boolean;
   onToggleCompare: () => void;
   onOpenDetails: () => void;
   onRemove: () => void;
 }) {
-  const averageRating = getGeneralRatingAverage(player);
+  const scoutScore = computeScoutScore(player, activePlaybook);
 
   return (
-    <article className="grid gap-3 p-4 lg:grid-cols-[minmax(280px,1.4fr)_180px_190px_180px] lg:items-center">
+    <article className="grid gap-3 p-4 lg:grid-cols-[minmax(240px,1.4fr)_160px_180px_96px] lg:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <PlayerAvatar player={player} size="md" />
         <div className="min-w-0">
@@ -2418,7 +2485,7 @@ function ShortlistPlayerRow({
       <div className="grid grid-cols-3 gap-2">
         <RatingPill label="OVR" value={player.ovr} />
         <RatingPill label="POT" value={player.potential} />
-        <RatingPill label="AVG" value={averageRating === null ? null : Math.round(averageRating)} />
+        <ScorePill value={scoutScore} />
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -2426,12 +2493,12 @@ function ShortlistPlayerRow({
         <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={onToggleCompare}
           aria-pressed={isCompareSelected}
-          className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border px-2 text-xs font-semibold transition-colors ${
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-colors ${
             isCompareSelected
               ? "border-primary/35 bg-primary/10 text-primary"
               : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
@@ -2439,25 +2506,22 @@ function ShortlistPlayerRow({
           title={isCompareSelected ? "Remover da comparação" : "Adicionar à comparação"}
         >
           {isCompareSelected ? <Check size={14} /> : <UsersRound size={14} />}
-          <span className="truncate">{isCompareSelected ? "Sel." : "Comp."}</span>
         </button>
         <button
           type="button"
           onClick={onOpenDetails}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
           title="Ver detalhes"
         >
           <Eye size={14} />
-          <span className="truncate">Ver</span>
         </button>
         <button
           type="button"
           onClick={onRemove}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/15"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-destructive/25 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/15"
           title="Remover da Lista Final"
         >
           <X size={14} />
-          <span className="truncate">Sair</span>
         </button>
       </div>
     </article>
@@ -2977,13 +3041,14 @@ function MultiSelectCombobox({ label, placeholder, emptyLabel, options, selected
 
 interface PlayerComparisonLauncherProps {
   players: Fc26Player[];
+  activePlaybook: ApiPlaybook | null;
   onClear: () => void;
   onOpenComparison: () => void;
   onOpenDetails: (sofifaId: number) => void;
   onRemove: (sofifaId: number) => void;
 }
 
-function PlayerComparisonLauncher({ players, onClear, onOpenComparison, onOpenDetails, onRemove }: PlayerComparisonLauncherProps) {
+function PlayerComparisonLauncher({ players, activePlaybook, onClear, onOpenComparison, onOpenDetails, onRemove }: PlayerComparisonLauncherProps) {
   const hasEnoughPlayers = players.length >= 2;
 
   return (
@@ -3033,6 +3098,7 @@ function PlayerComparisonLauncher({ players, onClear, onOpenComparison, onOpenDe
               <ComparedPlayerCard
                 key={player.sofifaId}
                 player={player}
+                activePlaybook={activePlaybook}
                 onOpenDetails={() => onOpenDetails(player.sofifaId)}
                 onRemove={() => onRemove(player.sofifaId)}
               />
@@ -3274,14 +3340,16 @@ function ComparisonProfileCard({
 
 function ComparedPlayerCard({
   player,
+  activePlaybook,
   onOpenDetails,
   onRemove,
 }: {
   player: Fc26Player;
+  activePlaybook: ApiPlaybook | null;
   onOpenDetails: () => void;
   onRemove: () => void;
 }) {
-  const averageRating = getGeneralRatingAverage(player);
+  const scoutScore = computeScoutScore(player, activePlaybook);
 
   return (
     <article className="rounded-md border border-border bg-background/35 p-3">
@@ -3313,7 +3381,7 @@ function ComparedPlayerCard({
       <div className="mb-3 grid grid-cols-3 gap-2">
         <RatingPill label="OVR" value={player.ovr} />
         <RatingPill label="POT" value={player.potential} />
-        <RatingPill label="AVG" value={averageRating === null ? null : Math.round(averageRating)} />
+        <ScorePill value={scoutScore} />
       </div>
 
       <button
@@ -3740,6 +3808,26 @@ function RatingPill({ label, value }: { label: string; value: number | null }) {
     <div className="rounded border border-border bg-background/45 px-2 py-1 text-center">
       <p className="text-[9px] font-semibold text-muted-foreground">{label}</p>
       <p className="font-display text-sm font-bold text-foreground">{formatRating(value)}</p>
+    </div>
+  );
+}
+
+function ScorePill({ value }: { value: number | null }) {
+  const color =
+    value === null
+      ? "text-muted-foreground"
+      : value >= 75
+        ? "text-primary"
+        : value >= 55
+          ? "text-yellow-400"
+          : "text-muted-foreground";
+  return (
+    <div
+      className="rounded border border-primary/20 bg-primary/8 px-2 py-1 text-center"
+      title={value !== null ? `Scout Score: ${value}/100` : "Score indisponível"}
+    >
+      <p className="text-[9px] font-semibold text-primary/70">SCORE</p>
+      <p className={`font-display text-sm font-bold ${color}`}>{value ?? "—"}</p>
     </div>
   );
 }

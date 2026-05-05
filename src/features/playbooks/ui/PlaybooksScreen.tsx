@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
+import { Slider } from "@/shared/ui/slider";
 import { Switch } from "@/shared/ui/switch";
 import {
   AlertDialog,
@@ -77,6 +78,13 @@ const OBJECTIVE_AGE_DEFAULTS: Record<PlaybookObjective, { min: number; max: numb
   title: { min: 24, max: 31 },
   youth: { min: 16, max: 23 },
   rebuild: { min: 18, max: 25 },
+};
+
+const OBJECTIVE_WEIGHT_PRESETS: Record<PlaybookObjective, Record<keyof PlaybookWeights, number>> = {
+  balanced: { overall: 35, potential: 20, age: 20, historicalFit: 25, marketValue: 0, wage: 0 },
+  title:    { overall: 45, potential: 15, age: 15, historicalFit: 25, marketValue: 0, wage: 0 },
+  youth:    { overall: 15, potential: 35, age: 35, historicalFit: 15, marketValue: 0, wage: 0 },
+  rebuild:  { overall: 25, potential: 30, age: 25, historicalFit: 20, marketValue: 0, wage: 0 },
 };
 
 interface FormState {
@@ -370,37 +378,45 @@ function WeightInput({
   onChange: (v: string) => void;
   totalWeight: number;
 }) {
-  const numVal = parseInt(value, 10);
-  const isActive = !isNaN(numVal) && numVal > 0;
-  const pct = isActive && totalWeight > 0 ? Math.round((numVal / totalWeight) * 100) : 0;
+  const numVal = Math.max(0, parseInt(value, 10) || 0);
+  const isActive = numVal > 0;
+  const remaining = 100 - totalWeight; // budget left (can be negative if somehow over)
+  const budgetExhausted = remaining <= 0 && numVal === 0;
 
   return (
-    <div className={`rounded-md border p-3 transition-colors ${isActive ? "border-border bg-background/35" : "border-border/40 bg-background/15"}`}>
-      <div className="mb-2 flex items-center justify-between gap-3">
+    <div
+      className={`rounded-md border p-3 transition-colors ${
+        isActive ? "border-border bg-background/35" : "border-border/40 bg-background/15"
+      } ${budgetExhausted ? "opacity-40" : ""}`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className={`text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground/60"}`}>{label}</p>
+          <p className={`text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground/60"}`}>
+            {label}
+          </p>
           <p className="truncate text-[10px] text-muted-foreground/60">{description}</p>
         </div>
-        <Input
-          type="number"
-          min="0"
-          max="999"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-20 shrink-0 text-right font-display text-sm font-bold"
-        />
+        <span
+          className={`font-display text-xl font-bold leading-none tabular-nums ${
+            isActive ? "text-foreground" : "text-muted-foreground/40"
+          }`}
+        >
+          {numVal}
+        </span>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full transition-all ${isActive ? "bg-primary" : "bg-transparent"}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <p className={`w-8 text-right text-[10px] font-semibold ${isActive ? "text-primary" : "text-muted-foreground/40"}`}>
-          {isActive ? `${pct}%` : "—"}
-        </p>
-      </div>
+      <Slider
+        value={[numVal]}
+        onValueChange={([v]) => {
+          // cap increase at budget; always allow decrease
+          const capped = v > numVal ? Math.min(v, numVal + Math.max(0, remaining)) : v;
+          onChange(String(capped));
+        }}
+        min={0}
+        max={100}
+        step={1}
+        disabled={budgetExhausted}
+        className="cursor-grab active:cursor-grabbing"
+      />
     </div>
   );
 }
@@ -481,10 +497,16 @@ function PlaybookSheet({
     parseInt(form.weights.wage ?? "0", 10) > 0;
 
   const handleObjectiveChange = (objective: PlaybookObjective) => {
-    const defaults = OBJECTIVE_AGE_DEFAULTS[objective];
-    const patches: Partial<FormState> = { objective };
-    if (!form.idealAgeMin) patches.idealAgeMin = String(defaults.min);
-    if (!form.idealAgeMax) patches.idealAgeMax = String(defaults.max);
+    const ageDefaults = OBJECTIVE_AGE_DEFAULTS[objective];
+    const weightPreset = OBJECTIVE_WEIGHT_PRESETS[objective];
+    const patches: Partial<FormState> = {
+      objective,
+      weights: Object.fromEntries(
+        Object.entries(weightPreset).map(([k, v]) => [k, String(v)])
+      ) as FormState["weights"],
+    };
+    if (!form.idealAgeMin) patches.idealAgeMin = String(ageDefaults.min);
+    if (!form.idealAgeMax) patches.idealAgeMax = String(ageDefaults.max);
     onFormChange(patches);
   };
 
