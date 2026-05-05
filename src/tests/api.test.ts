@@ -123,7 +123,7 @@ describe("fc26PlayersApi", () => {
   });
 
   it("envia saveId e objective na busca do scout com contexto de save", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(JSON.stringify({ players: [], total: 0, limit: 20, offset: 0 }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -148,7 +148,7 @@ describe("fc26PlayersApi", () => {
   });
 
   it("não envia sortBy=fitScore para o backend", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(JSON.stringify({ players: [], total: 0, limit: 20, offset: 0 }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
