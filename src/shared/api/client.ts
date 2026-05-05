@@ -174,6 +174,9 @@ export interface ApiClubStint {
 export type PlayerPosition = "GOL" | "LD" | "LE" | "ZAG" | "VOL" | "MC" | "ME" | "MD" | "MEI" | "PE" | "PD" | "SA" | "ATA";
 
 export type Fc26PlayerPosition = PlayerPosition;
+export type Fc26FitObjective = "balanced" | "title" | "youth" | "rebuild";
+export type Fc26FitConfidence = "high" | "medium" | "low" | "none";
+export type Fc26PlayerSortBy = "ovr" | "potential" | "fitScore";
 
 export interface Fc26Player {
   id: number;
@@ -244,6 +247,9 @@ export interface Fc26Player {
   goalkeepingPositioning: number | null;
   goalkeepingReflexes: number | null;
   goalkeepingSpeed: number | null;
+  fitScore?: number | null;
+  fitConfidence?: Fc26FitConfidence | null;
+  fitProfileSize?: number | null;
 }
 
 export interface Fc26PlayersResponse {
@@ -318,11 +324,16 @@ export type Fc26PlayerFilters = {
   leagues?: string[];
   preferredFoot?: "Right" | "Left";
   traits?: string[];
-  sortBy?: "ovr" | "potential";
+  sortBy?: Fc26PlayerSortBy;
   sortOrder?: "asc" | "desc";
+  objective?: Fc26FitObjective;
   limit?: number;
   offset?: number;
 } & Partial<Record<Fc26NumericFilterKey, number>>;
+
+export type Fc26PlayerListParams = Fc26PlayerFilters & {
+  saveId?: string;
+};
 
 export interface Fc26PlayerFilterMetadata {
   positions: Fc26PlayerPosition[];
@@ -513,7 +524,7 @@ function toRangeParamKey(prefix: "min" | "max", base: Fc26NumericFilterBase): Fc
   return `${prefix}${base.charAt(0).toUpperCase()}${base.slice(1)}` as Fc26NumericFilterKey;
 }
 
-function toFc26PlayersQuery(filters: Fc26PlayerFilters = {}) {
+function toFc26PlayersQuery(filters: Fc26PlayerListParams = {}) {
   const params = new URLSearchParams();
 
   appendCsvParam(params, "positions", filters.positions);
@@ -534,11 +545,18 @@ function toFc26PlayersQuery(filters: Fc26PlayerFilters = {}) {
     params.set("preferredFoot", filters.preferredFoot);
   }
   appendCsvParam(params, "traits", filters.traits);
-  if (filters.sortBy) {
+  const canSendSortBy = filters.sortBy === "ovr" || filters.sortBy === "potential";
+  if (canSendSortBy) {
     params.set("sortBy", filters.sortBy);
   }
-  if (filters.sortOrder) {
+  if (canSendSortBy && filters.sortOrder) {
     params.set("sortOrder", filters.sortOrder);
+  }
+  if (filters.saveId) {
+    params.set("saveId", filters.saveId);
+  }
+  if (filters.objective) {
+    params.set("objective", filters.objective);
   }
   appendNumberParam(params, "limit", Math.min(Math.max(filters.limit ?? 20, 1), 100));
   appendNumberParam(params, "offset", Math.max(filters.offset ?? 0, 0));
@@ -547,9 +565,9 @@ function toFc26PlayersQuery(filters: Fc26PlayerFilters = {}) {
 }
 
 export const fc26PlayersApi = {
-  list: (filters?: Fc26PlayerFilters) => {
+  list: (filters?: Fc26PlayerListParams) => {
     const qs = toFc26PlayersQuery(filters);
-    return request<Fc26PlayersResponse>(`/fc26-players${qs ? `?${qs}` : ""}`);
+    return request<Fc26PlayersResponse>(`/fc26-players${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   },
   filters: () =>
     request<Fc26PlayerFilterMetadata>("/fc26-players/filters"),

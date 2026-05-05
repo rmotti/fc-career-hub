@@ -49,11 +49,22 @@ import { toast } from "sonner";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
-import { extractErrorMessage, fc26PlayersApi, type Fc26Player, type Fc26PlayerFilters, type PlayerPosition } from "@/shared/api/client";
+import { filterOutCurrentClubPlayers, isSameClubName } from "@/features/scout/model/currentClubFilter";
+import {
+  extractErrorMessage,
+  fc26PlayersApi,
+  type Fc26FitConfidence,
+  type Fc26FitObjective,
+  type Fc26Player,
+  type Fc26PlayerFilters,
+  type Fc26PlayerListParams,
+  type PlayerPosition,
+} from "@/shared/api/client";
 import { PLAYER_POSITIONS } from "@/shared/lib/playerPositions";
 
 interface Props {
   section: ScoutSection;
+  saveId?: string | null;
   currentClub: string;
   currentSeason: string;
 }
@@ -105,6 +116,7 @@ type DraftFilters = {
   minMarketValue: string;
   maxMarketValue: string;
   preferredFoot: "" | "Left" | "Right";
+  objective: Fc26FitObjective;
   playStyles: string[];
   playStylesPlus: string[];
   attributeRanges: AttributeRangeDraft;
@@ -167,6 +179,27 @@ const LIMIT_OPTIONS = ["20", "40", "60", "100"];
 const FOOT_LABELS: Record<"Left" | "Right", string> = {
   Left: "Canhoto",
   Right: "Destro",
+};
+
+const FIT_OBJECTIVE_LABELS: Record<Fc26FitObjective, string> = {
+  balanced: "Equilibrado",
+  title: "Brigar por título",
+  youth: "Desenvolver base",
+  rebuild: "Reconstrução",
+};
+
+const FIT_OBJECTIVE_OPTIONS: Array<{ value: Fc26FitObjective; label: string }> = [
+  { value: "balanced", label: FIT_OBJECTIVE_LABELS.balanced },
+  { value: "title", label: FIT_OBJECTIVE_LABELS.title },
+  { value: "youth", label: FIT_OBJECTIVE_LABELS.youth },
+  { value: "rebuild", label: FIT_OBJECTIVE_LABELS.rebuild },
+];
+
+const FIT_CONFIDENCE_LABELS: Record<Fc26FitConfidence, string> = {
+  high: "confiança alta",
+  medium: "confiança média",
+  low: "confiança baixa",
+  none: "sem histórico suficiente",
 };
 
 const PLAYSTYLE_OPTIONS = [
@@ -325,6 +358,7 @@ const createDefaultDraft = (): DraftFilters => ({
   minMarketValue: "",
   maxMarketValue: "",
   preferredFoot: "",
+  objective: "balanced",
   playStyles: [],
   playStylesPlus: [],
   attributeRanges: createDefaultAttributeRanges(),
@@ -656,6 +690,7 @@ function buildFiltersFromDraft(draft: DraftFilters): AppliedScoutFilters | null 
     ...(typeof maxMarketValue === "number" ? { maxMarketValue } : {}),
     ...attributeFilters,
     ...(draft.preferredFoot ? { preferredFoot: draft.preferredFoot } : {}),
+    objective: draft.objective,
     ...(traits.length ? { traits } : {}),
     limit: Number(draft.limit) || 20,
     offset: 0,
@@ -702,6 +737,7 @@ function draftFromFilters(filters: AppliedScoutFilters): DraftFilters {
     minMarketValue: filters.minMarketValue ? String(filters.minMarketValue) : "",
     maxMarketValue: filters.maxMarketValue ? String(filters.maxMarketValue) : "",
     preferredFoot: filters.preferredFoot ?? "",
+    objective: filters.objective ?? "balanced",
     playStyles: traits.filter((trait) => !isPlayStylePlus(trait)),
     playStylesPlus: traits.filter(isPlayStylePlus),
     attributeRanges: Object.fromEntries(
@@ -770,6 +806,36 @@ function formatInteger(value: number) {
   return value.toLocaleString("pt-BR");
 }
 
+function getVisibleFitScore(player: Pick<Fc26Player, "fitScore" | "fitConfidence">) {
+  if (player.fitConfidence === "none") return null;
+  if (typeof player.fitScore !== "number" || !Number.isFinite(player.fitScore)) return null;
+
+  return Math.round(Math.min(Math.max(player.fitScore, 0), 1) * 100);
+}
+
+function hasVisibleFitScore(player: Pick<Fc26Player, "fitScore" | "fitConfidence">) {
+  return getVisibleFitScore(player) !== null;
+}
+
+function getFitScoreTone(confidence: Fc26Player["fitConfidence"]) {
+  if (confidence === "low") return "border-warning/35 bg-warning/10 text-warning";
+  if (confidence === "medium") return "border-accent/30 bg-accent/10 text-accent";
+  return "border-primary/35 bg-primary/10 text-primary";
+}
+
+function getFitScoreTitle(player: Pick<Fc26Player, "fitScore" | "fitConfidence" | "fitProfileSize">) {
+  const score = getVisibleFitScore(player);
+  if (score === null) return undefined;
+
+  const confidence = player.fitConfidence ? FIT_CONFIDENCE_LABELS[player.fitConfidence] : "confiança não informada";
+  const profileSize =
+    typeof player.fitProfileSize === "number" && Number.isFinite(player.fitProfileSize)
+      ? `, perfil com ${player.fitProfileSize} registro${player.fitProfileSize === 1 ? "" : "s"}`
+      : "";
+
+  return `Fit score ${score}/100, ${confidence}${profileSize}`;
+}
+
 function getOvrClass(ovr: number) {
   if (ovr >= 88) return "text-gold";
   if (ovr >= 82) return "text-primary";
@@ -804,6 +870,7 @@ function sortLeagueOptions(leagues: string[]) {
 }
 
 function getSortValue(player: Fc26Player, sortBy: ScoutSortBy) {
+  if (sortBy === "fitScore") return getVisibleFitScore(player);
   return sortBy === "potential" ? player.potential : player.ovr;
 }
 
@@ -812,17 +879,79 @@ function sortPlayersForDisplay(players: Fc26Player[], filters: AppliedScoutFilte
 
   const sortBy = filters.sortBy;
   const direction = filters.sortOrder === "asc" ? 1 : -1;
-  const tieBreaker = sortBy === "ovr" ? "potential" : "ovr";
+  const tieBreakers: ScoutSortBy[] = sortBy === "ovr"
+    ? ["potential"]
+    : sortBy === "potential"
+      ? ["ovr"]
+      : ["ovr", "potential"];
 
   return [...players].sort((a, b) => {
-    const valueDiff = getSortValue(a, sortBy) - getSortValue(b, sortBy);
+    const valueA = getSortValue(a, sortBy);
+    const valueB = getSortValue(b, sortBy);
+
+    if (valueA === null && valueB !== null) return 1;
+    if (valueA !== null && valueB === null) return -1;
+    if (valueA === null && valueB === null) return a.name.localeCompare(b.name, "pt-BR");
+
+    const valueDiff = valueA - valueB;
     if (valueDiff !== 0) return valueDiff * direction;
 
-    const tieDiff = getSortValue(a, tieBreaker) - getSortValue(b, tieBreaker);
-    if (tieDiff !== 0) return tieDiff * direction;
+    for (const tieBreaker of tieBreakers) {
+      const tieValueA = getSortValue(a, tieBreaker);
+      const tieValueB = getSortValue(b, tieBreaker);
+      if (tieValueA === null || tieValueB === null) continue;
+
+      const tieDiff = tieValueA - tieValueB;
+      if (tieDiff !== 0) return tieDiff * direction;
+    }
 
     return a.name.localeCompare(b.name, "pt-BR");
   });
+}
+
+function withScoutSaveContext(filters: AppliedScoutFilters, saveId?: string | null): Fc26PlayerListParams {
+  const { objective, ...baseFilters } = filters;
+
+  if (!saveId) return baseFilters;
+
+  return {
+    ...baseFilters,
+    saveId,
+    objective: objective ?? "balanced",
+  };
+}
+
+function getCurrentClubFilteredTotal(total: number, rawPlayers: Fc26Player[], visiblePlayers: Fc26Player[]) {
+  const hiddenCurrentClubPlayers = rawPlayers.length - visiblePlayers.length;
+
+  return Math.max(visiblePlayers.length, total - hiddenCurrentClubPlayers);
+}
+
+function filterSavedQueryForCurrentClub(query: SavedScoutQuery, currentClub: string): SavedScoutQuery {
+  const results = filterOutCurrentClubPlayers(query.results, currentClub);
+  if (results.length === query.results.length) return query;
+
+  return {
+    ...query,
+    results,
+    total: getCurrentClubFilteredTotal(query.total, query.results, results),
+  };
+}
+
+function removeCurrentClubFromAppliedFilters(filters: AppliedScoutFilters, currentClub: string): AppliedScoutFilters {
+  if (!filters.clubs?.length) return filters;
+
+  const clubs = filters.clubs.filter((club) => !isSameClubName(club, currentClub));
+  if (clubs.length === filters.clubs.length) return filters;
+
+  const nextFilters = { ...filters };
+  if (clubs.length) {
+    nextFilters.clubs = clubs;
+  } else {
+    delete nextFilters.clubs;
+  }
+
+  return nextFilters;
 }
 
 function loadSavedScoutQueries(): SavedScoutQuery[] {
@@ -897,6 +1026,7 @@ function getSavedQueryChips(filters: AppliedScoutFilters) {
   if (ovrRange) chips.push(ovrRange);
   if (potentialRange) chips.push(potentialRange);
   if (marketValueRange) chips.push(marketValueRange);
+  if (filters.objective && filters.objective !== "balanced") chips.push(`Objetivo: ${FIT_OBJECTIVE_LABELS[filters.objective]}`);
   if (filters.nations?.length) chips.push(`Nações: ${filters.nations.slice(0, 3).join(", ")}${filters.nations.length > 3 ? "..." : ""}`);
   if (filters.leagues?.length) chips.push(`Ligas: ${filters.leagues.slice(0, 2).join(", ")}${filters.leagues.length > 2 ? "..." : ""}`);
   if (filters.clubs?.length) chips.push(`Clubes: ${filters.clubs.slice(0, 2).join(", ")}${filters.clubs.length > 2 ? "..." : ""}`);
@@ -914,6 +1044,7 @@ function createSavedQueryTitle(filters: AppliedScoutFilters) {
   if (typeof filters.maxAge === "number") titleParts.push(`sub-${filters.maxAge + 1}`);
   if (typeof filters.minPotential === "number") titleParts.push(`pot. ${filters.minPotential}+`);
   if (typeof filters.maxMarketValue === "number") titleParts.push(`até ${formatMarketValue(filters.maxMarketValue)}`);
+  if (filters.objective && filters.objective !== "balanced") titleParts.push(FIT_OBJECTIVE_LABELS[filters.objective].toLocaleLowerCase("pt-BR"));
 
   return titleParts.length ? `Scout ${titleParts.join(" · ")}` : "Consulta de scout";
 }
@@ -967,7 +1098,7 @@ function getAverageOvr(players: Fc26Player[]) {
   return Math.round(players.reduce((total, player) => total + player.ovr, 0) / players.length);
 }
 
-const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
+const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<DraftFilters>(() => createDefaultDraft());
   const [appliedFilters, setAppliedFilters] = useState<AppliedScoutFilters | null>(null);
@@ -979,7 +1110,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(() => loadSavedScoutQueries()[0]?.id ?? null);
   const [shortlistPlayers, setShortlistPlayers] = useState<Fc26Player[]>(() => loadShortlistPlayers());
 
-  const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters);
+  const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters, saveId);
   const {
     data: selectedPlayerDetails,
     isError: isSelectedPlayerError,
@@ -989,15 +1120,16 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   const { data: filterMetadata, isLoading: isLoadingFilters } = useFc26PlayerFilters();
 
   const hasSearched = !!appliedFilters;
-  const apiPlayers = useMemo(() => (hasSearched ? data?.players ?? [] : []), [data?.players, hasSearched]);
+  const rawApiPlayers = useMemo(() => (hasSearched ? data?.players ?? [] : []), [data?.players, hasSearched]);
+  const apiPlayers = useMemo(() => filterOutCurrentClubPlayers(rawApiPlayers, currentClub), [currentClub, rawApiPlayers]);
   const players = useMemo(() => sortPlayersForDisplay(apiPlayers, appliedFilters), [apiPlayers, appliedFilters]);
-  const total = hasSearched ? data?.total ?? 0 : 0;
+  const total = hasSearched ? getCurrentClubFilteredTotal(data?.total ?? 0, rawApiPlayers, apiPlayers) : 0;
   const limit = hasSearched ? data?.limit ?? appliedFilters?.limit ?? 20 : 20;
   const offset = hasSearched ? data?.offset ?? appliedFilters?.offset ?? 0 : 0;
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.max(1, Math.ceil(total / limit));
-  const visibleStart = total === 0 ? 0 : Math.min(offset + 1, total);
-  const visibleEnd = total === 0 ? 0 : Math.min(offset + limit, total);
+  const visibleStart = total === 0 || players.length === 0 ? 0 : Math.min(offset + 1, total);
+  const visibleEnd = total === 0 || players.length === 0 ? 0 : Math.min(offset + players.length, total);
 
   const activeFilterCount = useMemo(() => {
     if (!appliedFilters) return 0;
@@ -1020,6 +1152,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     if (typeof appliedFilters.maxMarketValue === "number") count += 1;
     count += countAttributeFilters(appliedFilters);
     if (appliedFilters.preferredFoot) count += 1;
+    if (appliedFilters.objective && appliedFilters.objective !== "balanced") count += 1;
     if (appliedFilters.traits?.some((trait) => !isPlayStylePlus(trait))) count += 1;
     if (appliedFilters.traits?.some(isPlayStylePlus)) count += 1;
     return count;
@@ -1031,21 +1164,38 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     () => players.find((player) => player.sofifaId === selectedSofifaId) ?? null,
     [players, selectedSofifaId]
   );
-  const selectedPlayer = selectedPlayerDetails ?? selectedPlayerPreview;
+  const selectedPlayer = useMemo(() => {
+    if (!selectedPlayerDetails) return selectedPlayerPreview;
+    if (!selectedPlayerPreview) return selectedPlayerDetails;
+
+    return {
+      ...selectedPlayerDetails,
+      fitScore: selectedPlayerDetails.fitScore ?? selectedPlayerPreview.fitScore,
+      fitConfidence: selectedPlayerDetails.fitConfidence ?? selectedPlayerPreview.fitConfidence,
+      fitProfileSize: selectedPlayerDetails.fitProfileSize ?? selectedPlayerPreview.fitProfileSize,
+    };
+  }, [selectedPlayerDetails, selectedPlayerPreview]);
+  const visibleComparisonPlayers = useMemo(() => filterOutCurrentClubPlayers(comparisonPlayers, currentClub), [comparisonPlayers, currentClub]);
   const comparedPlayers = useMemo(
     () =>
-      comparisonPlayers.map(
+      visibleComparisonPlayers.map(
         (selectedPlayer) => players.find((player) => player.sofifaId === selectedPlayer.sofifaId) ?? selectedPlayer
       ),
-    [comparisonPlayers, players]
+    [players, visibleComparisonPlayers]
   );
   const comparedPlayerIds = useMemo(() => new Set(comparedPlayers.map((player) => player.sofifaId)), [comparedPlayers]);
   const shortlistedPlayerIds = useMemo(() => new Set(shortlistPlayers.map((player) => player.sofifaId)), [shortlistPlayers]);
-  const shortlistGroups = useMemo(() => groupShortlistPlayers(shortlistPlayers), [shortlistPlayers]);
-  const shortlistAverageOvr = useMemo(() => getAverageOvr(shortlistPlayers), [shortlistPlayers]);
+  const visibleShortlistPlayers = useMemo(() => filterOutCurrentClubPlayers(shortlistPlayers, currentClub), [shortlistPlayers, currentClub]);
+  const shortlistGroups = useMemo(() => groupShortlistPlayers(visibleShortlistPlayers), [visibleShortlistPlayers]);
+  const shortlistAverageOvr = useMemo(() => getAverageOvr(visibleShortlistPlayers), [visibleShortlistPlayers]);
+  const hasFitScores = useMemo(() => players.some(hasVisibleFitScore), [players]);
+  const visibleSavedQueries = useMemo(
+    () => savedQueries.map((query) => filterSavedQueryForCurrentClub(query, currentClub)),
+    [currentClub, savedQueries]
+  );
   const selectedSavedQuery = useMemo(
-    () => savedQueries.find((query) => query.id === selectedSavedQueryId) ?? savedQueries[0] ?? null,
-    [savedQueries, selectedSavedQueryId]
+    () => visibleSavedQueries.find((query) => query.id === selectedSavedQueryId) ?? visibleSavedQueries[0] ?? null,
+    [selectedSavedQueryId, visibleSavedQueries]
   );
   const positionOptions = useMemo(
     () => (filterMetadata?.positions?.length ? filterMetadata.positions : PLAYER_POSITIONS).filter((position) => position !== "SA"),
@@ -1063,8 +1213,18 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
       clubsByLeague[league]?.forEach((club) => options.add(club));
     });
 
-    return [...options].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [draft.leagues, filterMetadata?.clubsByLeague]);
+    return [...options]
+      .filter((club) => !isSameClubName(club, currentClub))
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [currentClub, draft.leagues, filterMetadata?.clubsByLeague]);
+
+  useEffect(() => {
+    setDraft((current) => {
+      const clubs = current.clubs.filter((club) => !isSameClubName(club, currentClub));
+
+      return clubs.length === current.clubs.length ? current : { ...current, clubs };
+    });
+  }, [currentClub]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1100,8 +1260,10 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   };
 
   const applyFilters = () => {
-    const nextFilters = buildFiltersFromDraft(draft);
-    if (!nextFilters) return;
+    const draftFilters = buildFiltersFromDraft(draft);
+    if (!draftFilters) return;
+
+    const nextFilters = removeCurrentClubFromAppliedFilters(draftFilters, currentClub);
 
     if (!hasMeaningfulFilters(nextFilters)) {
       setAppliedFilters(null);
@@ -1144,21 +1306,23 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   };
 
   const saveAssistantQuery = async (conversation: AiCoachConversation) => {
-    const filters = { ...conversation.filters, limit: conversation.filters.limit ?? 20, offset: 0 };
+    const filters: AppliedScoutFilters = { objective: "balanced", ...conversation.filters, limit: conversation.filters.limit ?? 20, offset: 0 };
 
     try {
-      const response = await fc26PlayersApi.list(filters);
+      const response = await fc26PlayersApi.list(withScoutSaveContext(filters, saveId));
+      const visibleResults = filterOutCurrentClubPlayers(response.players, currentClub);
+      const visibleTotal = getCurrentClubFilteredTotal(response.total, response.players, visibleResults);
       const savedQuery: SavedScoutQuery = {
         id: createQueryId(),
         title: conversation.title,
-        description: `${formatInteger(response.total)} jogador${response.total === 1 ? "" : "es"} encontrados pelo AIssistent Coach.`,
+        description: `${formatInteger(visibleTotal)} jogador${visibleTotal === 1 ? "" : "es"} encontrados pelo AIssistent Coach.`,
         source: "assistant",
         club: currentClub,
         season: currentSeason,
         createdAt: new Date().toISOString(),
         filters,
-        results: response.players,
-        total: response.total,
+        results: visibleResults,
+        total: visibleTotal,
       };
 
       setSavedQueries((current) => [savedQuery, ...current].slice(0, MAX_SAVED_SCOUT_QUERIES));
@@ -1170,8 +1334,10 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
   };
 
   const editSavedQuery = (query: SavedScoutQuery) => {
-    setDraft(draftFromFilters(query.filters));
-    setAppliedFilters({ ...query.filters, offset: 0 });
+    const filters = removeCurrentClubFromAppliedFilters(query.filters, currentClub);
+
+    setDraft(draftFromFilters(filters));
+    setAppliedFilters({ ...filters, offset: 0 });
     setComparisonPlayers([]);
     setIsComparisonOpen(false);
     navigate("/scout/filtros");
@@ -1254,6 +1420,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
     setIsComparisonOpen(true);
   };
 
+  const hasSaveContext = Boolean(saveId);
   const isAiSection = section === "ai";
   const isArchiveSection = section === "archive";
   const isShortlistSection = section === "shortlist";
@@ -1294,7 +1461,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
             </>
           ) : isShortlistSection ? (
             <>
-              <SummaryPill label="Na lista" value={shortlistPlayers.length} icon={ListChecks} />
+              <SummaryPill label="Na lista" value={visibleShortlistPlayers.length} icon={ListChecks} />
               <SummaryPill label="Posições" value={shortlistGroups.length} icon={Target} />
               <SummaryPill label="Média OVR" value={shortlistAverageOvr ?? "—"} icon={Activity} />
               <SummaryPill label="Comparando" value={comparedPlayers.length} icon={GitCompareArrows} />
@@ -1449,7 +1616,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                 </div>
               ) : (
                 <div className="divide-y divide-border">
-                  {savedQueries.map((query) => {
+                  {visibleSavedQueries.map((query) => {
                     const isSelected = selectedSavedQuery?.id === query.id;
                     const Icon = isSelected ? FolderOpen : Folder;
 
@@ -1546,7 +1713,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
 
         {isShortlistSection && (
           <ShortlistContent
-            players={shortlistPlayers}
+            players={visibleShortlistPlayers}
             groups={shortlistGroups}
             comparedPlayers={comparedPlayers}
             comparedPlayerIds={comparedPlayerIds}
@@ -1669,7 +1836,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                 </div>
               </div>
 
-              <div className="grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]">
+              <div className={`grid gap-3 ${hasSaveContext ? "lg:grid-cols-[180px_190px_minmax(0,1fr)_minmax(0,1fr)]" : "lg:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]"}`}>
                 <div>
                   <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Pé dominante</label>
                   <select
@@ -1682,6 +1849,20 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                     <option value="Right">Destro</option>
                   </select>
                 </div>
+                {hasSaveContext && (
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Objetivo</label>
+                    <select
+                      value={draft.objective}
+                      onChange={(event) => setDraft((current) => ({ ...current, objective: event.target.value as Fc26FitObjective }))}
+                      className="h-10 w-full rounded-md border border-border bg-muted px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                    >
+                      {FIT_OBJECTIVE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <MultiSelectCombobox
                   label="PlayStyles"
                   placeholder="Selecionar PlayStyles..."
@@ -1746,7 +1927,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                     setDraft((current) => ({
                       ...current,
                       leagues,
-                      clubs: current.clubs.filter((club) => nextClubOptions.has(club)),
+                      clubs: current.clubs.filter((club) => nextClubOptions.has(club) && !isSameClubName(club, currentClub)),
                     }));
                   }}
                 />
@@ -1853,11 +2034,25 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
             ) : (
               <>
                 <ScrollArea scrollbars="horizontal" className="hidden w-full lg:block" viewportClassName="pb-3">
-                  <table className="w-full min-w-[1320px] text-left">
+                  <table className={`w-full text-left ${hasFitScores ? "min-w-[1420px]" : "min-w-[1320px]"}`}>
                     <thead className="bg-muted/35">
                       <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                         <th className="px-4 py-3 font-semibold">Jogador</th>
                         <th className="px-4 py-3 font-semibold">Posições</th>
+                        {hasFitScores && (
+                          <th
+                            className="px-4 py-3 text-center font-semibold"
+                            aria-sort={appliedFilters?.sortBy === "fitScore" ? (appliedFilters.sortOrder === "asc" ? "ascending" : "descending") : "none"}
+                          >
+                            <SortHeaderButton
+                              label="Fit"
+                              sortBy="fitScore"
+                              activeSortBy={appliedFilters?.sortBy}
+                              sortOrder={appliedFilters?.sortOrder}
+                              onSort={toggleSort}
+                            />
+                          </th>
+                        )}
                         <th
                           className="px-4 py-3 text-center font-semibold"
                           aria-sort={appliedFilters?.sortBy === "ovr" ? (appliedFilters.sortOrder === "asc" ? "ascending" : "descending") : "none"}
@@ -1893,6 +2088,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                         <PlayerTableRow
                           key={player.sofifaId}
                           player={player}
+                          showFitScore={hasFitScores}
                           isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
                           isShortlisted={shortlistedPlayerIds.has(player.sofifaId)}
                           onSelect={() => setSelectedSofifaId(player.sofifaId)}
@@ -1909,6 +2105,7 @@ const ScoutScreen = ({ section, currentClub, currentSeason }: Props) => {
                     <PlayerMobileRow
                       key={player.sofifaId}
                       player={player}
+                      showFitScore={hasFitScores}
                       isCompareSelected={comparedPlayerIds.has(player.sofifaId)}
                       isShortlisted={shortlistedPlayerIds.has(player.sofifaId)}
                       onSelect={() => setSelectedSofifaId(player.sofifaId)}
@@ -2210,6 +2407,7 @@ function ShortlistPlayerRow({
           </div>
           <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "Sem clube"}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
+            <FitScoreBadge player={player} />
             {player.positions.map((position) => (
               <PositionBadge key={position} position={position} />
             ))}
@@ -2322,6 +2520,7 @@ function SavedQueryResults({
               </div>
 
               <div className="mb-3 flex flex-wrap gap-1.5">
+                <FitScoreBadge player={player} />
                 {player.positions.map((position) => (
                   <PositionBadge key={position} position={position} />
                 ))}
@@ -3243,7 +3442,10 @@ function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: 
             <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
           </div>
         </div>
-        <span className={`font-display text-2xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</span>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span className={`font-display text-2xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</span>
+          <FitScoreBadge player={player} compact />
+        </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {player.positions.map((position) => (
@@ -3262,6 +3464,7 @@ function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: 
 
 function PlayerTableRow({
   player,
+  showFitScore,
   isCompareSelected,
   isShortlisted,
   onSelect,
@@ -3269,6 +3472,7 @@ function PlayerTableRow({
   onToggleShortlist,
 }: {
   player: Fc26Player;
+  showFitScore: boolean;
   isCompareSelected: boolean;
   isShortlisted: boolean;
   onSelect: () => void;
@@ -3345,6 +3549,13 @@ function PlayerTableRow({
           ))}
         </div>
       </td>
+      {showFitScore && (
+        <td className="px-4 py-3 text-center">
+          <div className="flex justify-center">
+            <FitScoreBadge player={player} />
+          </div>
+        </td>
+      )}
       <td className={`px-4 py-3 text-center font-display text-xl font-bold ${getOvrClass(player.ovr)}`}>{player.ovr}</td>
       <td className="px-4 py-3 text-center font-display text-xl font-bold text-foreground">{player.potential}</td>
       <td className="min-w-[180px] px-4 py-3">
@@ -3375,6 +3586,7 @@ function PlayerTableRow({
 
 function PlayerMobileRow({
   player,
+  showFitScore,
   isCompareSelected,
   isShortlisted,
   onSelect,
@@ -3382,6 +3594,7 @@ function PlayerMobileRow({
   onToggleShortlist,
 }: {
   player: Fc26Player;
+  showFitScore: boolean;
   isCompareSelected: boolean;
   isShortlisted: boolean;
   onSelect: () => void;
@@ -3404,6 +3617,11 @@ function PlayerMobileRow({
         <div className="shrink-0 text-right">
           <p className={`font-display text-3xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+          {showFitScore && (
+            <div className="mt-2 flex justify-end">
+              <FitScoreBadge player={player} compact />
+            </div>
+          )}
         </div>
       </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
@@ -3497,6 +3715,23 @@ function PlayerAvatar({ player, size }: { player: Fc26Player; size: "sm" | "md" 
         />
       )}
     </div>
+  );
+}
+
+function FitScoreBadge({ player, compact = false }: { player: Fc26Player; compact?: boolean }) {
+  const score = getVisibleFitScore(player);
+  if (score === null) return null;
+
+  const isLowConfidence = player.fitConfidence === "low";
+
+  return (
+    <span
+      title={getFitScoreTitle(player)}
+      className={`inline-flex h-6 max-w-full items-center gap-1 rounded border px-2 font-display text-xs font-bold ${getFitScoreTone(player.fitConfidence)}`}
+    >
+      <Target size={compact ? 11 : 12} className="shrink-0" />
+      <span className="truncate">Fit {score}{isLowConfidence ? "?" : ""}</span>
+    </span>
   );
 }
 
@@ -3695,6 +3930,9 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
                         <div className="text-right">
                           <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
                           <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+                          <div className="mt-2 flex justify-end">
+                            <FitScoreBadge player={player} />
+                          </div>
                         </div>
                       </div>
 

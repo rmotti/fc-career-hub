@@ -7,11 +7,12 @@ interface ScoutProps {
 }
 
 const Scout = ({ section }: ScoutProps) => {
-  const { currentClub, currentSeason } = useOutletContext<HubOutletContext>();
+  const { saveId, currentClub, currentSeason } = useOutletContext<HubOutletContext>();
 
   return (
     <ScoutScreen
       section={section}
+      saveId={saveId}
       currentClub={currentClub}
       currentSeason={currentSeason}
     />

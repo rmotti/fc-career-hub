@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { ApiError, extractErrorMessage } from "@/shared/api/client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ApiError, extractErrorMessage, fc26PlayersApi } from "@/shared/api/client";
 
 describe("ApiError", () => {
   it("cria erro com propriedades corretas", () => {
@@ -113,5 +113,60 @@ describe("extractErrorMessage", () => {
       expect(() => extractErrorMessage(null)).not.toThrow();
       expect(() => extractErrorMessage(undefined)).not.toThrow();
     });
+  });
+});
+
+describe("fc26PlayersApi", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.localStorage.clear();
+  });
+
+  it("envia saveId e objective na busca do scout com contexto de save", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ players: [], total: 0, limit: 20, offset: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fc26PlayersApi.list({
+      saveId: "11111111-1111-4111-8111-111111111111",
+      objective: "youth",
+      positions: ["MC"],
+      limit: 20,
+      offset: 0,
+    });
+
+    const requestUrl = new URL(String(fetchMock.mock.calls[0][0]));
+
+    expect(requestUrl.pathname).toBe("/api/fc26-players");
+    expect(requestUrl.searchParams.get("saveId")).toBe("11111111-1111-4111-8111-111111111111");
+    expect(requestUrl.searchParams.get("objective")).toBe("youth");
+    expect(requestUrl.searchParams.get("positions")).toBe("MC");
+  });
+
+  it("não envia sortBy=fitScore para o backend", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ players: [], total: 0, limit: 20, offset: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fc26PlayersApi.list({
+      saveId: "11111111-1111-4111-8111-111111111111",
+      sortBy: "fitScore",
+      sortOrder: "desc",
+      limit: 20,
+      offset: 0,
+    });
+
+    const requestUrl = new URL(String(fetchMock.mock.calls[0][0]));
+
+    expect(requestUrl.searchParams.get("sortBy")).toBeNull();
+    expect(requestUrl.searchParams.get("sortOrder")).toBeNull();
   });
 });
