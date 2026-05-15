@@ -1148,10 +1148,11 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   } = useJuniorChat(user?.id);
   const [chatInput, setChatInput] = useState("");
   const [showChatHistory, setShowChatHistory] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = chatScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [chatMessages, isChatLoading]);
 
   const { data: playbooksData } = usePlaybooks(saveId ?? null);
@@ -1595,7 +1596,10 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
             ) : (
               <>
                 {/* Messages */}
-                <ScrollArea className="min-h-0 flex-1">
+                <div
+                  ref={chatScrollRef}
+                  className="min-h-0 flex-1 overflow-y-auto"
+                >
                   <div
                     role="log"
                     aria-live="polite"
@@ -1628,9 +1632,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                         </div>
                       </div>
                     )}
-                    <div ref={chatEndRef} />
                   </div>
-                </ScrollArea>
+                </div>
 
                 {/* Input */}
                 <div className="shrink-0 border-t border-border p-4">
