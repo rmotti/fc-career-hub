@@ -9,54 +9,96 @@ export interface JuniorChatMessage {
   timestamp: number;
 }
 
-interface PersistedChatState {
+export interface ConversationEntry {
+  id: string;
+  title: string;
+  messages: JuniorChatMessage[];
+  lastResponseId: string | null;
+  createdAt: number;
+}
+
+interface CurrentChatState {
   messages: JuniorChatMessage[];
   lastResponseId: string | null;
 }
 
-function getStorageKey(userId: string) {
+const MAX_HISTORY = 20;
+
+function getCurrentKey(userId: string) {
   return `junior-chat:${userId}`;
 }
 
-function loadChatState(userId: string): PersistedChatState {
+function getHistoryKey(userId: string) {
+  return `junior-chat-history:${userId}`;
+}
+
+function loadCurrentState(userId: string): CurrentChatState {
   try {
-    const raw = localStorage.getItem(getStorageKey(userId));
-    if (raw) return JSON.parse(raw) as PersistedChatState;
+    const raw = localStorage.getItem(getCurrentKey(userId));
+    if (raw) return JSON.parse(raw) as CurrentChatState;
   } catch {
     // ignore malformed storage
   }
   return { messages: [], lastResponseId: null };
 }
 
-function saveChatState(userId: string, state: PersistedChatState) {
+function saveCurrentState(userId: string, state: CurrentChatState) {
   try {
-    localStorage.setItem(getStorageKey(userId), JSON.stringify(state));
+    localStorage.setItem(getCurrentKey(userId), JSON.stringify(state));
   } catch {
     // ignore storage quota errors
   }
 }
 
-function clearChatState(userId: string) {
-  localStorage.removeItem(getStorageKey(userId));
+function clearCurrentState(userId: string) {
+  localStorage.removeItem(getCurrentKey(userId));
+}
+
+function loadHistory(userId: string): ConversationEntry[] {
+  try {
+    const raw = localStorage.getItem(getHistoryKey(userId));
+    if (raw) return JSON.parse(raw) as ConversationEntry[];
+  } catch {
+    // ignore malformed storage
+  }
+  return [];
+}
+
+function saveHistory(userId: string, history: ConversationEntry[]) {
+  try {
+    localStorage.setItem(getHistoryKey(userId), JSON.stringify(history));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+function deriveTitle(messages: JuniorChatMessage[]): string {
+  const firstUserMsg = messages.find((m) => m.role === "user");
+  if (!firstUserMsg) return "Conversa sem título";
+  return firstUserMsg.content.length > 45
+    ? firstUserMsg.content.slice(0, 42) + "…"
+    : firstUserMsg.content;
 }
 
 export function useJuniorChat(userId: string | undefined) {
   const [messages, setMessages] = useState<JuniorChatMessage[]>([]);
   const [lastResponseId, setLastResponseId] = useState<string | null>(null);
+  const [history, setHistory] = useState<ConversationEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!userId) return;
-    const state = loadChatState(userId);
+    const state = loadCurrentState(userId);
     setMessages(state.messages);
     setLastResponseId(state.lastResponseId);
+    setHistory(loadHistory(userId));
   }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
-    saveChatState(userId, { messages, lastResponseId });
+    saveCurrentState(userId, { messages, lastResponseId });
   }, [userId, messages, lastResponseId]);
 
   useEffect(() => {
@@ -65,19 +107,15 @@ export function useJuniorChat(userId: string | undefined) {
         clearInterval(retryTimerRef.current);
         retryTimerRef.current = null;
       }
-      if (retryAfterSeconds !== null) {
-        setRetryAfterSeconds(null);
-      }
+      if (retryAfterSeconds !== null) setRetryAfterSeconds(null);
       return;
     }
-
     retryTimerRef.current = setInterval(() => {
       setRetryAfterSeconds((prev) => {
         if (prev === null || prev <= 1) return 0;
         return prev - 1;
       });
     }, 1000);
-
     return () => {
       if (retryTimerRef.current) clearInterval(retryTimerRef.current);
     };
@@ -134,18 +172,76 @@ export function useJuniorChat(userId: string | undefined) {
     }
   }, [isLoading, retryAfterSeconds, lastResponseId]);
 
-  const clearConversation = useCallback(() => {
+  const startNewConversation = useCallback((currentMessages: JuniorChatMessage[], currentResponseId: string | null) => {
+    if (!userId) return;
+
+    if (currentMessages.length > 0) {
+      const entry: ConversationEntry = {
+        id: crypto.randomUUID(),
+        title: deriveTitle(currentMessages),
+        messages: currentMessages,
+        lastResponseId: currentResponseId,
+        createdAt: Date.now(),
+      };
+      setHistory((prev) => {
+        const next = [entry, ...prev].slice(0, MAX_HISTORY);
+        saveHistory(userId, next);
+        return next;
+      });
+    }
+
     setMessages([]);
     setLastResponseId(null);
-    if (userId) clearChatState(userId);
+    clearCurrentState(userId);
+  }, [userId]);
+
+  const loadConversation = useCallback((entry: ConversationEntry, currentMessages: JuniorChatMessage[], currentResponseId: string | null) => {
+    if (!userId) return;
+
+    if (currentMessages.length > 0) {
+      const currentEntry: ConversationEntry = {
+        id: crypto.randomUUID(),
+        title: deriveTitle(currentMessages),
+        messages: currentMessages,
+        lastResponseId: currentResponseId,
+        createdAt: Date.now(),
+      };
+      setHistory((prev) => {
+        const next = [currentEntry, ...prev.filter((h) => h.id !== entry.id)].slice(0, MAX_HISTORY);
+        saveHistory(userId, next);
+        return next;
+      });
+    } else {
+      setHistory((prev) => {
+        const next = prev.filter((h) => h.id !== entry.id);
+        saveHistory(userId, next);
+        return next;
+      });
+    }
+
+    setMessages(entry.messages);
+    setLastResponseId(entry.lastResponseId);
+  }, [userId]);
+
+  const deleteConversation = useCallback((entryId: string) => {
+    if (!userId) return;
+    setHistory((prev) => {
+      const next = prev.filter((h) => h.id !== entryId);
+      saveHistory(userId, next);
+      return next;
+    });
   }, [userId]);
 
   return {
     messages,
+    lastResponseId,
+    history,
     isLoading,
     isRateLimited: retryAfterSeconds !== null && retryAfterSeconds > 0,
     retryAfterSeconds,
     sendMessage,
-    clearConversation,
+    startNewConversation,
+    loadConversation,
+    deleteConversation,
   };
 }

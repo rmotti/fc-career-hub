@@ -65,7 +65,7 @@ import {
 import { PLAYER_POSITIONS } from "@/shared/lib/playerPositions";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/features/auth/model/useAuth";
-import { useJuniorChat } from "@/features/scout/model/useJuniorChat";
+import { useJuniorChat, type ConversationEntry } from "@/features/scout/model/useJuniorChat";
 
 interface Props {
   section: ScoutSection;
@@ -1136,13 +1136,18 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const { user } = useAuth();
   const {
     messages: chatMessages,
+    lastResponseId: chatLastResponseId,
+    history: chatHistory,
     isLoading: isChatLoading,
     isRateLimited,
     retryAfterSeconds,
     sendMessage,
-    clearConversation,
+    startNewConversation,
+    loadConversation,
+    deleteConversation,
   } = useJuniorChat(user?.id);
   const [chatInput, setChatInput] = useState("");
+  const [showChatHistory, setShowChatHistory] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1502,110 +1507,180 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
         }
       >
         {isAiSection && (
-          <aside className="card-gamer flex min-h-[680px] flex-col overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border p-5">
+          <aside
+            className="card-gamer flex flex-col overflow-hidden"
+            style={{ height: "clamp(500px, calc(100vh - 220px), 860px)" }}
+          >
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
-                  <Bot size={20} />
+                <div className="flex h-9 w-9 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                  <Bot size={18} />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold leading-none">Junior</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">Assistente técnico do Career Mode</p>
+                  <h3 className="font-display text-base font-bold leading-none">Junior</h3>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Assistente técnico do Career Mode</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={clearConversation}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/25 hover:bg-primary/5 hover:text-primary"
-              >
-                <RotateCcw size={13} />
-                Nova conversa
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowChatHistory((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    showChatHistory
+                      ? "border-primary/30 bg-primary/10 text-primary"
+                      : "border-border bg-background/45 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-primary"
+                  }`}
+                >
+                  <MessageSquareText size={13} />
+                  Histórico
+                  {chatHistory.length > 0 && (
+                    <span className="ml-0.5 rounded-full bg-primary/20 px-1.5 py-0 text-[10px] font-bold text-primary">
+                      {chatHistory.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { startNewConversation(chatMessages, chatLastResponseId); setShowChatHistory(false); }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/25 hover:bg-primary/5 hover:text-primary"
+                >
+                  <RotateCcw size={13} />
+                  Nova
+                </button>
+              </div>
             </div>
 
-            <ScrollArea className="min-h-0 flex-1">
-              <div
-                role="log"
-                aria-live="polite"
-                aria-label="Conversa com Junior"
-                className="flex flex-col gap-3 p-5"
-              >
-                {chatMessages.length === 0 && (
-                  <ChatBubble speaker="Junior" tone="assistant" markdown={false}>
-                    Olá! Sou o Junior, seu assistente do Career Mode. Posso ajudar com análise de elenco, recomendações de mercado, táticas e muito mais. O que você precisa?
-                  </ChatBubble>
-                )}
-                {chatMessages.map((msg) => (
-                  <ChatBubble
-                    key={msg.id}
-                    speaker={msg.role === "user" ? "Você" : "Junior"}
-                    tone={msg.role === "user" ? "user" : "assistant"}
-                    markdown={msg.role === "assistant"}
-                  >
-                    {msg.content}
-                  </ChatBubble>
-                ))}
-                {isChatLoading && (
-                  <div className="flex justify-start">
-                    <div className="max-w-[92%] rounded-md border border-border bg-background/45 px-3 py-2">
-                      <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Junior</p>
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Loader2 size={13} className="animate-spin" />
-                        <span className="text-sm">Pensando...</span>
-                      </div>
+            {/* History panel */}
+            {showChatHistory ? (
+              <ScrollArea className="min-h-0 flex-1">
+                <div className="flex flex-col gap-2 p-4">
+                  {chatHistory.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <MessageSquareText size={28} className="mx-auto mb-3 text-muted-foreground/40" />
+                      <p className="text-sm font-medium text-muted-foreground">Nenhuma conversa arquivada</p>
+                      <p className="mt-1 text-xs text-muted-foreground/60">Inicie uma nova conversa e ela aparecerá aqui.</p>
                     </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-            </ScrollArea>
-
-            <div className="border-t border-border p-4">
-              {isRateLimited && retryAfterSeconds !== null && retryAfterSeconds > 0 && (
-                <div className="mb-3 flex items-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
-                  <LockKeyhole size={13} />
-                  <span>Muitas mensagens. Aguarde {retryAfterSeconds}s para continuar.</span>
+                  ) : (
+                    chatHistory.map((entry: ConversationEntry) => (
+                      <div key={entry.id} className="rounded-md border border-border bg-background/30 p-3">
+                        <p className="truncate text-sm font-semibold text-foreground">{entry.title}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {new Date(entry.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {" · "}{entry.messages.length} mensagen{entry.messages.length !== 1 ? "s" : ""}
+                        </p>
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { loadConversation(entry, chatMessages, chatLastResponseId); setShowChatHistory(false); }}
+                            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
+                          >
+                            <RotateCcw size={11} />
+                            Continuar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteConversation(entry.id)}
+                            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/25 hover:bg-destructive/5 hover:text-destructive"
+                          >
+                            <Trash2 size={11} />
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!chatInput.trim()) return;
-                  void sendMessage(chatInput);
-                  setChatInput("");
-                }}
-                className="flex items-end gap-2"
-              >
-                <label htmlFor="junior-chat-input" className="sr-only">
-                  Mensagem para o Junior
-                </label>
-                <textarea
-                  id="junior-chat-input"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+              </ScrollArea>
+            ) : (
+              <>
+                {/* Messages */}
+                <ScrollArea className="min-h-0 flex-1">
+                  <div
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Conversa com Junior"
+                    className="flex flex-col gap-3 p-5"
+                  >
+                    {chatMessages.length === 0 && (
+                      <ChatBubble speaker="Junior" tone="assistant" markdown={false}>
+                        Olá! Sou o Junior, seu assistente do Career Mode. Posso ajudar com análise de elenco, recomendações de mercado, táticas e muito mais. O que você precisa?
+                      </ChatBubble>
+                    )}
+                    {chatMessages.map((msg) => (
+                      <ChatBubble
+                        key={msg.id}
+                        speaker={msg.role === "user" ? "Você" : "Junior"}
+                        tone={msg.role === "user" ? "user" : "assistant"}
+                        markdown={msg.role === "assistant"}
+                      >
+                        {msg.content}
+                      </ChatBubble>
+                    ))}
+                    {isChatLoading && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[92%] rounded-md border border-border bg-background/45 px-3 py-2">
+                          <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Junior</p>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Loader2 size={13} className="animate-spin" />
+                            <span className="text-sm">Pensando...</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                </ScrollArea>
+
+                {/* Input */}
+                <div className="shrink-0 border-t border-border p-4">
+                  {isRateLimited && retryAfterSeconds !== null && retryAfterSeconds > 0 && (
+                    <div className="mb-3 flex items-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
+                      <LockKeyhole size={13} />
+                      <span>Muitas mensagens. Aguarde {retryAfterSeconds}s para continuar.</span>
+                    </div>
+                  )}
+                  <form
+                    onSubmit={(e) => {
                       e.preventDefault();
                       if (!chatInput.trim()) return;
                       void sendMessage(chatInput);
                       setChatInput("");
-                    }
-                  }}
-                  placeholder="Pergunte ao Junior… (Enter envia, Shift+Enter quebra linha)"
-                  disabled={isChatLoading || isRateLimited}
-                  rows={2}
-                  className="min-w-0 flex-1 resize-none rounded-md border border-border bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-                <button
-                  type="submit"
-                  disabled={isChatLoading || isRateLimited || !chatInput.trim()}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-                  aria-label="Enviar mensagem"
-                >
-                  {isChatLoading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                </button>
-              </form>
-            </div>
+                    }}
+                    className="flex items-end gap-2"
+                  >
+                    <label htmlFor="junior-chat-input" className="sr-only">
+                      Mensagem para o Junior
+                    </label>
+                    <textarea
+                      id="junior-chat-input"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!chatInput.trim()) return;
+                          void sendMessage(chatInput);
+                          setChatInput("");
+                        }
+                      }}
+                      placeholder="Pergunte ao Junior… (Enter envia, Shift+Enter quebra linha)"
+                      disabled={isChatLoading || isRateLimited}
+                      rows={2}
+                      className="min-w-0 flex-1 resize-none rounded-md border border-border bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isChatLoading || isRateLimited || !chatInput.trim()}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                      aria-label="Enviar mensagem"
+                    >
+                      {isChatLoading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
           </aside>
         )}
 
