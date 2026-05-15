@@ -1,5 +1,6 @@
 import { ChevronLeft, X } from "lucide-react";
 import type { TooltipRenderProps } from "react-joyride";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 
 const getStepLabel = (index: number, size: number) => `${index + 1}/${size}`;
 
@@ -47,7 +48,9 @@ const TutorialTooltip = ({
           </button>
         </header>
 
-        <div className="max-h-[32dvh] overflow-y-auto pr-1 text-sm leading-6 text-muted-foreground sm:max-h-32">{step.content}</div>
+        <ScrollArea className="max-h-[32dvh] sm:max-h-32" viewportClassName="pr-3 text-sm leading-6 text-muted-foreground" scrollbars="vertical">
+          {step.content}
+        </ScrollArea>
 
         <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-muted">
           <div

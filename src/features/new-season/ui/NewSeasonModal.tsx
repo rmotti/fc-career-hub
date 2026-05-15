@@ -8,6 +8,7 @@ import { useFinancialSnapshot } from "@/features/dashboard/model/useFinancialSna
 import { useEuropeanCompetitions } from "@/features/change-club/model/useCompetitions";
 import { CUP_LABELS, formatTrophyLabel, getLeagueStats } from "@/shared/lib/competitions";
 import { formatCurrency, parseBudgetInMillionsInput } from "@/shared/lib/currency";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 
 interface Props {
   open: boolean;
@@ -105,7 +106,8 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-hidden p-0">
+        <ScrollArea className="max-h-[85vh]" viewportClassName="p-6" scrollbars="vertical">
         {step === "confirm" ? (
           <>
             <DialogHeader>
@@ -434,6 +436,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
             </div>
           </>
         )}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

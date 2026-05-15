@@ -24,6 +24,7 @@ import {
 } from "@/shared/ui/dialog";
 import { usePlayers } from "@/features/squad/model/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/features/stats/model/useTeamStats";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 import type { ApiPlayer, ApiTeamStats } from "@/shared/api/client";
 import {
   CUP_LABELS,
@@ -544,7 +545,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
           </DialogHeader>
         </div>
 
-        <div className="max-h-[calc(88vh-132px)] overflow-y-auto p-3">
+        <ScrollArea className="max-h-[calc(88vh-132px)]" viewportClassName="p-3" scrollbars="vertical">
           {active && active.players.length > 0 ? (
             <div className="divide-y divide-border rounded-md border border-border bg-background/25">
               {active.players.map((player, index) => {
@@ -592,7 +593,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
               <p className="mt-2 text-sm text-muted-foreground">Quando houver estatísticas acima de zero, elas aparecem aqui.</p>
             </div>
           )}
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

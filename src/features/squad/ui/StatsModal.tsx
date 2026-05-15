@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/di
 import { extractErrorMessage, type ApiTeamStats } from "@/shared/api/client";
 import { toast } from "sonner";
 import { CUP_OPTIONS } from "@/shared/lib/competitions";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 
 interface StatsForm {
   goalsPro: number | "";
@@ -184,8 +185,8 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
           </DialogHeader>
         </div>
 
-        <form onSubmit={handleSubmit} className="max-h-[calc(90vh-104px)] overflow-y-auto">
-          <div className="space-y-5 p-5">
+        <form onSubmit={handleSubmit} className="flex max-h-[calc(90vh-104px)] flex-col">
+          <ScrollArea className="min-h-0 flex-1" viewportClassName="space-y-5 p-5" scrollbars="vertical">
             <section data-tour="stats-modal-campaign">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
@@ -288,7 +289,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
                 </div>
               )}
             </section>
-          </div>
+          </ScrollArea>
 
           <div className="flex flex-col-reverse gap-2 border-t border-border bg-background/35 p-4 sm:flex-row sm:justify-end">
             <button
