@@ -25,12 +25,14 @@ export class ApiError extends Error {
   status?: number;
   data?: any;
   isNetworkError?: boolean;
+  retryAfter?: number;
 
-  constructor(message: string, status?: number, data?: any, isNetworkError?: boolean) {
+  constructor(message: string, status?: number, data?: any, isNetworkError?: boolean, retryAfter?: number) {
     super(message);
     this.status = status;
     this.data = data;
     this.isNetworkError = isNetworkError;
+    this.retryAfter = retryAfter;
     this.name = "ApiError";
   }
 }
@@ -110,6 +112,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+    const retryAfter = res.status === 429
+      ? parseInt(res.headers.get("Retry-After") ?? "60", 10)
+      : undefined;
     if (
       res.status === 401 &&
       !path.startsWith("/auth/sign-in") &&
@@ -117,7 +122,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ) {
       unauthorizedHandler?.();
     }
-    throw new ApiError(err.error || `HTTP ${res.status}`, res.status, err);
+    throw new ApiError(err.error || `HTTP ${res.status}`, res.status, err, false, retryAfter);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -668,6 +673,21 @@ export const playbooksApi = {
     request<ApiPlaybook>(`/scout/playbooks/${playbookId}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (playbookId: string) =>
     request<void>(`/scout/playbooks/${playbookId}`, { method: "DELETE" }),
+};
+
+// ─── Chat ───────────────────────────────────────────────────────────
+
+export interface ChatMessageResponse {
+  reply: string;
+  responseId: string;
+}
+
+export const chatApi = {
+  sendMessage: (data: { message: string; previousResponseId?: string }) =>
+    request<ChatMessageResponse>("/chat/messages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─── Trophies ───────────────────────────────────────────────────────

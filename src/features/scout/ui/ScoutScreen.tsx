@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ElementType, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -63,6 +63,9 @@ import {
   type PlayerPosition,
 } from "@/shared/api/client";
 import { PLAYER_POSITIONS } from "@/shared/lib/playerPositions";
+import ReactMarkdown from "react-markdown";
+import { useAuth } from "@/features/auth/model/useAuth";
+import { useJuniorChat } from "@/features/scout/model/useJuniorChat";
 
 interface Props {
   section: ScoutSection;
@@ -150,12 +153,6 @@ interface ShortlistPositionGroup {
   players: Fc26Player[];
 }
 
-interface AiCoachConversation {
-  title: string;
-  description: string;
-  date: string;
-  filters: AppliedScoutFilters;
-}
 
 type ScoutSortBy = NonNullable<Fc26PlayerFilters["sortBy"]>;
 type ScoutSortOrder = NonNullable<Fc26PlayerFilters["sortOrder"]>;
@@ -377,32 +374,6 @@ const MAX_SAVED_SCOUT_QUERIES = 25;
 const SCOUT_SHORTLIST_STORAGE_KEY = "fc-career-hub.scout-shortlist";
 const MAX_SHORTLIST_PLAYERS = 80;
 
-const AI_COACH_CONVERSATION_HISTORY: AiCoachConversation[] = [
-  {
-    title: "Pontas para atacar espaço",
-    description: "Perfis jovens, ritmo alto e bom potencial para rotação imediata.",
-    date: "Hoje",
-    filters: { positions: ["PE", "PD"], maxAge: 23, minPace: 85, minPotential: 78, limit: 20, offset: 0 },
-  },
-  {
-    title: "Volantes para proteger a área",
-    description: "Busca por físico, interceptação e passe seguro para jogo grande.",
-    date: "Ontem",
-    filters: { positions: ["VOL"], minDefending: 75, minPhysic: 75, limit: 20, offset: 0 },
-  },
-  {
-    title: "Plano de renovação do elenco",
-    description: "Leitura de idade média, contratos e posições com pouca profundidade.",
-    date: "2 dias",
-    filters: { maxAge: 22, minPotential: 82, limit: 20, offset: 0 },
-  },
-  {
-    title: "Alternativas de baixo custo",
-    description: "Sugestões de mercado com salário controlado e cláusula acessível.",
-    date: "Semana",
-    filters: { maxAge: 24, minPotential: 78, maxOvr: 76, limit: 20, offset: 0 },
-  },
-];
 
 const GENERAL_RATING_FIELDS = ["pace", "shooting", "passing", "dribbling", "defending", "physic"] as const;
 const COMPARISON_RADAR_COLORS = [
@@ -1162,6 +1133,22 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(() => loadSavedScoutQueries()[0]?.id ?? null);
   const [shortlistPlayers, setShortlistPlayers] = useState<Fc26Player[]>(() => loadShortlistPlayers());
 
+  const { user } = useAuth();
+  const {
+    messages: chatMessages,
+    isLoading: isChatLoading,
+    isRateLimited,
+    retryAfterSeconds,
+    sendMessage,
+    clearConversation,
+  } = useJuniorChat(user?.id);
+  const [chatInput, setChatInput] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages, isChatLoading]);
+
   const { data: playbooksData } = usePlaybooks(saveId ?? null);
   const activePlaybook =
     playbooksData?.playbooks.find((p) => p.isDefault) ?? playbooksData?.defaultPlaybook ?? null;
@@ -1361,34 +1348,6 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     toast.success("Consulta salva nas pastas do Scout.", { duration: 3000 });
   };
 
-  const saveAssistantQuery = async (conversation: AiCoachConversation) => {
-    const filters: AppliedScoutFilters = { objective: "balanced", ...conversation.filters, limit: conversation.filters.limit ?? 20, offset: 0 };
-
-    try {
-      const response = await fc26PlayersApi.list(withScoutSaveContext(filters, saveId));
-      const visibleResults = filterOutCurrentClubPlayers(response.players, currentClub);
-      const visibleTotal = getCurrentClubFilteredTotal(response.total, response.players, visibleResults);
-      const savedQuery: SavedScoutQuery = {
-        id: createQueryId(),
-        title: conversation.title,
-        description: `${formatInteger(visibleTotal)} jogador${visibleTotal === 1 ? "" : "es"} encontrados pelo AIssistent Coach.`,
-        source: "assistant",
-        club: currentClub,
-        season: currentSeason,
-        createdAt: new Date().toISOString(),
-        filters,
-        results: visibleResults,
-        total: visibleTotal,
-      };
-
-      setSavedQueries((current) => [savedQuery, ...current].slice(0, MAX_SAVED_SCOUT_QUERIES));
-      setSelectedSavedQueryId(savedQuery.id);
-      toast.success("Consulta do AIssistent Coach salva nas pastas.", { duration: 3000 });
-    } catch (err) {
-      toast.error(extractErrorMessage(err), { duration: 5000 });
-    }
-  };
-
   const editSavedQuery = (query: SavedScoutQuery) => {
     const filters = removeCurrentClubFromAppliedFilters(query.filters, currentClub);
 
@@ -1536,113 +1495,118 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
       <section
         className={
           isAiSection
-            ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start"
+            ? "space-y-4"
             : isArchiveSection
               ? "grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)] xl:items-start"
               : "space-y-4"
         }
       >
         {isAiSection && (
-        <aside className="card-gamer flex min-h-[620px] flex-col overflow-hidden">
-          <div className="border-b border-border p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
+          <aside className="card-gamer flex min-h-[680px] flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border p-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
                   <Bot size={20} />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold leading-none">AIssistent Coach</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">Recomendações em prévia</p>
+                  <h3 className="font-display text-lg font-bold leading-none">Junior</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Assistente técnico do Career Mode</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 p-5">
-            <div className="space-y-3">
-              <ChatBubble
-                speaker="AIssistent Coach"
-                tone="assistant"
-              >
-                Posso analisar carências do elenco e transformar o contexto da sua carreira em recomendações de mercado.
-              </ChatBubble>
-
-              <ChatBubble speaker="Você" tone="user">Recomende contratações para o meu elenco.</ChatBubble>
-              <ChatBubble speaker="AIssistent Coach" tone="assistant">
-                Esse fluxo vai cruzar carências do elenco, idade, OVR, potencial e orçamento. Por enquanto, ele fica em prévia.
-              </ChatBubble>
-              <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
-                <div className="mb-2 flex items-center gap-2 font-semibold">
-                  <LockKeyhole size={15} />
-                  Recomendação em mock
-                </div>
-                <p className="text-warning/80">
-                  A busca filtrada fica em uma subseção própria do Scout.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-md border border-border bg-background/50 p-2">
-              <input
-                value=""
-                disabled
-                readOnly
-                placeholder="Chat em breve"
-                className="min-w-0 flex-1 bg-transparent px-2 text-sm text-muted-foreground outline-none disabled:cursor-not-allowed"
-              />
               <button
                 type="button"
-                disabled
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
-                aria-label="Enviar mensagem"
+                onClick={clearConversation}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/25 hover:bg-primary/5 hover:text-primary"
               >
-                <Send size={15} />
+                <RotateCcw size={13} />
+                Nova conversa
               </button>
             </div>
-          </div>
-        </aside>
-        )}
 
-        {isAiSection && (
-          <section className="card-gamer overflow-hidden">
-            <div className="border-b border-border p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
-                  <MessageSquareText size={19} />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg font-bold leading-none">Histórico de conversas</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">Conversas mockadas</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="divide-y divide-border">
-              {AI_COACH_CONVERSATION_HISTORY.map((conversation, index) => (
-                <article
-                  key={conversation.title}
-                  className={`p-4 transition-colors ${index === 0 ? "bg-primary/5" : "bg-transparent"}`}
-                >
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <p className="min-w-0 truncate text-sm font-semibold text-foreground">{conversation.title}</p>
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-background/45 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                      <Clock3 size={11} />
-                      {conversation.date}
-                    </span>
-                  </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{conversation.description}</p>
-                  <button
-                    type="button"
-                    onClick={() => void saveAssistantQuery(conversation)}
-                    className="mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
+            <ScrollArea className="min-h-0 flex-1">
+              <div
+                role="log"
+                aria-live="polite"
+                aria-label="Conversa com Junior"
+                className="flex flex-col gap-3 p-5"
+              >
+                {chatMessages.length === 0 && (
+                  <ChatBubble speaker="Junior" tone="assistant" markdown={false}>
+                    Olá! Sou o Junior, seu assistente do Career Mode. Posso ajudar com análise de elenco, recomendações de mercado, táticas e muito mais. O que você precisa?
+                  </ChatBubble>
+                )}
+                {chatMessages.map((msg) => (
+                  <ChatBubble
+                    key={msg.id}
+                    speaker={msg.role === "user" ? "Você" : "Junior"}
+                    tone={msg.role === "user" ? "user" : "assistant"}
+                    markdown={msg.role === "assistant"}
                   >
-                    <Save size={13} />
-                    Salvar pasta
-                  </button>
-                </article>
-              ))}
+                    {msg.content}
+                  </ChatBubble>
+                ))}
+                {isChatLoading && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[92%] rounded-md border border-border bg-background/45 px-3 py-2">
+                      <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Junior</p>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Loader2 size={13} className="animate-spin" />
+                        <span className="text-sm">Pensando...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="border-t border-border p-4">
+              {isRateLimited && retryAfterSeconds !== null && retryAfterSeconds > 0 && (
+                <div className="mb-3 flex items-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
+                  <LockKeyhole size={13} />
+                  <span>Muitas mensagens. Aguarde {retryAfterSeconds}s para continuar.</span>
+                </div>
+              )}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!chatInput.trim()) return;
+                  void sendMessage(chatInput);
+                  setChatInput("");
+                }}
+                className="flex items-end gap-2"
+              >
+                <label htmlFor="junior-chat-input" className="sr-only">
+                  Mensagem para o Junior
+                </label>
+                <textarea
+                  id="junior-chat-input"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!chatInput.trim()) return;
+                      void sendMessage(chatInput);
+                      setChatInput("");
+                    }
+                  }}
+                  placeholder="Pergunte ao Junior… (Enter envia, Shift+Enter quebra linha)"
+                  disabled={isChatLoading || isRateLimited}
+                  rows={2}
+                  className="min-w-0 flex-1 resize-none rounded-md border border-border bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={isChatLoading || isRateLimited || !chatInput.trim()}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                  aria-label="Enviar mensagem"
+                >
+                  {isChatLoading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                </button>
+              </form>
             </div>
-          </section>
+          </aside>
         )}
 
         {isArchiveSection && (
@@ -2657,7 +2621,7 @@ function SortHeaderButton({ label, sortBy, activeSortBy, sortOrder, onSort }: So
   );
 }
 
-function ChatBubble({ speaker, tone, children }: { speaker: string; tone: "assistant" | "user"; children: ReactNode }) {
+function ChatBubble({ speaker, tone, children, markdown = false }: { speaker: string; tone: "assistant" | "user"; children: ReactNode; markdown?: boolean }) {
   const isUser = tone === "user";
 
   return (
@@ -2672,7 +2636,13 @@ function ChatBubble({ speaker, tone, children }: { speaker: string; tone: "assis
         <p className={`mb-1 text-[10px] uppercase tracking-[0.16em] ${isUser ? "text-primary/70" : "text-muted-foreground"}`}>
           {speaker}
         </p>
-        <p className="text-sm leading-relaxed">{children}</p>
+        {markdown && typeof children === "string" ? (
+          <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-0.5 [&_strong]:font-semibold [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_table]:w-full [&_table]:text-xs [&_th]:border-b [&_th]:border-border [&_th]:pb-1 [&_th]:pr-3 [&_th]:text-left [&_th]:font-semibold [&_td]:border-b [&_td]:border-border/50 [&_td]:py-1 [&_td]:pr-3">
+            <ReactMarkdown>{children}</ReactMarkdown>
+          </div>
+        ) : (
+          <p className="text-sm leading-relaxed">{children}</p>
+        )}
       </div>
     </div>
   );
