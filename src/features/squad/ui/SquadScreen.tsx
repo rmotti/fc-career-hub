@@ -151,11 +151,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   };
 
   const handleImportClick = () => {
-    if (players.length > 0) {
-      setImportConfirmOpen(true);
-    } else {
-      runFc26Import();
-    }
+    setImportConfirmOpen(true);
   };
 
   const squadSummary = useMemo(() => {
@@ -665,7 +661,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  Jogadores já existentes no save serão mantidos (não duplicados). Esta ação cria jogadores novos do dataset oficial do FC26 para o clube atual.
+                  Vamos buscar o elenco do clube atual no dataset oficial do FC26 e adicionar ao seu save. {players.length > 0 ? "Jogadores já existentes serão mantidos (não duplicados)." : ""}
                 </p>
                 <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
                   <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
