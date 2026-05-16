@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import SaveSelect from "@/features/saves/ui/SaveSelect";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { useSaves, useCreateSave } from "@/features/saves/model/useSaves";
+import { useImportFc26Players } from "@/features/squad/model/usePlayers";
 import { getStoredActiveSaveId, setStoredActiveSaveId } from "@/features/auth/lib/auth-storage";
 import { type ApiSave, extractErrorMessage } from "@/shared/api/client";
 import { getTutorialPromptKey } from "@/features/tutorial/model/tutorialUtils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -14,7 +26,9 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { data: saves = [], isLoading: savesLoading } = useSaves();
   const createSave = useCreateSave();
+  const importFc26 = useImportFc26Players();
   const [isRedirectingToDashboard, setIsRedirectingToDashboard] = useState(false);
+  const [importPromptSave, setImportPromptSave] = useState<ApiSave | null>(null);
   const isSwitchingSave = searchParams.get("switch") === "1";
 
   useEffect(() => {
@@ -45,9 +59,8 @@ const Index = () => {
         }
       }
 
-      setIsRedirectingToDashboard(true);
       toast.success("Save criado com sucesso!", { duration: 3000 });
-      navigate("/dashboard", { replace: true });
+      setImportPromptSave(newSave);
     } catch (err: any) {
       setIsRedirectingToDashboard(false);
       const status = err?.status || err?.response?.status;
@@ -57,6 +70,32 @@ const Index = () => {
           : extractErrorMessage(err);
       toast.error(message, { duration: 5000 });
       throw err;
+    }
+  };
+
+  const closeImportPromptAndGo = () => {
+    setImportPromptSave(null);
+    setIsRedirectingToDashboard(true);
+    navigate("/dashboard", { replace: true });
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPromptSave) return;
+    try {
+      const result = await importFc26.mutateAsync({ saveId: importPromptSave.id });
+      toast.success(
+        `Elenco importado: ${result.imported} jogador${result.imported === 1 ? "" : "es"}${
+          result.skipped > 0 ? `, ${result.skipped} já existia${result.skipped === 1 ? "" : "m"}` : ""
+        }.`,
+        { duration: 4000 },
+      );
+    } catch (importErr) {
+      toast.message("Não foi possível importar o elenco automaticamente.", {
+        description: `${extractErrorMessage(importErr)} Você pode adicionar jogadores manualmente.`,
+        duration: 6000,
+      });
+    } finally {
+      closeImportPromptAndGo();
     }
   };
 
@@ -72,16 +111,67 @@ const Index = () => {
   };
 
   return (
-    <SaveSelect
-      userName={user?.name ?? "Jogador"}
-      userPlan={user?.plan ?? "FREE"}
-      saves={saves}
-      loading={savesLoading}
-      onSelectSave={handleSelectSave}
-      onCreateSave={handleCreateSave}
-      onSignOut={handleSignOut}
-      creating={createSave.isPending || isRedirectingToDashboard}
-    />
+    <>
+      <SaveSelect
+        userName={user?.name ?? "Jogador"}
+        userPlan={user?.plan ?? "FREE"}
+        saves={saves}
+        loading={savesLoading}
+        onSelectSave={handleSelectSave}
+        onCreateSave={handleCreateSave}
+        onSignOut={handleSignOut}
+        creating={createSave.isPending || importFc26.isPending || isRedirectingToDashboard}
+      />
+
+      <AlertDialog
+        open={importPromptSave !== null}
+        onOpenChange={(open) => {
+          if (!open && !importFc26.isPending) closeImportPromptAndGo();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Download size={18} className="text-primary" />
+              Importar elenco do {importPromptSave?.currentClubStint?.club ?? "clube"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Podemos preencher o seu elenco automaticamente com os jogadores do clube a partir do dataset oficial do FC26.
+                </p>
+                <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
+                  <span>
+                    O dataset pode não estar 100% atualizado com a última atualização do jogo. Mesmo após importar, talvez seja necessário ajustar manualmente alguns jogadores para refletir o seu save.
+                  </span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={importFc26.isPending} onClick={closeImportPromptAndGo}>
+              Pular
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={importFc26.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                handleConfirmImport();
+              }}
+            >
+              {importFc26.isPending ? (
+                <>
+                  <Loader2 size={15} className="mr-2 animate-spin" /> Importando...
+                </>
+              ) : (
+                "Importar elenco"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

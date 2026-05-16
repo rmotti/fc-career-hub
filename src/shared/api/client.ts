@@ -508,6 +508,11 @@ export const playersApi = {
     request<ApiPlayerSeasonStats>(`/saves/${saveId}/players/${playerId}/stats`, { method: "PATCH", body: JSON.stringify(data) }),
   release: (saveId: string, playerId: string) =>
     request<void>(`/saves/${saveId}/players/${playerId}/release`, { method: "DELETE" }),
+  importFc26: (saveId: string) =>
+    request<{ imported: number; skipped: number; total: number }>(
+      `/saves/${saveId}/players/import-fc26`,
+      { method: "POST" },
+    ),
 };
 
 // ─── FC26 Players Dataset ───────────────────────────────────────────

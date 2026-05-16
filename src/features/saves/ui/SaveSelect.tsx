@@ -88,7 +88,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
         newName.trim(),
         newClub,
         String(num),
-        newEuropeanCompetitionId === "none" ? null : newEuropeanCompetitionId
+        newEuropeanCompetitionId === "none" ? null : newEuropeanCompetitionId,
       );
       resetForm();
     } catch {

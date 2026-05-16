@@ -53,6 +53,16 @@ export function useUpdatePlayerStats() {
   });
 }
 
+export function useImportFc26Players() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId }: { saveId: string }) => playersApi.importFc26(saveId),
+    onSuccess: (_res, vars) => {
+      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+    },
+  });
+}
+
 export function useReleasePlayer() {
   const qc = useQueryClient();
   return useMutation({

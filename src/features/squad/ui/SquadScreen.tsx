@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import {
   Activity,
+  AlertTriangle,
   ArrowRightLeft,
   BarChart3,
   CircleDollarSign,
+  Download,
   Dumbbell,
   Eye,
   Loader2,
@@ -18,7 +20,17 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { type ApiPlayer, extractErrorMessage } from "@/shared/api/client";
-import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats } from "@/features/squad/model/usePlayers";
+import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats, useImportFc26Players } from "@/features/squad/model/usePlayers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { useSave } from "@/features/saves/model/useSaves";
 import PlayerModal from "@/features/squad/ui/PlayerModal";
 import PlayerViewModal from "@/features/squad/ui/PlayerViewModal";
@@ -118,6 +130,33 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const updatePlayer = useUpdatePlayer();
   const releasePlayer = useReleasePlayer();
   const updateStats = useUpdatePlayerStats();
+  const importFc26 = useImportFc26Players();
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false);
+
+  const runFc26Import = () => {
+    importFc26.mutate(
+      { saveId },
+      {
+        onSuccess: (res) => {
+          toast.success(
+            `Elenco importado: ${res.imported} novo${res.imported === 1 ? "" : "s"}${
+              res.skipped > 0 ? `, ${res.skipped} já existia${res.skipped === 1 ? "" : "m"}` : ""
+            }.`,
+            { duration: 4000 },
+          );
+        },
+        onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+      },
+    );
+  };
+
+  const handleImportClick = () => {
+    if (players.length > 0) {
+      setImportConfirmOpen(true);
+    } else {
+      runFc26Import();
+    }
+  };
 
   const squadSummary = useMemo(() => {
     const totalPlayers = players.length;
@@ -348,13 +387,24 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
           </p>
         </div>
         {!isPastSeason && (
-          <button
-            data-tour="squad-create-player"
-            onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
-            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
-          >
-            <Plus size={16} /> Adicionar Jogador
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleImportClick}
+              disabled={importFc26.isPending}
+              className="flex items-center gap-2 rounded-md border border-border bg-background/35 px-4 py-2 text-sm font-semibold text-foreground transition-[opacity,transform,border-color] hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.97]"
+              title="Importa o elenco do clube atual a partir do dataset FC26"
+            >
+              {importFc26.isPending ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              Importar elenco do FC26
+            </button>
+            <button
+              data-tour="squad-create-player"
+              onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
+              className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
+            >
+              <Plus size={16} /> Adicionar Jogador
+            </button>
+          </div>
         )}
       </div>
 
@@ -607,6 +657,31 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         onSave={handleSavePlayer}
         saveId={saveId}
       />
+
+      <AlertDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Importar elenco do FC26?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Jogadores já existentes no save serão mantidos (não duplicados). Esta ação cria jogadores novos do dataset oficial do FC26 para o clube atual.
+                </p>
+                <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
+                  <span>
+                    O dataset pode não refletir a última atualização do jogo. Mesmo após importar, talvez você precise ajustar manualmente alguns jogadores para deixar o elenco igual ao do seu save.
+                  </span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={runFc26Import}>Importar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <PlayerViewModal
         open={viewModalOpen}
