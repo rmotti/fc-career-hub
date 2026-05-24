@@ -37,7 +37,7 @@ interface Props {
   currentClub: string;
 }
 
-const ALL_LEAGUES = "Todas";
+const ALL_LEAGUES = "All";
 
 const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   const [selectedClub, setSelectedClub] = useState<string | null>(null);
@@ -56,7 +56,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   const handleBudgetBlur = () => {
     const budget = parseBudgetInMillionsInput(budgetInput);
     if (budget === null) {
-      setBudgetError("Orçamento deve ser um número válido em milhões (ex: 100 para 100M)");
+      setBudgetError("Budget must be a valid number in millions (e.g. 100 for 100M)");
       return;
     }
     setBudgetError("");
@@ -67,7 +67,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
 
     const budget = parseBudgetInMillionsInput(budgetInput);
     if (budget === null) {
-      setBudgetError("Orçamento obrigatório e deve ser um número válido em milhões");
+      setBudgetError("Budget is required and must be a valid number in millions");
       return;
     }
 
@@ -81,7 +81,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
         },
       });
 
-      toast.success(`Agora você gerencia o ${contractClub}!`, { duration: 3000 });
+      toast.success(`You are now managing ${contractClub}!`, { duration: 3000 });
       navigate("/dashboard");
     } catch (err) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
@@ -95,7 +95,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" /> Carregando clubes...
+        <Loader2 size={20} className="animate-spin" /> Loading clubs...
       </div>
     );
   }
@@ -110,7 +110,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
   const knownClubs = new Set(Object.values(CLUBS_BY_LEAGUE).flat());
   const otherClubs = availableClubs.filter(c => !knownClubs.has(c));
   if (otherClubs.length > 0) {
-    groupedClubsBase.push({ league: "Outras Ligas", clubs: otherClubs });
+    groupedClubsBase.push({ league: "Other Leagues", clubs: otherClubs });
   }
 
   const leagueOptions = [ALL_LEAGUES, ...groupedClubsBase.map((group) => group.league)];
@@ -158,24 +158,24 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
                 <BriefcaseBusiness size={14} />
-                Mercado de oportunidades
+                Opportunity market
               </div>
               <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground md:text-4xl">
-                Escolha seu próximo clube
+                Choose your next club
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Você pode mudar no meio da carreira. O histórico global fica salvo, e o novo clube começa um ciclo próprio de elenco, estatísticas e transferências.
+                You can change clubs mid-career. The global history is saved, and the new club starts its own cycle of squad, stats, and transfers.
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-              <ClubStatusCard label="Clube atual" club={currentClub} tone="muted" />
+              <ClubStatusCard label="Current club" club={currentClub} tone="muted" />
               <div className="hidden h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground sm:flex">
                 <ArrowRight size={17} />
               </div>
               <ClubStatusCard
-                label="Próximo destino"
-                club={selectedClub ?? "Nenhum clube escolhido"}
+                label="Next destination"
+                club={selectedClub ?? "No club selected"}
                 tone={selectedClub ? "primary" : "empty"}
                 onClear={selectedClub ? clearSelection : undefined}
               />
@@ -186,7 +186,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
         <section data-tour="change-club-filters" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)_180px]">
           <div className="card-gamer p-4">
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Buscar clube
+              Search club
             </label>
             <div className="relative">
               <Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -194,7 +194,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Digite o nome do clube"
+                placeholder="Type the club name"
                 className="h-11 w-full rounded-md border border-border bg-background/50 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
@@ -202,14 +202,14 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
 
           <div className="card-gamer p-4">
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Liga
+              League
             </label>
             <Select
               value={activeLeague}
               onValueChange={setActiveLeague}
             >
               <SelectTrigger className="h-11 w-full border-border bg-background/50 font-display text-sm font-semibold text-foreground shadow-none transition-colors hover:border-primary/35 focus:ring-primary/30">
-                <SelectValue placeholder="Selecione uma liga" />
+                <SelectValue placeholder="Select a league" />
               </SelectTrigger>
               <SelectContent className="max-h-72 border-border bg-card font-display text-foreground">
                 {leagueOptions.map((league) => (
@@ -226,7 +226,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
           </div>
 
           <div className="card-gamer p-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Clubes visíveis</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Visible clubs</p>
             <p className="mt-2 font-display text-3xl font-bold leading-none text-primary">{visibleClubCount}</p>
           </div>
         </section>
@@ -241,7 +241,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
                     {league}
                   </h3>
                   <span className="rounded-md border border-border bg-muted/20 px-2 py-1 text-xs font-semibold text-muted-foreground">
-                    {clubs.length} clubes
+                    {clubs.length} clubs
                   </span>
                 </div>
 
@@ -286,8 +286,8 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
         ) : (
           <div className="card-gamer flex min-h-[180px] flex-col items-center justify-center p-8 text-center">
             <Search size={24} className="text-muted-foreground" />
-            <p className="mt-3 font-display text-lg font-bold text-foreground">Nenhum clube encontrado</p>
-            <p className="mt-1 text-sm text-muted-foreground">Tente limpar a busca ou trocar o filtro de liga.</p>
+            <p className="mt-3 font-display text-lg font-bold text-foreground">No clubs found</p>
+            <p className="mt-1 text-sm text-muted-foreground">Try clearing the search or changing the league filter.</p>
           </div>
         )}
       </div>
@@ -300,12 +300,12 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
               <DialogHeader>
                 <div className="pr-8">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">Contrato de carreira</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">Career contract</p>
                     <DialogTitle className="mt-1 truncate font-display text-3xl leading-none text-foreground">
-                      Assinar com {contractClub}
+                      Sign with {contractClub}
                     </DialogTitle>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Informe as condições iniciais antes de abrir o novo ciclo.
+                      Enter the initial conditions before opening the new cycle.
                     </p>
                   </div>
                 </div>
@@ -314,30 +314,30 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
 
             <div className="space-y-5 bg-card px-5 py-5">
               <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                <ClubStatusCard label="Saindo de" club={currentClub} tone="muted" />
+                <ClubStatusCard label="Leaving" club={currentClub} tone="muted" />
                 <div className="hidden h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-primary sm:flex">
                   <ArrowRight size={17} />
                 </div>
-                <ClubStatusCard label="Chegando em" club={contractClub ?? "Novo clube"} tone="primary" />
+                <ClubStatusCard label="Joining" club={contractClub ?? "New club"} tone="primary" />
               </div>
 
               <div className="rounded-md border border-[hsl(var(--warning)/0.25)] bg-[hsl(var(--warning)/0.08)] p-4">
                 <p className="text-sm font-medium text-foreground">
-                  Ao confirmar, seu período no clube atual será encerrado. O histórico global da carreira será mantido, mas o novo clube começará sem elenco registrado.
+                  Upon confirmation, your time at the current club will end. The global career history will be kept, but the new club will start without a registered squad.
                 </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Competição europeia
+                    European competition
                   </label>
                   <select
                     value={europeanCompetitionId}
                     onChange={(e) => setEuropeanCompetitionId(e.target.value)}
                     className="h-11 w-full appearance-none rounded-md border border-border bg-background/50 px-3 text-sm text-foreground transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
-                    <option value="none">Nenhuma</option>
+                    <option value="none">None</option>
                     {europeanCompetitions.map((competition) => (
                       <option key={competition.id} value={competition.id}>{competition.name}</option>
                     ))}
@@ -346,7 +346,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
 
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Orçamento inicial
+                    Initial budget
                   </label>
                   <input
                     type="text"
@@ -356,21 +356,21 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
                       if (budgetError) setBudgetError("");
                     }}
                     onBlur={handleBudgetBlur}
-                    placeholder="Ex: 100"
+                    placeholder="E.g.: 100"
                     className={`h-11 w-full rounded-md border bg-background/50 px-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-shadow focus:outline-none focus:ring-2 ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/40"}`}
                   />
-                  <p className="mt-1.5 text-xs text-muted-foreground">Digite em milhões. Ex.: 100 = 100M.</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">Enter in millions. E.g.: 100 = 100M.</p>
                   {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive">{budgetError}</p>}
                 </div>
               </div>
 
               <div className="rounded-md border border-border bg-background/25 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resumo</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Summary</p>
                 <p className="mt-2 text-sm text-foreground">
-                  Você sairá de <span className="font-semibold">{currentClub}</span> e começará no{" "}
+                  You will leave <span className="font-semibold">{currentClub}</span> and join{" "}
                   <span className="font-semibold text-primary">{contractClub}</span>
-                  {parsedBudget !== null ? <> com orçamento de <span className="font-semibold">{budgetInput}M</span></> : null}
-                  {selectedCompetition ? <> disputando <span className="font-semibold">{selectedCompetition.name}</span></> : null}.
+                  {parsedBudget !== null ? <> with a budget of <span className="font-semibold">{budgetInput}M</span></> : null}
+                  {selectedCompetition ? <> competing in <span className="font-semibold">{selectedCompetition.name}</span></> : null}.
                 </p>
               </div>
 
@@ -381,7 +381,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
                   disabled={isSubmitting}
                   className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-background/40 px-4 font-display text-sm font-semibold text-foreground transition-colors hover:border-primary/35 disabled:opacity-50"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   type="button"
@@ -390,7 +390,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-5 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-                  {isSubmitting ? "Transferindo..." : `Confirmar mudança`}
+                  {isSubmitting ? "Transferring..." : `Confirm move`}
                 </button>
               </div>
             </div>
@@ -442,8 +442,8 @@ const ClubStatusCard = ({
             type="button"
             onClick={onClear}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary/25 bg-background/35 text-primary transition-colors hover:bg-primary/10"
-            aria-label="Limpar seleção de clube"
-            title="Limpar seleção"
+            aria-label="Clear club selection"
+            title="Clear selection"
           >
             <X size={15} />
           </button>

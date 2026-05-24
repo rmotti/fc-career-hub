@@ -16,23 +16,23 @@ const player = (overrides: Partial<ApiPlayer>): ApiPlayer => ({
 });
 
 describe("playerPositions", () => {
-  it("trata campo ausente como lista vazia", () => {
+  it("treats missing field as empty list", () => {
     expect(getAlternativePositions(player({ alternativePosition: undefined }))).toEqual([]);
   });
 
-  it("remove duplicadas, inválidas e a posição principal", () => {
+  it("removes duplicates, invalid positions and the main position", () => {
     expect(normalizeAlternativePositions(["PD", "SA", "PD", "PE", "INVALID"], "PE")).toEqual(["PD", "SA"]);
   });
 
-  it("não permite GOL como alternativa de jogador de linha", () => {
+  it("does not allow GOL as an alternative for outfield players", () => {
     expect(normalizeAlternativePositions(["GOL", "PD", "SA"], "PE")).toEqual(["PD", "SA"]);
   });
 
-  it("não permite posições de linha como alternativas de goleiro", () => {
+  it("does not allow outfield positions as goalkeeper alternatives", () => {
     expect(normalizeAlternativePositions(["ZAG", "GOL"], "GOL")).toEqual([]);
   });
 
-  it("aceita posição alternativa como posição jogável", () => {
+  it("accepts alternative position as a playable position", () => {
     const winger = player({ alternativePosition: { positions: ["PD", "SA"] } });
 
     expect(playerCanPlayPosition(winger, "PE")).toBe(true);

@@ -158,33 +158,33 @@ type ScoutSortBy = NonNullable<Fc26PlayerFilters["sortBy"]>;
 type ScoutSortOrder = NonNullable<Fc26PlayerFilters["sortOrder"]>;
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
-  GOL: "Goleiro",
-  ZAG: "Zagueiro",
-  LE: "Lateral Esquerdo",
-  LD: "Lateral Direito",
-  VOL: "Volante",
-  MC: "Meia Central",
-  ME: "Meia Esquerda",
-  MD: "Meia Direita",
-  MEI: "Meia Atacante",
-  PE: "Ponta Esquerda",
-  PD: "Ponta Direita",
-  SA: "Segundo Atacante",
-  ATA: "Atacante",
+  GOL: "Goalkeeper",
+  ZAG: "Centre Back",
+  LE: "Left Back",
+  LD: "Right Back",
+  VOL: "Defensive Mid",
+  MC: "Central Mid",
+  ME: "Left Mid",
+  MD: "Right Mid",
+  MEI: "Attacking Mid",
+  PE: "Left Wing",
+  PD: "Right Wing",
+  SA: "Second Striker",
+  ATA: "Striker",
 };
 
 const LIMIT_OPTIONS = ["20", "40", "60", "100"];
 
 const FOOT_LABELS: Record<"Left" | "Right", string> = {
-  Left: "Canhoto",
-  Right: "Destro",
+  Left: "Left",
+  Right: "Right",
 };
 
 const FIT_OBJECTIVE_LABELS: Record<Fc26FitObjective, string> = {
-  balanced: "Equilibrado",
-  title: "Brigar por título",
-  youth: "Desenvolver base",
-  rebuild: "Reconstrução",
+  balanced: "Balanced",
+  title: "Title contender",
+  youth: "Youth development",
+  rebuild: "Rebuild",
 };
 
 const FIT_OBJECTIVE_OPTIONS: Array<{ value: Fc26FitObjective; label: string }> = [
@@ -195,10 +195,10 @@ const FIT_OBJECTIVE_OPTIONS: Array<{ value: Fc26FitObjective; label: string }> =
 ];
 
 const FIT_CONFIDENCE_LABELS: Record<Fc26FitConfidence, string> = {
-  high: "confiança alta",
-  medium: "confiança média",
-  low: "confiança baixa",
-  none: "sem histórico suficiente",
+  high: "high confidence",
+  medium: "medium confidence",
+  low: "low confidence",
+  none: "insufficient history",
 };
 
 const PLAYSTYLE_OPTIONS = [
@@ -235,103 +235,103 @@ const PLAYSTYLE_PLUS_OPTIONS = PLAYSTYLE_OPTIONS.map((playStyle) => `${playStyle
 
 const ATTRIBUTE_FILTER_GROUPS: AttributeFilterGroupConfig[] = [
   {
-    title: "Perfil",
+    title: "Profile",
     icon: UserRound,
     filters: [
-      { field: "height", label: "Altura", min: 150, max: 230 },
-      { field: "weight", label: "Peso", min: 45, max: 120 },
-      { field: "weakFoot", label: "Perna ruim", min: 1, max: 5 },
+      { field: "height", label: "Height", min: 150, max: 230 },
+      { field: "weight", label: "Weight", min: 45, max: 120 },
+      { field: "weakFoot", label: "Weak foot", min: 1, max: 5 },
       { field: "skillMoves", label: "Skill moves", min: 1, max: 5 },
-      { field: "internationalReputation", label: "Reputação", min: 1, max: 5 },
+      { field: "internationalReputation", label: "Reputation", min: 1, max: 5 },
     ],
   },
   {
-    title: "Ratings gerais",
+    title: "General ratings",
     icon: Activity,
     filters: [
-      { field: "pace", label: "Ritmo", min: 1, max: 99 },
-      { field: "shooting", label: "Finalização", min: 1, max: 99 },
-      { field: "passing", label: "Passe", min: 1, max: 99 },
-      { field: "dribbling", label: "Drible", min: 1, max: 99 },
-      { field: "defending", label: "Defesa", min: 1, max: 99 },
-      { field: "physic", label: "Físico", min: 1, max: 99 },
+      { field: "pace", label: "Pace", min: 1, max: 99 },
+      { field: "shooting", label: "Shooting", min: 1, max: 99 },
+      { field: "passing", label: "Passing", min: 1, max: 99 },
+      { field: "dribbling", label: "Dribbling", min: 1, max: 99 },
+      { field: "defending", label: "Defending", min: 1, max: 99 },
+      { field: "physic", label: "Physical", min: 1, max: 99 },
     ],
   },
   {
-    title: "Ataque",
+    title: "Attacking",
     icon: Target,
     filters: [
-      { field: "attackingCrossing", label: "Cruzamento", min: 1, max: 99 },
-      { field: "attackingFinishing", label: "Finalização", min: 1, max: 99 },
-      { field: "attackingHeadingAccuracy", label: "Cabeceio", min: 1, max: 99 },
-      { field: "attackingShortPassing", label: "Passe curto", min: 1, max: 99 },
-      { field: "attackingVolleys", label: "Voleios", min: 1, max: 99 },
+      { field: "attackingCrossing", label: "Crossing", min: 1, max: 99 },
+      { field: "attackingFinishing", label: "Finishing", min: 1, max: 99 },
+      { field: "attackingHeadingAccuracy", label: "Heading", min: 1, max: 99 },
+      { field: "attackingShortPassing", label: "Short passing", min: 1, max: 99 },
+      { field: "attackingVolleys", label: "Volleys", min: 1, max: 99 },
     ],
   },
   {
-    title: "Habilidade",
+    title: "Skill",
     icon: Sparkles,
     filters: [
-      { field: "skillDribbling", label: "Drible", min: 1, max: 99 },
-      { field: "skillCurve", label: "Curva", min: 1, max: 99 },
-      { field: "skillFkAccuracy", label: "Falta", min: 1, max: 99 },
-      { field: "skillLongPassing", label: "Passe longo", min: 1, max: 99 },
-      { field: "skillBallControl", label: "Controle", min: 1, max: 99 },
+      { field: "skillDribbling", label: "Dribbling", min: 1, max: 99 },
+      { field: "skillCurve", label: "Curve", min: 1, max: 99 },
+      { field: "skillFkAccuracy", label: "FK accuracy", min: 1, max: 99 },
+      { field: "skillLongPassing", label: "Long passing", min: 1, max: 99 },
+      { field: "skillBallControl", label: "Ball control", min: 1, max: 99 },
     ],
   },
   {
-    title: "Movimentação",
+    title: "Movement",
     icon: Footprints,
     filters: [
-      { field: "movementAcceleration", label: "Aceleração", min: 1, max: 99 },
-      { field: "movementSprintSpeed", label: "Sprint", min: 1, max: 99 },
-      { field: "movementAgility", label: "Agilidade", min: 1, max: 99 },
-      { field: "movementReactions", label: "Reações", min: 1, max: 99 },
-      { field: "movementBalance", label: "Equilíbrio", min: 1, max: 99 },
+      { field: "movementAcceleration", label: "Acceleration", min: 1, max: 99 },
+      { field: "movementSprintSpeed", label: "Sprint speed", min: 1, max: 99 },
+      { field: "movementAgility", label: "Agility", min: 1, max: 99 },
+      { field: "movementReactions", label: "Reactions", min: 1, max: 99 },
+      { field: "movementBalance", label: "Balance", min: 1, max: 99 },
     ],
   },
   {
-    title: "Força",
+    title: "Power",
     icon: Dumbbell,
     filters: [
-      { field: "powerShotPower", label: "Força do chute", min: 1, max: 99 },
-      { field: "powerJumping", label: "Impulsão", min: 1, max: 99 },
-      { field: "powerStamina", label: "Fôlego", min: 1, max: 99 },
-      { field: "powerStrength", label: "Força", min: 1, max: 99 },
-      { field: "powerLongShots", label: "Chute longo", min: 1, max: 99 },
+      { field: "powerShotPower", label: "Shot power", min: 1, max: 99 },
+      { field: "powerJumping", label: "Jumping", min: 1, max: 99 },
+      { field: "powerStamina", label: "Stamina", min: 1, max: 99 },
+      { field: "powerStrength", label: "Strength", min: 1, max: 99 },
+      { field: "powerLongShots", label: "Long shots", min: 1, max: 99 },
     ],
   },
   {
-    title: "Mentalidade",
+    title: "Mentality",
     icon: Brain,
     filters: [
-      { field: "mentalityAggression", label: "Agressividade", min: 1, max: 99 },
-      { field: "mentalityInterceptions", label: "Interceptações", min: 1, max: 99 },
-      { field: "mentalityPositioning", label: "Posicionamento", min: 1, max: 99 },
-      { field: "mentalityVision", label: "Visão", min: 1, max: 99 },
-      { field: "mentalityPenalties", label: "Pênaltis", min: 1, max: 99 },
-      { field: "mentalityComposure", label: "Compostura", min: 1, max: 99 },
+      { field: "mentalityAggression", label: "Aggression", min: 1, max: 99 },
+      { field: "mentalityInterceptions", label: "Interceptions", min: 1, max: 99 },
+      { field: "mentalityPositioning", label: "Positioning", min: 1, max: 99 },
+      { field: "mentalityVision", label: "Vision", min: 1, max: 99 },
+      { field: "mentalityPenalties", label: "Penalties", min: 1, max: 99 },
+      { field: "mentalityComposure", label: "Composure", min: 1, max: 99 },
     ],
   },
   {
-    title: "Defesa",
+    title: "Defending",
     icon: ShieldCheck,
     filters: [
-      { field: "defendingMarkingAwareness", label: "Consciência", min: 1, max: 99 },
-      { field: "defendingStandingTackle", label: "Carrinho em pé", min: 1, max: 99 },
-      { field: "defendingSlidingTackle", label: "Carrinho", min: 1, max: 99 },
+      { field: "defendingMarkingAwareness", label: "Awareness", min: 1, max: 99 },
+      { field: "defendingStandingTackle", label: "Standing tackle", min: 1, max: 99 },
+      { field: "defendingSlidingTackle", label: "Sliding tackle", min: 1, max: 99 },
     ],
   },
   {
-    title: "Goleiro",
+    title: "Goalkeeper",
     icon: UserRound,
     filters: [
-      { field: "goalkeepingDiving", label: "Mergulho", min: 1, max: 99 },
-      { field: "goalkeepingHandling", label: "Manuseio", min: 1, max: 99 },
-      { field: "goalkeepingKicking", label: "Chute", min: 1, max: 99 },
-      { field: "goalkeepingPositioning", label: "Posição", min: 1, max: 99 },
-      { field: "goalkeepingReflexes", label: "Reflexos", min: 1, max: 99 },
-      { field: "goalkeepingSpeed", label: "Velocidade", min: 1, max: 99 },
+      { field: "goalkeepingDiving", label: "Diving", min: 1, max: 99 },
+      { field: "goalkeepingHandling", label: "Handling", min: 1, max: 99 },
+      { field: "goalkeepingKicking", label: "Kicking", min: 1, max: 99 },
+      { field: "goalkeepingPositioning", label: "Positioning", min: 1, max: 99 },
+      { field: "goalkeepingReflexes", label: "Reflexes", min: 1, max: 99 },
+      { field: "goalkeepingSpeed", label: "Speed", min: 1, max: 99 },
     ],
   },
 ];
@@ -386,51 +386,51 @@ const COMPARISON_RADAR_COLORS = [
 
 const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
   {
-    title: "Decisão rápida",
+    title: "Quick decision",
     icon: Target,
     metrics: [
       { label: "OVR", render: (player) => player.ovr, score: (player) => player.ovr, better: "higher" },
-      { label: "Potencial", render: (player) => player.potential, score: (player) => player.potential, better: "higher" },
+      { label: "Potential", render: (player) => player.potential, score: (player) => player.potential, better: "higher" },
       {
-        label: "Crescimento",
+        label: "Growth",
         render: (player) => formatPotentialGrowth(player),
         score: (player) => player.potential - player.ovr,
         better: "higher",
       },
-      { label: "Idade", render: (player) => `${player.age} anos` },
-      { label: "Valor", render: (player) => formatMarketValue(player.marketValue) },
-      { label: "Salário", render: (player) => formatWage(player.wage) },
-      { label: "Clube", render: (player) => player.club ?? "Sem clube" },
-      { label: "Liga", render: (player) => player.league ?? "Liga não informada" },
+      { label: "Age", render: (player) => `${player.age} yrs` },
+      { label: "Value", render: (player) => formatMarketValue(player.marketValue) },
+      { label: "Wage", render: (player) => formatWage(player.wage) },
+      { label: "Club", render: (player) => player.club ?? "No club" },
+      { label: "League", render: (player) => player.league ?? "League not provided" },
     ],
   },
   {
-    title: "Ratings gerais",
+    title: "General ratings",
     icon: Activity,
     metrics: [
-      { label: "Média técnica", render: (player) => formatAverageRating(getGeneralRatingAverage(player)), score: getGeneralRatingAverage, better: "higher" },
-      { label: "Ritmo", render: (player) => formatRating(player.pace), score: (player) => player.pace, better: "higher" },
-      { label: "Finalização", render: (player) => formatRating(player.shooting), score: (player) => player.shooting, better: "higher" },
-      { label: "Passe", render: (player) => formatRating(player.passing), score: (player) => player.passing, better: "higher" },
-      { label: "Drible", render: (player) => formatRating(player.dribbling), score: (player) => player.dribbling, better: "higher" },
-      { label: "Defesa", render: (player) => formatRating(player.defending), score: (player) => player.defending, better: "higher" },
-      { label: "Físico", render: (player) => formatRating(player.physic), score: (player) => player.physic, better: "higher" },
+      { label: "Tech avg", render: (player) => formatAverageRating(getGeneralRatingAverage(player)), score: getGeneralRatingAverage, better: "higher" },
+      { label: "Pace", render: (player) => formatRating(player.pace), score: (player) => player.pace, better: "higher" },
+      { label: "Shooting", render: (player) => formatRating(player.shooting), score: (player) => player.shooting, better: "higher" },
+      { label: "Passing", render: (player) => formatRating(player.passing), score: (player) => player.passing, better: "higher" },
+      { label: "Dribbling", render: (player) => formatRating(player.dribbling), score: (player) => player.dribbling, better: "higher" },
+      { label: "Defending", render: (player) => formatRating(player.defending), score: (player) => player.defending, better: "higher" },
+      { label: "Physical", render: (player) => formatRating(player.physic), score: (player) => player.physic, better: "higher" },
     ],
   },
   {
-    title: "Perfil",
+    title: "Profile",
     icon: UserRound,
     metrics: [
-      { label: "Principal", render: (player) => getPrimaryPosition(player) ?? "—" },
-      { label: "Secundárias", render: (player) => getSecondaryPositions(player).join(", ") || "—" },
-      { label: "Nacionalidade", render: (player) => player.nation ?? "—" },
-      { label: "Altura", render: (player) => formatHeight(player.height), score: (player) => player.height, better: "higher" },
-      { label: "Peso", render: (player) => formatWeight(player.weight) },
-      { label: "Pé dominante", render: (player) => formatPreferredFoot(player.preferredFoot) },
-      { label: "Perna ruim", render: (player) => formatStars(player.weakFoot), score: (player) => player.weakFoot, better: "higher" },
+      { label: "Primary", render: (player) => getPrimaryPosition(player) ?? "—" },
+      { label: "Secondary", render: (player) => getSecondaryPositions(player).join(", ") || "—" },
+      { label: "Nationality", render: (player) => player.nation ?? "—" },
+      { label: "Height", render: (player) => formatHeight(player.height), score: (player) => player.height, better: "higher" },
+      { label: "Weight", render: (player) => formatWeight(player.weight) },
+      { label: "Preferred foot", render: (player) => formatPreferredFoot(player.preferredFoot) },
+      { label: "Weak foot", render: (player) => formatStars(player.weakFoot), score: (player) => player.weakFoot, better: "higher" },
       { label: "Skill moves", render: (player) => formatStars(player.skillMoves), score: (player) => player.skillMoves, better: "higher" },
       {
-        label: "Reputação",
+        label: "Reputation",
         render: (player) => formatStars(player.internationalReputation),
         score: (player) => player.internationalReputation,
         better: "higher",
@@ -439,95 +439,95 @@ const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
     ],
   },
   {
-    title: "Ataque",
+    title: "Attacking",
     icon: Target,
     metrics: [
-      { label: "Cruzamento", render: (player) => formatRating(player.attackingCrossing), score: (player) => player.attackingCrossing, better: "higher" },
-      { label: "Finalização", render: (player) => formatRating(player.attackingFinishing), score: (player) => player.attackingFinishing, better: "higher" },
+      { label: "Crossing", render: (player) => formatRating(player.attackingCrossing), score: (player) => player.attackingCrossing, better: "higher" },
+      { label: "Finishing", render: (player) => formatRating(player.attackingFinishing), score: (player) => player.attackingFinishing, better: "higher" },
       {
-        label: "Cabeceio",
+        label: "Heading",
         render: (player) => formatRating(player.attackingHeadingAccuracy),
         score: (player) => player.attackingHeadingAccuracy,
         better: "higher",
       },
-      { label: "Passe curto", render: (player) => formatRating(player.attackingShortPassing), score: (player) => player.attackingShortPassing, better: "higher" },
-      { label: "Voleios", render: (player) => formatRating(player.attackingVolleys), score: (player) => player.attackingVolleys, better: "higher" },
+      { label: "Short passing", render: (player) => formatRating(player.attackingShortPassing), score: (player) => player.attackingShortPassing, better: "higher" },
+      { label: "Volleys", render: (player) => formatRating(player.attackingVolleys), score: (player) => player.attackingVolleys, better: "higher" },
     ],
   },
   {
-    title: "Habilidade",
+    title: "Skill",
     icon: Sparkles,
     metrics: [
-      { label: "Drible", render: (player) => formatRating(player.skillDribbling), score: (player) => player.skillDribbling, better: "higher" },
-      { label: "Curva", render: (player) => formatRating(player.skillCurve), score: (player) => player.skillCurve, better: "higher" },
-      { label: "Falta", render: (player) => formatRating(player.skillFkAccuracy), score: (player) => player.skillFkAccuracy, better: "higher" },
-      { label: "Passe longo", render: (player) => formatRating(player.skillLongPassing), score: (player) => player.skillLongPassing, better: "higher" },
-      { label: "Controle", render: (player) => formatRating(player.skillBallControl), score: (player) => player.skillBallControl, better: "higher" },
+      { label: "Dribbling", render: (player) => formatRating(player.skillDribbling), score: (player) => player.skillDribbling, better: "higher" },
+      { label: "Curve", render: (player) => formatRating(player.skillCurve), score: (player) => player.skillCurve, better: "higher" },
+      { label: "FK accuracy", render: (player) => formatRating(player.skillFkAccuracy), score: (player) => player.skillFkAccuracy, better: "higher" },
+      { label: "Long passing", render: (player) => formatRating(player.skillLongPassing), score: (player) => player.skillLongPassing, better: "higher" },
+      { label: "Ball control", render: (player) => formatRating(player.skillBallControl), score: (player) => player.skillBallControl, better: "higher" },
     ],
   },
   {
-    title: "Movimentação",
+    title: "Movement",
     icon: Footprints,
     metrics: [
-      { label: "Aceleração", render: (player) => formatRating(player.movementAcceleration), score: (player) => player.movementAcceleration, better: "higher" },
-      { label: "Sprint", render: (player) => formatRating(player.movementSprintSpeed), score: (player) => player.movementSprintSpeed, better: "higher" },
-      { label: "Agilidade", render: (player) => formatRating(player.movementAgility), score: (player) => player.movementAgility, better: "higher" },
-      { label: "Reações", render: (player) => formatRating(player.movementReactions), score: (player) => player.movementReactions, better: "higher" },
-      { label: "Equilíbrio", render: (player) => formatRating(player.movementBalance), score: (player) => player.movementBalance, better: "higher" },
+      { label: "Acceleration", render: (player) => formatRating(player.movementAcceleration), score: (player) => player.movementAcceleration, better: "higher" },
+      { label: "Sprint speed", render: (player) => formatRating(player.movementSprintSpeed), score: (player) => player.movementSprintSpeed, better: "higher" },
+      { label: "Agility", render: (player) => formatRating(player.movementAgility), score: (player) => player.movementAgility, better: "higher" },
+      { label: "Reactions", render: (player) => formatRating(player.movementReactions), score: (player) => player.movementReactions, better: "higher" },
+      { label: "Balance", render: (player) => formatRating(player.movementBalance), score: (player) => player.movementBalance, better: "higher" },
     ],
   },
   {
-    title: "Força",
+    title: "Power",
     icon: Dumbbell,
     metrics: [
-      { label: "Força do chute", render: (player) => formatRating(player.powerShotPower), score: (player) => player.powerShotPower, better: "higher" },
-      { label: "Impulsão", render: (player) => formatRating(player.powerJumping), score: (player) => player.powerJumping, better: "higher" },
-      { label: "Fôlego", render: (player) => formatRating(player.powerStamina), score: (player) => player.powerStamina, better: "higher" },
-      { label: "Força", render: (player) => formatRating(player.powerStrength), score: (player) => player.powerStrength, better: "higher" },
-      { label: "Chute longo", render: (player) => formatRating(player.powerLongShots), score: (player) => player.powerLongShots, better: "higher" },
+      { label: "Shot power", render: (player) => formatRating(player.powerShotPower), score: (player) => player.powerShotPower, better: "higher" },
+      { label: "Jumping", render: (player) => formatRating(player.powerJumping), score: (player) => player.powerJumping, better: "higher" },
+      { label: "Stamina", render: (player) => formatRating(player.powerStamina), score: (player) => player.powerStamina, better: "higher" },
+      { label: "Strength", render: (player) => formatRating(player.powerStrength), score: (player) => player.powerStrength, better: "higher" },
+      { label: "Long shots", render: (player) => formatRating(player.powerLongShots), score: (player) => player.powerLongShots, better: "higher" },
     ],
   },
   {
-    title: "Mentalidade",
+    title: "Mentality",
     icon: Brain,
     metrics: [
-      { label: "Agressividade", render: (player) => formatRating(player.mentalityAggression), score: (player) => player.mentalityAggression, better: "higher" },
-      { label: "Interceptações", render: (player) => formatRating(player.mentalityInterceptions), score: (player) => player.mentalityInterceptions, better: "higher" },
-      { label: "Posicionamento", render: (player) => formatRating(player.mentalityPositioning), score: (player) => player.mentalityPositioning, better: "higher" },
-      { label: "Visão", render: (player) => formatRating(player.mentalityVision), score: (player) => player.mentalityVision, better: "higher" },
-      { label: "Pênaltis", render: (player) => formatRating(player.mentalityPenalties), score: (player) => player.mentalityPenalties, better: "higher" },
-      { label: "Compostura", render: (player) => formatRating(player.mentalityComposure), score: (player) => player.mentalityComposure, better: "higher" },
+      { label: "Aggression", render: (player) => formatRating(player.mentalityAggression), score: (player) => player.mentalityAggression, better: "higher" },
+      { label: "Interceptions", render: (player) => formatRating(player.mentalityInterceptions), score: (player) => player.mentalityInterceptions, better: "higher" },
+      { label: "Positioning", render: (player) => formatRating(player.mentalityPositioning), score: (player) => player.mentalityPositioning, better: "higher" },
+      { label: "Vision", render: (player) => formatRating(player.mentalityVision), score: (player) => player.mentalityVision, better: "higher" },
+      { label: "Penalties", render: (player) => formatRating(player.mentalityPenalties), score: (player) => player.mentalityPenalties, better: "higher" },
+      { label: "Composure", render: (player) => formatRating(player.mentalityComposure), score: (player) => player.mentalityComposure, better: "higher" },
     ],
   },
   {
-    title: "Defesa",
+    title: "Defending",
     icon: ShieldCheck,
     metrics: [
       {
-        label: "Consciência",
+        label: "Awareness",
         render: (player) => formatRating(player.defendingMarkingAwareness),
         score: (player) => player.defendingMarkingAwareness,
         better: "higher",
       },
       {
-        label: "Carrinho em pé",
+        label: "Standing tackle",
         render: (player) => formatRating(player.defendingStandingTackle),
         score: (player) => player.defendingStandingTackle,
         better: "higher",
       },
-      { label: "Carrinho", render: (player) => formatRating(player.defendingSlidingTackle), score: (player) => player.defendingSlidingTackle, better: "higher" },
+      { label: "Sliding tackle", render: (player) => formatRating(player.defendingSlidingTackle), score: (player) => player.defendingSlidingTackle, better: "higher" },
     ],
   },
   {
-    title: "Goleiro",
+    title: "Goalkeeper",
     icon: UserRound,
     metrics: [
-      { label: "Mergulho", render: (player) => formatRating(player.goalkeepingDiving), score: (player) => player.goalkeepingDiving, better: "higher" },
-      { label: "Manuseio", render: (player) => formatRating(player.goalkeepingHandling), score: (player) => player.goalkeepingHandling, better: "higher" },
-      { label: "Chute", render: (player) => formatRating(player.goalkeepingKicking), score: (player) => player.goalkeepingKicking, better: "higher" },
-      { label: "Posição", render: (player) => formatRating(player.goalkeepingPositioning), score: (player) => player.goalkeepingPositioning, better: "higher" },
-      { label: "Reflexos", render: (player) => formatRating(player.goalkeepingReflexes), score: (player) => player.goalkeepingReflexes, better: "higher" },
-      { label: "Velocidade", render: (player) => formatRating(player.goalkeepingSpeed), score: (player) => player.goalkeepingSpeed, better: "higher" },
+      { label: "Diving", render: (player) => formatRating(player.goalkeepingDiving), score: (player) => player.goalkeepingDiving, better: "higher" },
+      { label: "Handling", render: (player) => formatRating(player.goalkeepingHandling), score: (player) => player.goalkeepingHandling, better: "higher" },
+      { label: "Kicking", render: (player) => formatRating(player.goalkeepingKicking), score: (player) => player.goalkeepingKicking, better: "higher" },
+      { label: "Positioning", render: (player) => formatRating(player.goalkeepingPositioning), score: (player) => player.goalkeepingPositioning, better: "higher" },
+      { label: "Reflexes", render: (player) => formatRating(player.goalkeepingReflexes), score: (player) => player.goalkeepingReflexes, better: "higher" },
+      { label: "Speed", render: (player) => formatRating(player.goalkeepingSpeed), score: (player) => player.goalkeepingSpeed, better: "higher" },
     ],
   },
 ];
@@ -549,7 +549,7 @@ function sanitizeNumberInput(value: string, allowDecimal: boolean) {
 
 function validateRange(label: string, min?: number, max?: number) {
   if (typeof min === "number" && typeof max === "number" && min > max) {
-    toast.error(`${label}: o mínimo não pode ser maior que o máximo.`, { duration: 4000 });
+    toast.error(`${label}: minimum cannot be greater than maximum.`, { duration: 4000 });
     return false;
   }
 
@@ -727,7 +727,7 @@ function formatMarketValue(value: number | null) {
 
 function formatWage(value: number | null) {
   if (value === null || value === undefined) return "—";
-  return `€${Math.round(value)}K/sem`;
+  return `€${Math.round(value)}K/wk`;
 }
 
 function formatRating(value: number | null | undefined) {

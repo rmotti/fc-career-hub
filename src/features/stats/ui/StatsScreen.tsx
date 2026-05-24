@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   Calendar,
@@ -76,44 +77,44 @@ const getGoalContributions = (player: ApiPlayer) => {
 };
 
 const formatDecimal = (value: number) =>
-  Number.isFinite(value) ? value.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "0";
+  Number.isFinite(value) ? value.toLocaleString("en-US", { maximumFractionDigits: 1 }) : "0";
 
-const getSeasonVerdict = (winRate: number, goalDiff: number, matches: number) => {
+const getSeasonVerdict = (winRate: number, goalDiff: number, matches: number, t: (key: string) => string) => {
   if (matches === 0) {
     return {
-      title: "Temporada pronta para registro",
-      detail: "Adicione resultados para transformar esta tela em uma leitura real da campanha.",
+      title: t("stats.season.ready"),
+      detail: t("stats.season.readyDesc"),
       tone: "muted" as Tone,
     };
   }
 
   if (winRate >= 70 && goalDiff > 0) {
     return {
-      title: "Campanha dominante",
-      detail: "O time controla a temporada e sustenta vantagem clara no saldo de gols.",
+      title: t("stats.season.dominant"),
+      detail: t("stats.season.dominantDesc"),
       tone: "primary" as Tone,
     };
   }
 
   if (winRate >= 55 && goalDiff >= 0) {
     return {
-      title: "Temporada bem encaminhada",
-      detail: "A campanha é sólida, com margem positiva para seguir disputando alto.",
+      title: t("stats.season.onTrack"),
+      detail: "The campaign is solid, with a positive margin to keep competing at the top.",
       tone: "accent" as Tone,
     };
   }
 
   if (winRate >= 40 || goalDiff >= 0) {
     return {
-      title: "Campanha irregular",
-      detail: "Há produção suficiente, mas oscilação nos resultados ainda custa pontos.",
+      title: "Inconsistent campaign",
+      detail: "There is enough production, but result swings are still costing points.",
       tone: "warning" as Tone,
     };
   }
 
   return {
-    title: "Zona de alerta",
-    detail: "Os resultados pedem ajuste imediato no plano de jogo e na consistência defensiva.",
+    title: "Warning zone",
+    detail: "Results call for an immediate adjustment to the game plan and defensive consistency.",
     tone: "destructive" as Tone,
   };
 };
@@ -142,8 +143,8 @@ function PlayerSpotlight({ player, totalGoals }: PlayerSpotlightProps) {
   if (!player) {
     return (
       <div className="rounded-md border border-border bg-background/35 p-4">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Protagonista</p>
-        <p className="mt-3 text-sm text-muted-foreground">Nenhum jogador com impacto registrado.</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Key Player</p>
+        <p className="mt-3 text-sm text-muted-foreground">No player with recorded impact.</p>
       </div>
     );
   }
@@ -157,7 +158,7 @@ function PlayerSpotlight({ player, totalGoals }: PlayerSpotlightProps) {
     <div className="rounded-md border border-[hsl(var(--gold)/0.22)] bg-[hsl(var(--gold)/0.07)] p-4">
       <div className="mb-4 flex items-center gap-2">
         <Crown size={15} className="text-[hsl(var(--gold))]" />
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Protagonista</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Key Player</p>
       </div>
       <p className="truncate font-display text-2xl font-bold leading-none text-foreground">{player.name}</p>
       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -170,12 +171,12 @@ function PlayerSpotlight({ player, totalGoals }: PlayerSpotlightProps) {
         )}
       </div>
       <div className="mt-5 grid grid-cols-3 gap-2">
-        <CompactStat label="Gols" value={String(goals)} highlight="primary" />
-        <CompactStat label="Assist." value={String(assists)} highlight="accent" />
-        <CompactStat label="Part." value={String(contributions)} highlight="gold" />
+        <CompactStat label="Goals" value={String(goals)} highlight="primary" />
+        <CompactStat label="Assists" value={String(assists)} highlight="accent" />
+        <CompactStat label="Contrib." value={String(contributions)} highlight="gold" />
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        {share}% dos gols do elenco saem diretamente dele.
+        {share}% of the squad's goals come directly from them.
       </p>
     </div>
   );
@@ -189,12 +190,13 @@ interface CampaignSummaryProps {
 }
 
 function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: CampaignSummaryProps) {
+  const { t } = useTranslation();
   const matches = teamStats.wins + teamStats.draws + teamStats.losses;
   const winRate = matches > 0 ? Math.round((teamStats.wins / matches) * 100) : 0;
   const goalDiff = teamStats.goalsPro - teamStats.goalsAgainst;
   const goalsPerMatch = matches > 0 ? teamStats.goalsPro / matches : 0;
   const concededPerMatch = matches > 0 ? teamStats.goalsAgainst / matches : 0;
-  const verdict = getSeasonVerdict(winRate, goalDiff, matches);
+  const verdict = getSeasonVerdict(winRate, goalDiff, matches, t);
   const resultTotal = Math.max(matches, 1);
 
   return (
@@ -213,7 +215,7 @@ function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: Cam
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <Trophy size={15} className={toneClass[verdict.tone]} />
-                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Resumo da temporada</p>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Season summary</p>
               </div>
               <h2 className={`font-display text-3xl font-bold leading-tight md:text-4xl ${toneClass[verdict.tone]}`}>
                 {verdict.title}
@@ -221,7 +223,7 @@ function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: Cam
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{verdict.detail}</p>
             </div>
             <div className="flex min-h-[62px] min-w-[84px] flex-col items-center justify-center rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-center">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Jogos</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Games</p>
               <p className="font-display text-3xl font-bold leading-none text-primary text-glow-primary">{matches}</p>
             </div>
           </div>
@@ -231,15 +233,15 @@ function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: Cam
               <div className="grid grid-cols-3 divide-x divide-border rounded-md border border-border bg-background/25 p-4">
                 <div className="pr-3 text-center">
                   <p className="font-display text-5xl font-bold leading-none text-primary text-glow-primary">{teamStats.wins}</p>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Vitórias</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Wins</p>
                 </div>
                 <div className="px-3 text-center">
                   <p className="font-display text-5xl font-bold leading-none text-[hsl(var(--warning))]">{teamStats.draws}</p>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Empates</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Draws</p>
                 </div>
                 <div className="pl-3 text-center">
                   <p className="font-display text-5xl font-bold leading-none text-destructive">{teamStats.losses}</p>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Derrotas</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Losses</p>
                 </div>
               </div>
 
@@ -262,20 +264,20 @@ function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: Cam
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <CompactStat label="Aproveit." value={`${winRate}%`} highlight={verdict.tone} />
+              <CompactStat label="Win %" value={`${winRate}%`} highlight={verdict.tone} />
               <CompactStat
-                label="Saldo"
+                label="GD"
                 value={goalDiff > 0 ? `+${goalDiff}` : String(goalDiff)}
                 highlight={goalDiff > 0 ? "primary" : goalDiff < 0 ? "destructive" : "muted"}
               />
-              <CompactStat label="GP/J" value={formatDecimal(goalsPerMatch)} highlight="accent" />
+              <CompactStat label="GF/G" value={formatDecimal(goalsPerMatch)} highlight="accent" />
               <CompactStat
-                label="GC/J"
+                label="GA/G"
                 value={formatDecimal(concededPerMatch)}
                 highlight={concededPerMatch <= 1 ? "primary" : concededPerMatch <= 1.5 ? "warning" : "destructive"}
               />
               <div className="col-span-2">
-                <CompactStat label="Competições registradas" value={String(competitions)} highlight="gold" />
+                <CompactStat label="Competitions" value={String(competitions)} highlight="gold" />
               </div>
             </div>
           </div>
@@ -303,11 +305,11 @@ function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
   const { borderClass, bgClass } = getCompetitionAccent(stat.competition);
 
   const resultBadge = isLeague
-    ? stat.leaguePosition ? `${stat.leaguePosition}º lugar` : "Liga em andamento"
-    : stat.cupResult ? (CUP_LABELS[stat.cupResult] ?? stat.cupResult) : "Copa em andamento";
+    ? stat.leaguePosition ? `${stat.leaguePosition}th place` : "League in progress"
+    : stat.cupResult ? (CUP_LABELS[stat.cupResult] ?? stat.cupResult) : "Cup in progress";
 
   const isChampion = stat.cupResult === "Campeao";
-  const typeLabel = isLeague ? "Liga" : isEuropean ? "Europeia" : "Copa";
+  const typeLabel = isLeague ? "League" : isEuropean ? "European" : "Cup";
 
   return (
     <article data-tour="stats-competition-card" className={`rounded-lg border ${borderClass} ${bgClass} p-4 transition-colors hover:border-primary/35`}>
@@ -326,14 +328,14 @@ function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
             {isLeague && matches > 0 && (
               <span className="font-display text-sm font-bold text-[hsl(var(--warning))]">{pts} pts</span>
             )}
-            <span className="text-xs text-muted-foreground">{matches} jogos</span>
+            <span className="text-xs text-muted-foreground">{matches} games</span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[430px]">
-          <CompactStat label="Record" value={`${stat.wins}V ${stat.draws}E ${stat.losses}D`} highlight={winRate >= 60 ? "primary" : winRate >= 40 ? "warning" : "destructive"} />
-          <CompactStat label="Aprov." value={`${winRate}%`} highlight={winRate >= 60 ? "primary" : winRate >= 40 ? "warning" : "destructive"} />
-          <CompactStat label="Gols" value={`${stat.goalsPro}:${stat.goalsAgainst}`} />
+          <CompactStat label="Record" value={`${stat.wins}W ${stat.draws}D ${stat.losses}L`} highlight={winRate >= 60 ? "primary" : winRate >= 40 ? "warning" : "destructive"} />
+          <CompactStat label="Win %" value={`${winRate}%`} highlight={winRate >= 60 ? "primary" : winRate >= 40 ? "warning" : "destructive"} />
+          <CompactStat label="Goals" value={`${stat.goalsPro}:${stat.goalsAgainst}`} />
           <CompactStat
             label="Saldo"
             value={goalDiff > 0 ? `+${goalDiff}` : String(goalDiff)}
@@ -347,8 +349,8 @@ function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
             type="button"
             onClick={onEdit}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-            title="Editar estatísticas"
-            aria-label="Editar estatísticas"
+            title="Edit statistics"
+            aria-label="Edit statistics"
           >
             <Pencil className="h-4 w-4" />
           </button>
@@ -390,8 +392,8 @@ function RankingPanel({ rankings, activeRanking, onActiveRankingChange, onOpenAl
             <Users size={16} />
           </div>
           <div>
-            <h2 className="font-display text-xl font-bold leading-none">Destaques individuais</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Rankings concentrados para comparar impacto sem espalhar a atenção.</p>
+            <h2 className="font-display text-xl font-bold leading-none">Individual highlights</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Focused rankings to compare impact without spreading attention.</p>
           </div>
         </div>
 
@@ -456,7 +458,7 @@ function RankingPanel({ rankings, activeRanking, onActiveRankingChange, onOpenAl
                           style={{ width: 14, height: 10, borderRadius: 2, objectFit: "cover" }}
                         />
                       )}
-                      {active.key !== "matches" && <span>{getStatValue(player, "matches")} jogos</span>}
+                      {active.key !== "matches" && <span>{getStatValue(player, "matches")} games</span>}
                     </div>
                   </div>
                   <span className={`font-display text-base font-bold ${toneClass[active.tone]}`}>
@@ -477,7 +479,7 @@ function RankingPanel({ rankings, activeRanking, onActiveRankingChange, onOpenAl
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <ListFilter size={14} />
-                Ver ranking completo
+                View full ranking
               </button>
             </div>
           )}
@@ -515,14 +517,14 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
                     <ListFilter size={15} />
                   </div>
                   <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                    Ranking completo
+                    Full ranking
                   </span>
                 </div>
                 <DialogTitle className="font-display text-2xl leading-none">
                   {active?.title ?? "Ranking"}
                 </DialogTitle>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {active ? `${active.players.length} jogador${active.players.length === 1 ? "" : "es"} com estatística registrada` : ""}
+                  {active ? `${active.players.length} player${active.players.length === 1 ? "" : "s"} with recorded stats` : ""}
                 </p>
               </div>
 
@@ -530,7 +532,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
                 <div className={`min-w-[220px] rounded-md border border-border ${toneBgClass[active.tone]} p-3`}>
                   <div className="mb-2 flex items-center gap-2">
                     <Crown size={14} className={toneClass[active.tone]} />
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Líder</span>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Leader</span>
                   </div>
                   <p className="truncate font-display text-lg font-bold text-foreground">{topPlayer.name}</p>
                   <div className="mt-2 flex items-end justify-between gap-3">
@@ -573,7 +575,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
                             style={{ width: 14, height: 10, borderRadius: 2, objectFit: "cover" }}
                           />
                         )}
-                        {openKey !== "matches" && <span>{getStatValue(player, "matches")} jogos</span>}
+                        {openKey !== "matches" && <span>{getStatValue(player, "matches")} games</span>}
                         {openKey === "goalContributions" && (
                           <span>{getStatValue(player, "goals")} G / {getStatValue(player, "assists")} A</span>
                         )}
@@ -589,8 +591,8 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
             </div>
           ) : (
             <div className="rounded-md border border-border bg-background/25 p-6 text-center">
-              <p className="font-display text-lg font-bold text-foreground">Nenhum registro</p>
-              <p className="mt-2 text-sm text-muted-foreground">Quando houver estatísticas acima de zero, elas aparecem aqui.</p>
+              <p className="font-display text-lg font-bold text-foreground">No records</p>
+              <p className="mt-2 text-sm text-muted-foreground">When there are stats above zero, they appear here.</p>
             </div>
           )}
         </ScrollArea>
@@ -600,6 +602,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
 }
 
 const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId }: Props) => {
+  const { t } = useTranslation();
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [selectedStat, setSelectedStat] = useState<ApiTeamStats | null>(null);
   const [playerStatModal, setPlayerStatModal] = useState<PlayerStatModalKey>(null);
@@ -639,58 +642,58 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
   const rankingMeta: Record<RankingTabKey, RankingMeta> = {
     goals: {
       key: "goals",
-      label: "Gols",
-      title: "Artilheiro",
+      label: "Goals",
+      title: "Top Scorer",
       icon: Target,
       players: positiveStatPlayers.goals,
       tone: "primary",
       getValue: (p) => getStatValue(p, "goals"),
       formatValue: (v) => String(v),
-      emptyLabel: "Nenhum gol registrado.",
+      emptyLabel: "No goals recorded.",
     },
     assists: {
       key: "assists",
-      label: "Assist.",
-      title: "Garçom",
+      label: "Assists",
+      title: "Playmaker",
       icon: Zap,
       players: positiveStatPlayers.assists,
       tone: "accent",
       getValue: (p) => getStatValue(p, "assists"),
       formatValue: (v) => String(v),
-      emptyLabel: "Nenhuma assistência registrada.",
+      emptyLabel: "No assists recorded.",
     },
     goalContributions: {
       key: "goalContributions",
       label: "G+A",
-      title: "Participações em gol",
+      title: "Goal contributions",
       icon: Goal,
       players: positiveStatPlayers.goalContributions,
       tone: "gold",
       getValue: getGoalContributions,
       formatValue: (v) => String(v),
-      emptyLabel: "Nenhuma participação registrada.",
+      emptyLabel: "No contributions recorded.",
     },
     cleanSheets: {
       key: "cleanSheets",
-      label: "Defesa",
+      label: "Defense",
       title: "Clean sheets",
       icon: ShieldCheck,
       players: positiveStatPlayers.cleanSheets,
       tone: "accent",
       getValue: (p) => getStatValue(p, "cleanSheets"),
       formatValue: (v) => String(v),
-      emptyLabel: "Nenhum clean sheet registrado.",
+      emptyLabel: "No clean sheets recorded.",
     },
     matches: {
       key: "matches",
-      label: "Uso",
-      title: "Mais partidas",
+      label: "Apps",
+      title: "Most appearances",
       icon: Calendar,
       players: positiveStatPlayers.matches,
       tone: "primary",
       getValue: (p) => getStatValue(p, "matches"),
       formatValue: (v) => String(v),
-      emptyLabel: "Nenhuma partida registrada.",
+      emptyLabel: "No appearances recorded.",
     },
   };
 
@@ -710,18 +713,18 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
     formatValue: (v: number) => string;
   }> = {
     goals: {
-      title: "Artilheiros",
+      title: "Top Scorers",
       players: positiveStatPlayers.goals,
       tone: "primary",
       getValue: (p) => getStatValue(p, "goals"),
-      formatValue: (v) => `${v} gols`,
+      formatValue: (v) => `${v} goals`,
     },
     assists: {
-      title: "Assistentes",
+      title: "Playmakers",
       players: positiveStatPlayers.assists,
       tone: "accent",
       getValue: (p) => getStatValue(p, "assists"),
-      formatValue: (v) => `${v} assist.`,
+      formatValue: (v) => `${v} assists`,
     },
     cleanSheets: {
       title: "Clean Sheets",
@@ -731,24 +734,24 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
       formatValue: (v) => `${v} CS`,
     },
     matches: {
-      title: "Mais Partidas",
+      title: "Most Appearances",
       players: positiveStatPlayers.matches,
       tone: "primary",
       getValue: (p) => getStatValue(p, "matches"),
-      formatValue: (v) => `${v} jogos`,
+      formatValue: (v) => `${v} games`,
     },
     goalContributions: {
-      title: "Participações em Gol",
+      title: "Goal Contributions",
       players: positiveStatPlayers.goalContributions,
       tone: "gold",
       getValue: getGoalContributions,
-      formatValue: (v) => `${v} part.`,
+      formatValue: (v) => `${v} contrib.`,
     },
   };
 
   const handleUpdateStats = async (stats: any) => {
     if (!selectedStat) {
-      toast.error("Nenhuma estatística ativa encontrada para editar.");
+      toast.error("No active stats found to edit.");
       return;
     }
 
@@ -759,7 +762,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
         ? { goalsPro: stats.goalsPro, goalsAgainst: stats.goalsAgainst, wins: stats.wins, draws: stats.draws, losses: stats.losses, leaguePosition: stats.leaguePosition }
         : { goalsPro: stats.goalsPro, goalsAgainst: stats.goalsAgainst, wins: stats.wins, draws: stats.draws, losses: stats.losses, cupResult: stats.cupResult },
     });
-    toast.success("Estatísticas atualizadas!", { duration: 3000 });
+    toast.success("Stats updated!", { duration: 3000 });
     setStatsModalOpen(false);
     setSelectedStat(null);
   };
@@ -767,7 +770,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
   if (isLoadingPlayers || isLoadingTeamStats) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" /> Carregando estatísticas...
+        <Loader2 size={20} className="animate-spin" /> {t("stats.loading")}
       </div>
     );
   }
@@ -776,7 +779,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
     <div className="mx-auto w-full max-w-[1500px] space-y-6 pb-10 animate-in fade-in duration-500">
       {isPastSeason && (
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-4 py-2 text-sm text-muted-foreground">
-          <Calendar size={14} /> Visualizando temporada {selectedSeason} - modo somente leitura
+          <Calendar size={14} /> Viewing season {selectedSeason} — read-only mode
         </div>
       )}
 
@@ -787,13 +790,13 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
             <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Match room</p>
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-            Estatísticas da Temporada
+            Season Statistics
           </h1>
         </div>
         <div className="rounded-md border border-border bg-background/35 px-4 py-2 sm:text-right">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Temporada</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Season</p>
           <p className="font-display text-xl font-bold text-primary text-glow-primary">
-            {statsSeason ?? "Não selecionada"}
+            {statsSeason ?? "Not selected"}
           </p>
         </div>
       </div>
@@ -807,9 +810,9 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
         />
       ) : (
         <section className="card-gamer p-6">
-          <p className="font-display text-xl font-bold text-foreground">Nenhuma estatística registrada</p>
+          <p className="font-display text-xl font-bold text-foreground">No stats recorded</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cadastre competições e resultados para montar a leitura da temporada.
+            Add competitions and results to build the season reading.
           </p>
         </section>
       )}
@@ -821,8 +824,8 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
               <Trophy size={15} />
             </div>
             <div>
-              <h2 className="font-display text-xl font-bold leading-none">Competições</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Onde a temporada foi decidida, competição por competição.</p>
+              <h2 className="font-display text-xl font-bold leading-none">Competitions</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Where the season was decided, competition by competition.</p>
             </div>
           </div>
 

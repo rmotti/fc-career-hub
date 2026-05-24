@@ -23,23 +23,23 @@ const plans = [
     id: "FREE",
     name: "Free",
     price: null,
-    priceLabel: "Grátis",
-    priceSub: "para sempre",
-    description: "Perfeito para começar a registrar sua primeira carreira.",
+    priceLabel: "Free",
+    priceSub: "forever",
+    description: "Perfect to start tracking your first career.",
     accent: "border-border/60",
     badge: null,
-    cta: "Começar grátis",
+    cta: "Get started free",
     ctaStyle: "border border-border bg-card/50 text-foreground hover:border-primary/40 hover:bg-card",
     features: [
-      { label: "1 save simultâneo", included: true },
-      { label: "Elenco completo", included: true },
-      { label: "Estatísticas por temporada", included: true },
-      { label: "Histórico de troféus", included: true },
-      { label: "Transferências ilimitadas", included: true },
-      { label: "Campo tático", included: true },
-      { label: "Múltiplos saves", included: false },
-      { label: "Exportação de dados", included: false },
-      { label: "Suporte prioritário", included: false },
+      { label: "1 simultaneous save", included: true },
+      { label: "Full squad management", included: true },
+      { label: "Season statistics", included: true },
+      { label: "Trophy history", included: true },
+      { label: "Unlimited transfers", included: true },
+      { label: "Tactical lineup", included: true },
+      { label: "Multiple saves", included: false },
+      { label: "Data export", included: false },
+      { label: "Priority support", included: false },
     ],
     icon: Zap,
     iconColor: "text-muted-foreground",
@@ -50,22 +50,22 @@ const plans = [
     name: "Pro",
     price: "R$ 9",
     priceLabel: "R$ 9",
-    priceSub: "por mês",
-    description: "Para quem gerencia múltiplas carreiras e quer tudo registrado.",
+    priceSub: "per month",
+    description: "For those managing multiple careers and wanting everything tracked.",
     accent: "border-primary/50 shadow-[0_0_40px_hsl(142_70%_49%_/_0.12)]",
-    badge: "Mais popular",
-    cta: "Assinar Pro",
+    badge: "Most popular",
+    cta: "Subscribe Pro",
     ctaStyle: "bg-primary text-primary-foreground hover:opacity-90",
     features: [
-      { label: "3 saves simultâneos", included: true },
-      { label: "Elenco completo", included: true },
-      { label: "Estatísticas por temporada", included: true },
-      { label: "Histórico de troféus", included: true },
-      { label: "Transferências ilimitadas", included: true },
-      { label: "Campo tático", included: true },
-      { label: "Múltiplos saves", included: true },
-      { label: "Exportação de dados", included: false },
-      { label: "Suporte prioritário", included: false },
+      { label: "3 simultaneous saves", included: true },
+      { label: "Full squad management", included: true },
+      { label: "Season statistics", included: true },
+      { label: "Trophy history", included: true },
+      { label: "Unlimited transfers", included: true },
+      { label: "Tactical lineup", included: true },
+      { label: "Multiple saves", included: true },
+      { label: "Data export", included: false },
+      { label: "Priority support", included: false },
     ],
     icon: Star,
     iconColor: "text-primary",
@@ -76,22 +76,22 @@ const plans = [
     name: "Premium",
     price: "R$ 19",
     priceLabel: "R$ 19",
-    priceSub: "por mês",
-    description: "Máximo controle, saves ilimitados e todos os recursos futuros.",
+    priceSub: "per month",
+    description: "Maximum control, unlimited saves and all future features.",
     accent: "border-accent/40 shadow-[0_0_40px_hsl(195_90%_50%_/_0.08)]",
     badge: null,
-    cta: "Assinar Premium",
+    cta: "Subscribe Premium",
     ctaStyle: "bg-accent text-accent-foreground hover:opacity-90",
     features: [
-      { label: "Saves ilimitados", included: true },
-      { label: "Elenco completo", included: true },
-      { label: "Estatísticas por temporada", included: true },
-      { label: "Histórico de troféus", included: true },
-      { label: "Transferências ilimitadas", included: true },
-      { label: "Campo tático", included: true },
-      { label: "Múltiplos saves", included: true },
-      { label: "Exportação de dados", included: true },
-      { label: "Suporte prioritário", included: true },
+      { label: "Unlimited saves", included: true },
+      { label: "Full squad management", included: true },
+      { label: "Season statistics", included: true },
+      { label: "Trophy history", included: true },
+      { label: "Unlimited transfers", included: true },
+      { label: "Tactical lineup", included: true },
+      { label: "Multiple saves", included: true },
+      { label: "Data export", included: true },
+      { label: "Priority support", included: true },
     ],
     icon: Infinity,
     iconColor: "text-accent",
@@ -101,35 +101,35 @@ const plans = [
 
 const faq = [
   {
-    q: "Posso começar sem pagar nada?",
-    a: "Sim. O plano Free é gratuito para sempre e já inclui 1 save com todas as funcionalidades básicas do hub.",
+    q: "Can I start without paying anything?",
+    a: "Yes. The Free plan is free forever and already includes 1 save with all the basic hub features.",
   },
   {
-    q: "Como funciona a cobrança?",
-    a: "Os planos Pro e Premium ainda estão em desenvolvimento. Quando disponíveis, serão cobrados mensalmente com cancelamento a qualquer momento.",
+    q: "How does billing work?",
+    a: "The Pro and Premium plans are still in development. When available, they will be billed monthly with cancellation at any time.",
   },
   {
-    q: "O que acontece com meus dados se eu cancelar?",
-    a: "Seus saves e dados ficam intactos. Se você fizer downgrade para Free, continuará acessando o primeiro save normalmente.",
+    q: "What happens to my data if I cancel?",
+    a: "Your saves and data remain intact. If you downgrade to Free, you'll continue accessing the first save normally.",
   },
   {
-    q: "Vocês planejam mais funcionalidades?",
-    a: "Sim. Exportação de dados, comparativos de temporadas e análise avançada de desempenho estão no roadmap para usuários Pro e Premium.",
+    q: "Do you plan more features?",
+    a: "Yes. Data export, season comparisons and advanced performance analysis are on the roadmap for Pro and Premium users.",
   },
 ];
 
 // ─── Comparison table features ───────────────────────────────────────────────
 
 const comparisonRows = [
-  { label: "Saves simultâneos", free: "1", pro: "3", premium: "Ilimitados", icon: Users },
-  { label: "Gestão de elenco", free: true, pro: true, premium: true, icon: Users },
-  { label: "Estatísticas por temporada", free: true, pro: true, premium: true, icon: BarChart2 },
-  { label: "Histórico de troféus", free: true, pro: true, premium: true, icon: Trophy },
-  { label: "Transferências", free: true, pro: true, premium: true, icon: Repeat2 },
-  { label: "Campo tático", free: true, pro: true, premium: true, icon: LayoutDashboard },
-  { label: "Múltiplos saves", free: false, pro: true, premium: true, icon: Users },
-  { label: "Exportação de dados", free: false, pro: false, premium: true, icon: BarChart2 },
-  { label: "Suporte prioritário", free: false, pro: false, premium: true, icon: Shield },
+  { label: "Simultaneous saves", free: "1", pro: "3", premium: "Unlimited", icon: Users },
+  { label: "Squad management", free: true, pro: true, premium: true, icon: Users },
+  { label: "Season statistics", free: true, pro: true, premium: true, icon: BarChart2 },
+  { label: "Trophy history", free: true, pro: true, premium: true, icon: Trophy },
+  { label: "Transfers", free: true, pro: true, premium: true, icon: Repeat2 },
+  { label: "Tactical lineup", free: true, pro: true, premium: true, icon: LayoutDashboard },
+  { label: "Multiple saves", free: false, pro: true, premium: true, icon: Users },
+  { label: "Data export", free: false, pro: false, premium: true, icon: BarChart2 },
+  { label: "Priority support", free: false, pro: false, premium: true, icon: Shield },
 ];
 
 // ─── Navbar ──────────────────────────────────────────────────────────────────
@@ -145,14 +145,14 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
 
         <nav className="flex items-center gap-4">
           <Link to="/pricing" className="font-display text-sm font-semibold text-primary">
-            Planos
+            Plans
           </Link>
           {isAuthenticated ? (
             <Link
               to="/app"
               className="landing-btn-primary flex items-center gap-2 rounded-xl bg-primary px-5 py-2 font-display text-sm font-bold text-primary-foreground"
             >
-              Ir para o Hub
+              Go to Hub
               <ArrowRight size={14} />
             </Link>
           ) : (
@@ -161,13 +161,13 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
                 to="/login"
                 className="font-display text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
-                Entrar
+                Sign in
               </Link>
               <Link
                 to="/register"
                 className="landing-btn-primary flex items-center gap-2 rounded-xl bg-primary px-5 py-2 font-display text-sm font-bold text-primary-foreground"
               >
-                Criar conta
+                Sign up
               </Link>
             </>
           )}
@@ -216,20 +216,20 @@ export default function Pricing() {
         <div className="relative mx-auto max-w-4xl px-6 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 font-display text-xs font-bold uppercase tracking-widest text-primary">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-            Planos e preços
+            Plans & pricing
           </div>
           <h1 className="font-display text-5xl font-bold leading-tight tracking-tight sm:text-6xl">
-            Simples e transparente.
+            Simple and transparent.
             <br />
-            <span className="text-glow-primary text-primary">Escolha o seu plano.</span>
+            <span className="text-glow-primary text-primary">Choose your plan.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-xl font-body text-lg leading-relaxed text-muted-foreground">
-            Comece grátis com 1 save e evolua conforme sua carreira cresce. Sem compromisso.
+            Start free with 1 save and upgrade as your career grows. No commitment.
           </p>
 
           <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/8 px-4 py-2 font-body text-xs text-amber-400">
             <HelpCircle size={12} />
-            Os planos Pro e Premium estão em desenvolvimento. Tudo abaixo é uma prévia.
+            Pro and Premium plans are in development. Everything below is a preview.
           </div>
         </div>
       </section>
@@ -318,14 +318,14 @@ export default function Pricing() {
       <section className="py-20">
         <div className="mx-auto max-w-5xl px-6">
           <div className="mb-12 text-center">
-            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Detalhe completo</p>
-            <h2 className="font-display text-3xl font-bold sm:text-4xl">Compare os planos</h2>
+            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Full detail</p>
+            <h2 className="font-display text-3xl font-bold sm:text-4xl">Compare plans</h2>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-border/60">
             {/* Header */}
             <div className="grid grid-cols-4 border-b border-border/60 bg-card/50">
-              <div className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recurso</div>
+              <div className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">Feature</div>
               {plans.map((p) => (
                 <div key={p.id} className="px-4 py-4 text-center">
                   <span className={`font-display text-sm font-bold ${p.id === "PRO" ? "text-primary" : p.id === "PREMIUM" ? "text-accent" : "text-foreground"}`}>
@@ -364,8 +364,8 @@ export default function Pricing() {
       <section className="py-20">
         <div className="mx-auto max-w-3xl px-6">
           <div className="mb-12 text-center">
-            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Dúvidas</p>
-            <h2 className="font-display text-3xl font-bold sm:text-4xl">Perguntas frequentes</h2>
+            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">FAQ</p>
+            <h2 className="font-display text-3xl font-bold sm:text-4xl">Frequently asked questions</h2>
           </div>
 
           <div className="space-y-3">
@@ -386,10 +386,10 @@ export default function Pricing() {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(142_70%_49%_/_0.08),_transparent_65%)]" />
             <div className="relative">
               <h2 className="font-display text-3xl font-bold sm:text-4xl">
-                Comece grátis. Sem cartão de crédito.
+                Start free. No credit card.
               </h2>
               <p className="mx-auto mt-4 max-w-md font-body text-base text-muted-foreground">
-                Crie sua conta e monte seu primeiro save em menos de 2 minutos.
+                Create your account and set up your first save in under 2 minutes.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 {isAuthenticated ? (
@@ -397,7 +397,7 @@ export default function Pricing() {
                     to="/app"
                     className="landing-btn-primary group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-display text-base font-bold text-primary-foreground"
                   >
-                    Ir para o Hub
+                    Go to Hub
                     <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
                   </Link>
                 ) : (
@@ -405,7 +405,7 @@ export default function Pricing() {
                     to="/register"
                     className="landing-btn-primary group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-display text-base font-bold text-primary-foreground"
                   >
-                    Criar conta grátis
+                    Create free account
                     <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
                   </Link>
                 )}
@@ -413,7 +413,7 @@ export default function Pricing() {
                   to="/"
                   className="landing-btn-secondary rounded-2xl border border-border px-8 py-4 font-display text-base font-semibold text-foreground/70 transition-colors hover:border-primary/40 hover:text-foreground"
                 >
-                  Ver o produto
+                  See the product
                 </Link>
               </div>
             </div>
@@ -429,11 +429,11 @@ export default function Pricing() {
             <span className="font-display text-sm font-semibold text-muted-foreground">FC Career Hub</span>
           </Link>
           <p className="font-body text-xs text-muted-foreground/60">
-            Não afiliado à EA Sports. Feito para fãs de Modo Carreira.
+            Not affiliated with EA Sports. Made for Career Mode fans.
           </p>
           <div className="flex gap-4">
-            <Link to="/login" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Entrar</Link>
-            <Link to="/register" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Criar conta</Link>
+            <Link to="/login" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Sign in</Link>
+            <Link to="/register" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Sign up</Link>
           </div>
         </div>
       </footer>

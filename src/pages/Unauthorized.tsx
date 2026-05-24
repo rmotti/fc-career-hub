@@ -1,8 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, Lock, ArrowLeft } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 
 export default function Unauthorized() {
+  const { t } = useTranslation();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
 
@@ -52,18 +54,17 @@ export default function Unauthorized() {
         </p>
 
         {/* Headline */}
-        <h1 className="mb-3 font-display text-2xl font-bold">Acesso restrito</h1>
+        <h1 className="mb-3 font-display text-2xl font-bold">{t("pages.unauthorized.title")}</h1>
 
         {/* Description */}
         <p className="mx-auto mb-6 max-w-sm font-body text-base leading-relaxed text-muted-foreground">
-          Esta área é exclusiva para usuários com sessão ativa.
-          Faça login ou crie uma conta gratuita para continuar.
+          {t("pages.unauthorized.subtitle")}
         </p>
 
         {/* Attempted route badge */}
         {from && (
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/50 px-3 py-1.5">
-            <span className="font-body text-xs text-muted-foreground/60">Rota solicitada:</span>
+            <span className="font-body text-xs text-muted-foreground/60">Requested route:</span>
             <code className="font-body text-xs font-semibold text-muted-foreground">{from}</code>
           </div>
         )}
@@ -75,14 +76,14 @@ export default function Unauthorized() {
             state={{ from }}
             className="landing-btn-primary group flex items-center justify-center gap-2 rounded-2xl bg-primary px-7 py-3.5 font-display text-sm font-bold text-primary-foreground"
           >
-            Fazer login
+            Sign in
             <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
           <Link
             to="/register"
             className="landing-btn-secondary flex items-center justify-center gap-2 rounded-2xl border border-border px-7 py-3.5 font-display text-sm font-semibold text-foreground/80 transition-colors hover:border-primary/40 hover:text-foreground"
           >
-            Criar conta grátis
+            Create free account
           </Link>
         </div>
 
@@ -93,7 +94,7 @@ export default function Unauthorized() {
             className="inline-flex items-center gap-1.5 font-body text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
           >
             <ArrowLeft size={12} />
-            Voltar para a página inicial
+            {t("pages.notFound.back")}
           </Link>
         </div>
       </div>

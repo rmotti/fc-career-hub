@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -35,11 +36,11 @@ type HistorySort = "recent" | "value_desc" | "value_asc";
 type TransferTone = "primary" | "accent" | "warning" | "destructive" | "muted";
 
 const TRANSFER_TYPE_LABELS: Record<TransferTypeFilter, string> = {
-  all: "Todos os tipos",
-  compra: "Compras",
-  venda: "Vendas",
-  emprestimo_entrada: "Empréstimos de entrada",
-  emprestimo_saida: "Empréstimos de saída",
+  all: "All types",
+  compra: "Purchases",
+  venda: "Sales",
+  emprestimo_entrada: "Incoming loans",
+  emprestimo_saida: "Outgoing loans",
 };
 
 const toneClass: Record<TransferTone, string> = {
@@ -67,7 +68,7 @@ const isOutgoingTransfer = (transfer: ApiTransfer) =>
 const isLoanTransfer = (transfer: ApiTransfer) =>
   transfer.type === "emprestimo_entrada" || transfer.type === "emprestimo_saida";
 
-const normalizeClubName = (club: string) => club.trim().toLocaleLowerCase("pt-BR");
+const normalizeClubName = (club: string) => club.trim().toLocaleLowerCase("en");
 
 const getTransferTone = (transfer: ApiTransfer): TransferTone => {
   if (transfer.type === "compra") return "primary";
@@ -76,19 +77,20 @@ const getTransferTone = (transfer: ApiTransfer): TransferTone => {
 };
 
 const getTransferTypeLabel = (transfer: ApiTransfer) => {
-  if (transfer.type === "compra") return "Compra";
-  if (transfer.type === "venda") return "Venda";
-  return transfer.type === "emprestimo_entrada" ? "Empr. entrada" : "Empr. saída";
+  if (transfer.type === "compra") return "Purchase";
+  if (transfer.type === "venda") return "Sale";
+  return transfer.type === "emprestimo_entrada" ? "Loan in" : "Loan out";
 };
 
 const getTransferFeeLabel = (transfer: ApiTransfer) => {
   if (transfer.feeFormatted) return transfer.feeFormatted;
   if (transfer.fee) return formatCurrencyInMillions(transfer.fee);
-  if (isLoanTransfer(transfer)) return "Empréstimo";
-  return "Livre";
+  if (isLoanTransfer(transfer)) return "Loan";
+  return "Free";
 };
 
 const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }: Props) => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
@@ -166,7 +168,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
       if (updatedTransfer.playerId && shouldRemovePlayerFromSquad(updatedTransfer.type)) {
         await updatePlayer.mutateAsync({ saveId, playerId: updatedTransfer.playerId, data: { isActive: false } });
       }
-      toast.success("Transferência atualizada com sucesso!", { duration: 3000 });
+      toast.success(t("transfers.toasts.updated"), { duration: 3000 });
     } else {
       const response = await createTransfer.mutateAsync({ saveId, data });
       setVariation({ amount: data.fee || 0, type: data.type });
@@ -175,17 +177,17 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
       if ((data.type === "compra" || data.type === "emprestimo_entrada") && response.transfer?.playerId) {
         setPurchasePlayerId(response.transfer.playerId);
         setPlayerModalOpen(true);
-        toast.success("Jogador adicionado! Complete as informações abaixo.", { duration: 4000 });
+        toast.success(t("transfers.toasts.playerAdded"), { duration: 4000 });
       } else if (response.transfer?.playerId && shouldRemovePlayerFromSquad(data.type)) {
         await updatePlayer.mutateAsync({ saveId, playerId: response.transfer.playerId, data: { isActive: false } });
         toast.success(
           data.type === "venda"
-            ? "Jogador vendido e removido do elenco."
-            : "Jogador enviado por empréstimo e removido do elenco.",
+            ? t("transfers.toasts.playerSold")
+            : t("transfers.toasts.playerLoaned"),
           { duration: 3000 }
         );
       } else {
-        toast.success("Transferência registrada com sucesso!", { duration: 3000 });
+        toast.success(t("transfers.toasts.registered"), { duration: 3000 });
       }
     }
     setEditingTransfer(null);
@@ -199,13 +201,13 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
     if (hasStats) {
       await updateStats.mutateAsync({ saveId, playerId, data: { goals, assists, yellowCards, redCards, matches, cleanSheets } });
     }
-    toast.success("Jogador atualizado!", { duration: 3000 });
+    toast.success(t("transfers.toasts.playerUpdated"), { duration: 3000 });
     setPurchasePlayerId(null);
   };
 
   const handleDelete = (transfer: ApiTransfer) => {
     deleteTransfer.mutate({ saveId, transferId: transfer.id }, {
-      onSuccess: () => toast.success("Transferência removida.", { duration: 3000 }),
+      onSuccess: () => toast.success(t("transfers.toasts.deleted"), { duration: 3000 }),
       onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
   };
@@ -224,7 +226,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
     const incoming = isIncomingTransfer(transfer);
     const Icon = incoming ? ArrowDownLeft : ArrowUpRight;
     const tone = getTransferTone(transfer);
-    const routeLabel = incoming ? `De ${transfer.from}` : `Para ${transfer.to}`;
+    const routeLabel = incoming ? t("transfers.direction.from", { club: transfer.from }) : t("transfers.direction.to", { club: transfer.to });
 
     return (
       <div
@@ -254,7 +256,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 type="button"
                 onClick={() => openEditModal(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                aria-label={`Editar ${transfer.playerName}`}
+                aria-label={`Edit ${transfer.playerName}`}
               >
                 <Pencil size={13} />
               </button>
@@ -262,7 +264,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 type="button"
                 onClick={() => handleDelete(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                aria-label={`Excluir ${transfer.playerName}`}
+                aria-label={`Delete ${transfer.playerName}`}
               >
                 <Trash2 size={13} />
               </button>
@@ -303,7 +305,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 type="button"
                 onClick={() => openEditModal(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                aria-label={`Editar ${transfer.playerName}`}
+                aria-label={`Edit ${transfer.playerName}`}
               >
                 <Pencil size={13} />
               </button>
@@ -311,7 +313,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 type="button"
                 onClick={() => handleDelete(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                aria-label={`Excluir ${transfer.playerName}`}
+                aria-label={`Delete ${transfer.playerName}`}
               >
                 <Trash2 size={13} />
               </button>
@@ -325,7 +327,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" /> Carregando transferências...
+        <Loader2 size={20} className="animate-spin" /> {t("transfers.loading")}
       </div>
     );
   }
@@ -335,7 +337,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
       <div data-tour="transfers-header" className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{currentClub} · {currentSeason}</p>
-          <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">Central de Mercado</h2>
+          <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{t("transfers.title")}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {(["current", "history"] as const).map((item) => (
@@ -350,7 +352,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
               }`}
             >
               {item === "current" ? <Repeat2 size={15} /> : <Clock3 size={15} />}
-              {item === "current" ? "Janela atual" : "Histórico"}
+              {item === "current" ? t("transfers.tabs.current") : t("transfers.tabs.history")}
             </button>
           ))}
           {!isPastSeason && (
@@ -360,7 +362,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
               onClick={openCreateModal}
               className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              <Plus size={16} /> Nova transferência
+              <Plus size={16} /> {t("transfers.newTransfer")}
             </button>
           )}
         </div>
@@ -368,42 +370,42 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
 
       {isPastSeason && (
         <div className="rounded-md border border-border bg-muted px-4 py-2 text-sm text-muted-foreground">
-          Visualizando temporada {selectedSeason}. As transferências estão em modo somente leitura.
+          {t("transfers.pastSeasonBanner", { season: selectedSeason })}
         </div>
       )}
 
       <section data-tour="transfers-metrics" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MarketStat
-          label="Saldo disponível"
+          label={t("transfers.metrics.available")}
           value={displayBalance}
           icon={BadgeEuro}
           tone={(save?.balance ?? 0) < 0 ? "destructive" : "primary"}
           detail={
             variation
-              ? `${variation.type === "venda" || variation.type === "emprestimo_saida" ? "+" : "-"} ${formatCurrencyInMillions(variation.amount)} nesta ação`
-              : "Orçamento após a janela atual"
+              ? `${variation.type === "venda" || variation.type === "emprestimo_saida" ? "+" : "-"} ${formatCurrencyInMillions(variation.amount)}`
+              : t("transfers.metrics.budgetDetail")
           }
         />
         <MarketStat
-          label="Resultado da janela"
+          label={t("transfers.metrics.windowResult")}
           value={formatSignedCurrencyInMillions(transferNet)}
           icon={transferNet >= 0 ? TrendingUp : TrendingDown}
           tone={transferNet >= 0 ? "accent" : "destructive"}
-          detail={`${formatCurrencyInMillions(transferRevenue)} receita · ${formatCurrencyInMillions(transferSpend)} gasto`}
+          detail={t("transfers.metrics.windowDetail", { revenue: formatCurrencyInMillions(transferRevenue), spent: formatCurrencyInMillions(transferSpend) })}
         />
         <MarketStat
-          label="Entradas"
+          label={t("transfers.metrics.incoming")}
           value={currentIncoming.length}
           icon={ArrowDownLeft}
           tone="primary"
-          detail={`${currentIncoming.filter((transfer) => transfer.type === "compra").length} compra(s) · ${currentIncoming.filter((transfer) => transfer.type === "emprestimo_entrada").length} empréstimo(s)`}
+          detail={t("transfers.metrics.incomingDetail", { purchases: currentIncoming.filter((transfer) => transfer.type === "compra").length, loans: currentIncoming.filter((transfer) => transfer.type === "emprestimo_entrada").length })}
         />
         <MarketStat
-          label="Saídas"
+          label={t("transfers.metrics.outgoing")}
           value={currentOutgoing.length}
           icon={ArrowUpRight}
           tone="accent"
-          detail={`${currentOutgoing.filter((transfer) => transfer.type === "venda").length} venda(s) · ${currentOutgoing.filter((transfer) => transfer.type === "emprestimo_saida").length} empréstimo(s)`}
+          detail={t("transfers.metrics.outgoingDetail", { sales: currentOutgoing.filter((transfer) => transfer.type === "venda").length, loans: currentOutgoing.filter((transfer) => transfer.type === "emprestimo_saida").length })}
         />
       </section>
 
@@ -411,41 +413,41 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
         <div className="space-y-5">
           <section data-tour="transfers-current" className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <TransferColumn
-              title="Entradas"
+              title={t("transfers.current.incoming")}
               icon={ArrowDownLeft}
               tone="primary"
               count={currentIncoming.length}
-              empty="Nenhuma contratação ou empréstimo de entrada nesta janela."
+              empty={t("transfers.current.noIncoming")}
             >
               {currentIncoming.map((transfer) => renderTransferRow(transfer))}
             </TransferColumn>
 
             <TransferColumn
-              title="Saídas"
+              title={t("transfers.current.outgoing")}
               icon={ArrowUpRight}
               tone="accent"
               count={currentOutgoing.length}
-              empty="Nenhuma venda ou empréstimo de saída nesta janela."
+              empty={t("transfers.current.noOutgoing")}
             >
               {currentOutgoing.map((transfer) => renderTransferRow(transfer))}
             </TransferColumn>
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <MarketHighlight label="Maior compra" transfer={biggestPurchase} empty="Sem compras pagas" tone="primary" />
-            <MarketHighlight label="Maior venda" transfer={biggestSale} empty="Sem vendas pagas" tone="accent" />
+            <MarketHighlight label={t("transfers.highlights.biggestPurchase")} transfer={biggestPurchase} empty={t("transfers.highlights.noPurchases")} tone="primary" />
+            <MarketHighlight label={t("transfers.highlights.biggestSale")} transfer={biggestSale} empty={t("transfers.highlights.noSales")} tone="accent" />
             <div className="card-gamer p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Repeat2 size={15} className={toneClass.warning} />
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Empréstimos</p>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{t("transfers.highlights.loans")}</p>
                 </div>
                 <p className="font-display text-2xl font-bold leading-none text-[hsl(var(--warning))]">{currentLoans.length}</p>
               </div>
               <p className="text-sm text-muted-foreground">
                 {currentLoans.length > 0
-                  ? "Movimentos sem impacto direto no saldo, mas com impacto no elenco."
-                  : "Nenhum empréstimo registrado na janela atual."}
+                  ? t("transfers.highlights.loansDesc")
+                  : t("transfers.highlights.noLoans")}
               </p>
             </div>
           </section>
@@ -458,35 +460,35 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 <Filter size={18} />
               </div>
               <div>
-                <h3 className="font-display text-base font-semibold">Filtros do histórico</h3>
-                <p className="text-sm text-muted-foreground">{filteredHistoryTransfers.length} transferência{filteredHistoryTransfers.length === 1 ? "" : "s"} encontrada{filteredHistoryTransfers.length === 1 ? "" : "s"}</p>
+                <h3 className="font-display text-base font-semibold">{t("transfers.history.title")}</h3>
+                <p className="text-sm text-muted-foreground">{t("transfers.history.found", { count: filteredHistoryTransfers.length })}</p>
               </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
               <FilterSelect
-                label="Tipo"
+                label={t("transfers.history.type")}
                 value={historyTypeFilter}
                 onChange={(value) => setHistoryTypeFilter(value as TransferTypeFilter)}
                 options={Object.entries(TRANSFER_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
               />
               <FilterSelect
-                label="Temporada"
+                label={t("transfers.history.season")}
                 value={historySeasonFilter}
                 onChange={setHistorySeasonFilter}
                 options={[
-                  { value: "all", label: "Todas as temporadas" },
+                  { value: "all", label: t("transfers.history.allSeasons") },
                   ...historySeasons.map((season) => ({ value: season, label: season })),
                 ]}
               />
               <FilterSelect
-                label="Ordenação"
+                label={t("transfers.history.sort")}
                 value={historySort}
                 onChange={(value) => setHistorySort(value as HistorySort)}
                 options={[
-                  { value: "recent", label: "Padrão" },
-                  { value: "value_desc", label: "Maior valor" },
-                  { value: "value_asc", label: "Menor valor" },
+                  { value: "recent", label: t("transfers.history.default") },
+                  { value: "value_desc", label: t("transfers.history.highestValue") },
+                  { value: "value_asc", label: t("transfers.history.lowestValue") },
                 ]}
               />
             </div>
@@ -494,19 +496,19 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
 
           <section className="card-gamer overflow-hidden">
             {filteredHistoryTransfers.length === 0 ? (
-              <p className="p-5 text-sm text-muted-foreground">Sem transferências registradas para os filtros selecionados.</p>
+              <p className="p-5 text-sm text-muted-foreground">{t("transfers.history.noTransfers")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[840px] text-left">
                   <thead className="bg-muted/35">
                     <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <th className="px-4 py-3 font-semibold">Temporada</th>
-                      <th className="px-4 py-3 font-semibold">Tipo</th>
-                      <th className="px-4 py-3 font-semibold">Jogador</th>
-                      <th className="px-4 py-3 font-semibold">De</th>
-                      <th className="px-4 py-3 font-semibold">Para</th>
-                      <th className="px-4 py-3 text-right font-semibold">Valor</th>
-                      {!isPastSeason && <th className="px-4 py-3 text-right font-semibold">Ações</th>}
+                      <th className="px-4 py-3 font-semibold">{t("transfers.columns.season")}</th>
+                      <th className="px-4 py-3 font-semibold">{t("transfers.columns.type")}</th>
+                      <th className="px-4 py-3 font-semibold">{t("transfers.columns.player")}</th>
+                      <th className="px-4 py-3 font-semibold">{t("transfers.columns.from")}</th>
+                      <th className="px-4 py-3 font-semibold">{t("transfers.columns.to")}</th>
+                      <th className="px-4 py-3 text-right font-semibold">{t("transfers.columns.value")}</th>
+                      {!isPastSeason && <th className="px-4 py-3 text-right font-semibold">{t("transfers.columns.actions")}</th>}
                     </tr>
                   </thead>
                   <tbody>{filteredHistoryTransfers.map((transfer) => renderHistoryRow(transfer))}</tbody>

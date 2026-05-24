@@ -22,11 +22,11 @@ const tutorialJoyrideStyles = {
 };
 
 const tutorialLocale = {
-  back: "Voltar",
-  close: "Fechar",
-  last: "Concluir",
-  next: "Próximo",
-  skip: "Pular",
+  back: "Back",
+  close: "Close",
+  last: "Finish",
+  next: "Next",
+  skip: "Skip",
 };
 
 const tutorialOptions: Partial<Options> = {

@@ -3,33 +3,33 @@ import { BarChart2, ClipboardList, Trophy } from "lucide-react";
 const featureCards = [
   {
     icon: ClipboardList,
-    title: "Registre sua carreira",
-    desc: "Acompanhe cada temporada, clube gerenciado e conquistas do seu Modo Carreira ao longo dos anos.",
+    title: "Track your career",
+    desc: "Follow every season, managed club and Career Mode achievement over the years.",
   },
   {
     icon: BarChart2,
-    title: "Estatísticas completas",
-    desc: "Gols, assistências, partidas, cartões e muito mais documentados por jogador e consolidados por temporada.",
+    title: "Complete statistics",
+    desc: "Goals, assists, appearances, cards and more documented per player and consolidated per season.",
   },
   {
     icon: Trophy,
-    title: "Histórico de troféus",
-    desc: "Guarde cada título conquistado, com clube e temporada registrados na sua sala de troféus pessoal.",
+    title: "Trophy history",
+    desc: "Save every title won, with club and season recorded in your personal trophy room.",
   },
 ];
 
 const steps = [
-  { tag: "1", title: "Crie um Save", desc: "Dê um nome à sua carreira, escolha seu clube e defina o orçamento." },
-  { tag: "2", title: "Monte seu elenco", desc: "Adicione jogadores com posição, overall, salário e valor de mercado." },
-  { tag: "3", title: "Registre a temporada", desc: "Atualize estatísticas de jogadores e do time ao longo da temporada." },
-  { tag: "4", title: "Avance e conquiste", desc: "Finalize temporadas, registre transferências e conquiste troféus." },
+  { tag: "1", title: "Create a Save", desc: "Name your career, choose your club and set the budget." },
+  { tag: "2", title: "Build your squad", desc: "Add players with position, overall, salary and market value." },
+  { tag: "3", title: "Track the season", desc: "Update player and team statistics throughout the season." },
+  { tag: "4", title: "Advance and conquer", desc: "Finish seasons, register transfers and win trophies." },
 ];
 
 export default function AuthHubShowcase() {
   return (
     <div className="space-y-10">
       <section className="w-full space-y-8">
-        <h2 className="font-display text-center text-3xl font-bold sm:text-4xl">O que e o FC Career Hub?</h2>
+        <h2 className="font-display text-center text-3xl font-bold sm:text-4xl">What is FC Career Hub?</h2>
         <div className="grid grid-cols-1 gap-6 text-left md:grid-cols-3">
           {featureCards.map(({ icon: Icon, title, desc }) => (
             <article
@@ -47,7 +47,7 @@ export default function AuthHubShowcase() {
       </section>
 
       <section className="w-full rounded-[28px] border border-border/80 bg-card/25 px-6 py-10 sm:px-10 sm:py-14">
-        <h2 className="mb-12 text-center font-display text-3xl font-bold sm:text-4xl">Como funciona</h2>
+        <h2 className="mb-12 text-center font-display text-3xl font-bold sm:text-4xl">How it works</h2>
 
         <div className="relative grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-8">
           <div className="absolute left-[12%] right-[12%] top-7 hidden h-px bg-border/60 md:block" />

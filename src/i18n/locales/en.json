@@ -1,0 +1,780 @@
+{
+  "sidebar": {
+    "careerMode": "Career Mode",
+    "season": "Season",
+    "plan": "Plan {{plan}}",
+    "nav": {
+      "overview": "Overview",
+      "squad": "Squad",
+      "lineup": "Lineup",
+      "transfers": "Transfers",
+      "stats": "Stats",
+      "history": "History"
+    },
+    "sections": {
+      "main": "Main",
+      "scout": "Scout",
+      "career": "Career",
+      "workspace": "Workspace",
+      "account": "Account"
+    },
+    "career": {
+      "newSeason": "New Season",
+      "newSeasonDesc": "Advance calendar",
+      "changeClub": "Change Club"
+    },
+    "scout": {
+      "aiCoach": "AIssistent Coach",
+      "searchPlayers": "Search Players",
+      "savedQueries": "Saved Queries",
+      "shortlist": "Shortlist",
+      "playbooks": "Playbooks"
+    },
+    "workspace": {
+      "switchSave": "Switch Save"
+    },
+    "account": {
+      "signOut": "Sign Out",
+      "collapse": "Collapse",
+      "expandMenu": "Expand menu",
+      "collapseMenu": "Collapse menu"
+    },
+    "aria": {
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    }
+  },
+  "hub": {
+    "errors": {
+      "couldNotOpenSave": "Could not open this save. Choose another to continue.",
+      "couldNotLoadSave": "Could not load the save",
+      "sessionActive": "Session is still active, but the last save update failed.",
+      "tryAgain": "Try again",
+      "loadingSave": "Loading save...",
+      "invalidSeason": "Invalid current season. Reload the page.",
+      "signOutError": "Could not end the session."
+    },
+    "toasts": {
+      "newSeasonStarted": "New season started!",
+      "sessionEnded": "Session ended."
+    }
+  },
+  "squad": {
+    "title": "Squad Hub",
+    "subtitle": "Manage data, season statistics and market signals player by player.",
+    "importBtn": "Import FC26 Squad",
+    "addPlayer": "Add Player",
+    "pastSeasonBanner": "📅 Viewing season {{season}} — read-only mode",
+    "loadingSquad": "Loading squad...",
+    "noPlayers": "No players in squad.",
+    "noPlayersFiltered": "No players found with these filters.",
+    "searchPlaceholder": "Search player...",
+    "actions": "Actions",
+    "edit": "Edit",
+    "editTitle": "Edit data and stats",
+    "viewDetails": "View details",
+    "release": "Release",
+    "columns": {
+      "name": "Name",
+      "pos": "Pos",
+      "age": "Age",
+      "salary": "Salary",
+      "value": "Value",
+      "goals": "Goals",
+      "assists": "Assists",
+      "matches": "Apps",
+      "contributions": "Contrib.",
+      "cleanSheets": "CS",
+      "potential": "POT"
+    },
+    "views": {
+      "all": "All",
+      "management": "Management",
+      "stats": "Stats",
+      "market": "Market",
+      "development": "Development"
+    },
+    "filters": {
+      "all": "All",
+      "attack": "Attack",
+      "midfield": "Midfield",
+      "defense": "Defense",
+      "prospects": "Prospects",
+      "noStats": "No stats"
+    },
+    "metrics": {
+      "players": "Players",
+      "avgOvr": "Avg OVR",
+      "output": "Output",
+      "squadValue": "Squad Value",
+      "avgAge": "avg. {{age}} yrs old",
+      "prospects": "{{count}} prospect(s)",
+      "assists": "{{count}} assists",
+      "wageBill": "Wage bill: {{value}}"
+    },
+    "highlights": {
+      "topImpact": "Top Impact",
+      "growth": "Growth",
+      "appreciation": "Appreciation",
+      "attention": "Attention",
+      "monitorSquad": "Monitor squad",
+      "useFilters": "Use filters to adjust data and detect gaps.",
+      "veteran": "{{count}} veteran(s)",
+      "noStats": "{{count}} without stats"
+    },
+    "loaned": {
+      "sectionLabel": "Not in active squad",
+      "title": "Loaned Players",
+      "loanedTo": "Loaned to",
+      "seasonCol": "Season",
+      "players": "{{count}} player(s)",
+      "avgOvr": "Avg OVR {{value}}",
+      "destinations": "{{count}} destination(s)",
+      "noStats": "{{count}} without stats",
+      "noLoaned": "No players loaned by the current club.",
+      "loading": "Loading loaned players..."
+    },
+    "import": {
+      "dialogTitle": "Import squad from FC26?",
+      "body": "We'll fetch the current club's squad from the official FC26 dataset and add it to your save.",
+      "existing": "Existing players will be kept (no duplicates).",
+      "warning": "The dataset may not reflect the game's latest update. Even after importing, you may need to manually adjust some players to match your save.",
+      "cancel": "Cancel",
+      "import": "Import"
+    },
+    "toasts": {
+      "playerUpdated": "Player updated!",
+      "playerAdded": "Player added to squad!",
+      "playerReleased": "{{name}} was released.",
+      "imported": "Squad imported: {{count}} new{{skipped}}"
+    },
+    "badges": {
+      "scorer": "Top Scorer",
+      "playmaker": "Playmaker",
+      "engine": "Engine",
+      "rising": "Rising",
+      "prospect": "Prospect",
+      "diamond": "Diamond",
+      "veteran": "Veteran",
+      "elite": "Elite"
+    }
+  },
+  "scout": {
+    "sections": {
+      "ai": "AIssistent Coach",
+      "archive": "Saved Queries",
+      "shortlist": "Shortlist",
+      "filters": "Search Players"
+    },
+    "badges": {
+      "pro": "PRO",
+      "archive": "Folder Archive",
+      "shortlist": "Final List",
+      "dataset": "FC26 Dataset"
+    },
+    "pills": {
+      "folders": "Folders",
+      "selected": "Selected",
+      "inList": "In List",
+      "positions": "Positions",
+      "comparing": "Comparing",
+      "found": "Found",
+      "activeFilters": "Active Filters",
+      "page": "Page",
+      "mode": "Mode",
+      "status": "Status",
+      "avgOvr": "Avg OVR"
+    },
+    "chat": {
+      "subtitle": "Career Mode Technical Assistant",
+      "history": "History",
+      "newConversation": "New",
+      "noHistory": "No archived conversations",
+      "noHistoryDesc": "Start a new conversation and it will appear here.",
+      "continue": "Continue",
+      "delete": "Delete",
+      "thinking": "Thinking...",
+      "rateLimited": "Too many messages. Wait {{seconds}}s to continue.",
+      "placeholder": "Ask Junior… (Enter sends, Shift+Enter newline)",
+      "sendLabel": "Send message",
+      "inputLabel": "Message to Junior",
+      "greeting": "Hello! I'm Junior, your Career Mode assistant. I can help with squad analysis, market recommendations, tactics and much more. What do you need?",
+      "you": "You",
+      "noHistory2": "No title"
+    },
+    "archive": {
+      "title": "Folder Archive",
+      "subtitle": "Saved Scout queries",
+      "empty": "No saved folders",
+      "emptyDesc": "Apply a search in Search Players and save the query for it to appear here.",
+      "searchSource": "Search",
+      "aiSource": "AI",
+      "chooseFolder": "Choose a folder",
+      "chooseFolderDesc": "Saved queries appear as folders with filters and result snapshots.",
+      "edit": "Edit",
+      "remove": "Remove",
+      "queryResults": "Query results",
+      "snapshot": "Snapshot with {{count}} of {{total}} player(s) found.",
+      "savedFolder": "Saved folder",
+      "noResults": "Saved query with no results",
+      "noResultsDesc": "Edit the query to expand the filter range.",
+      "inList": "In list",
+      "finalList": "Final List",
+      "details": "Details"
+    },
+    "shortlist": {
+      "empty": "Final List is empty",
+      "emptyDesc": "Add players from Scout reports to build a shortlist before making a market decision.",
+      "searchMore": "Search more",
+      "compareSelection": "Compare selection",
+      "title": "Final List",
+      "desc": "{{count}} player(s) sorted by position for purchase decision.",
+      "positionsCovered": "Positions covered",
+      "positionGroups": "Groups by primary position",
+      "bestMargin": "Best margin",
+      "noData": "No data",
+      "comparison": "Comparison",
+      "compareReady": "Ready to open",
+      "selectTwo": "Select 2 players",
+      "comparePosition": "Compare position",
+      "openPosition": "Open position",
+      "minimizePosition": "Minimize position",
+      "players": "{{count}} player(s) · avg OVR {{avg}}",
+      "removeFromFinalList": "Remove from Final List",
+      "addToComparison": "Add to comparison",
+      "removeFromComparison": "Remove from comparison"
+    },
+    "filters": {
+      "searchPlayers": "Search Players",
+      "found": "{{start}}-{{end}} of {{total}} players",
+      "defineFilters": "Define filters to start searching",
+      "clear": "Clear",
+      "save": "Save",
+      "search": "Search",
+      "primaryPosition": "Primary position",
+      "primaryPositionDesc": "Uses the player's first displayed position.",
+      "secondaryPositions": "Secondary positions",
+      "secondaryPositionsDesc": "Uses extra positions shown after the primary.",
+      "minOvr": "Min OVR",
+      "maxOvr": "Max OVR",
+      "minAge": "Min Age",
+      "maxAge": "Max Age",
+      "minPotential": "Min Potential",
+      "maxPotential": "Max Potential",
+      "minValue": "Min Value (€M)",
+      "maxValue": "Max Value (€M)",
+      "results": "Results",
+      "perPage": "{{count}} per page",
+      "preferredFoot": "Preferred Foot",
+      "anyFoot": "Any foot",
+      "leftFoot": "Left-Footed",
+      "rightFoot": "Right-Footed",
+      "objective": "Objective",
+      "nationalities": "Nationalities",
+      "searchNationality": "Search nationality...",
+      "loadingNationalities": "Loading nationalities...",
+      "noNationality": "No nationality found",
+      "leagues": "Leagues",
+      "searchLeague": "Search league...",
+      "loadingLeagues": "Loading leagues...",
+      "noLeague": "No league found",
+      "clubs": "Clubs",
+      "searchClub": "Search club in league...",
+      "selectLeagueFirst": "Select a league first",
+      "loadingClubs": "Loading clubs...",
+      "noClub": "No club found",
+      "playstyles": "PlayStyles",
+      "selectPlaystyles": "Select PlayStyles...",
+      "noPlaystyle": "No PlayStyle found",
+      "playstylesPlus": "PlayStyles+",
+      "selectPlaystylesPlus": "Select PlayStyles+...",
+      "noPlaystylesPlus": "No PlayStyle+ found",
+      "advanced": "Advanced filters",
+      "advancedDesc": "Pace, finishing, passing, defending, physicality, mentality and goalkeeper",
+      "advancedActive": "{{count}} attribute(s) filtered",
+      "advancedBody": "Set min and max values only for the attributes that matter for the profile.",
+      "clearAttributes": "Clear attributes",
+      "removeFilter": "Remove",
+      "rangeError": "{{label}}: minimum cannot be greater than maximum.",
+      "noFilters": "Choose at least one filter to start scouting.",
+      "saveFirst": "Start a valid search before saving the query.",
+      "queryTitle": "Scout {{parts}}",
+      "defaultQueryTitle": "Scout query",
+      "queryDesc": "{{count}} player(s) found in the FC26 dataset.",
+      "querySaved": "Query saved to Scout folders.",
+      "queryRemoved": "Query removed from folders.",
+      "addedToList": "Player added to Final List.",
+      "removedFromList": "Player removed from Final List.",
+      "unknownDate": "Unknown date",
+      "chips": {
+        "primary": "Primary:",
+        "secondary": "Secondary:",
+        "positions": "Positions:",
+        "foot": "Foot:",
+        "age": "Age",
+        "ovr": "OVR",
+        "potential": "Potential",
+        "value": "Value",
+        "objective": "Objective:",
+        "nations": "Nations:",
+        "leagues": "Leagues:",
+        "clubs": "Clubs:",
+        "upTo": "up to"
+      },
+      "leftFooted": "left-footed",
+      "rightFooted": "right-footed",
+      "under": "u-{{age}}",
+      "pot": "pot."
+    },
+    "noScoutStarted": "No scout started",
+    "noScoutDesc": "The list remains empty until you apply position, OVR, age, potential, pace, height, PlayStyles, nationalities, leagues or clubs filters.",
+    "loading": "Loading players...",
+    "couldNotLoad": "Could not load the scout",
+    "noMatches": "No player matches these filters",
+    "noMatchesDesc": "Expand the OVR, age or potential range to broaden the search.",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "retrySearch": "Try again",
+    "playerTable": {
+      "player": "Player",
+      "positions": "Positions",
+      "profile": "Profile",
+      "attributes": "Attributes",
+      "club": "Club",
+      "value": "Value"
+    },
+    "fitScore": {
+      "unknown": "confidence unknown",
+      "profile": "profile with {{count}} record(s)",
+      "noClub": "No club",
+      "unknownLeague": "League unknown"
+    },
+    "comparison": {
+      "quickDecision": "Quick Decision",
+      "growth": "Growth",
+      "club": "Club",
+      "league": "League",
+      "generalRatings": "General Ratings",
+      "techAverage": "Tech Average",
+      "profile": "Profile",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "nationality": "Nationality",
+      "preferredFoot": "Preferred Foot",
+      "weakFoot": "Weak Foot",
+      "workRate": "Work Rate"
+    },
+    "sortAsc": "lowest first",
+    "sortDesc": "highest first",
+    "sortBy": "Sort by {{label}} ({{dir}})",
+    "objectives": {
+      "balanced": "Balanced",
+      "title": "Title Race",
+      "youth": "Youth Development",
+      "rebuild": "Rebuild"
+    },
+    "confidence": {
+      "high": "high confidence",
+      "medium": "medium confidence",
+      "low": "low confidence",
+      "none": "insufficient history"
+    },
+    "positionGroups": {
+      "profile": "Profile",
+      "generalRatings": "General Ratings",
+      "attack": "Attack",
+      "skill": "Skill",
+      "movement": "Movement",
+      "power": "Power",
+      "mentality": "Mentality",
+      "defense": "Defense",
+      "goalkeeper": "Goalkeeper"
+    },
+    "attributes": {
+      "height": "Height",
+      "weight": "Weight",
+      "weakFoot": "Weak Foot",
+      "skillMoves": "Skill Moves",
+      "reputation": "Reputation",
+      "pace": "Pace",
+      "shooting": "Shooting",
+      "passing": "Passing",
+      "dribbling": "Dribbling",
+      "defending": "Defending",
+      "physic": "Physicality",
+      "crossing": "Crossing",
+      "finishing": "Finishing",
+      "heading": "Heading",
+      "shortPassing": "Short Passing",
+      "volleys": "Volleys",
+      "skillDribbling": "Dribbling",
+      "curve": "Curve",
+      "fkAccuracy": "FK Accuracy",
+      "longPassing": "Long Passing",
+      "ballControl": "Ball Control",
+      "acceleration": "Acceleration",
+      "sprintSpeed": "Sprint Speed",
+      "agility": "Agility",
+      "reactions": "Reactions",
+      "balance": "Balance",
+      "shotPower": "Shot Power",
+      "jumping": "Jumping",
+      "stamina": "Stamina",
+      "strength": "Strength",
+      "longShots": "Long Shots",
+      "aggression": "Aggression",
+      "interceptions": "Interceptions",
+      "positioning": "Positioning",
+      "vision": "Vision",
+      "penalties": "Penalties",
+      "composure": "Composure",
+      "marking": "Marking",
+      "standingTackle": "Standing Tackle",
+      "slidingTackle": "Sliding Tackle",
+      "diving": "Diving",
+      "handling": "Handling",
+      "kicking": "Kicking",
+      "gkPositioning": "Positioning",
+      "reflexes": "Reflexes",
+      "speed": "Speed"
+    },
+    "positions": {
+      "GOL": "Goalkeeper",
+      "ZAG": "Centre-Back",
+      "LE": "Left Back",
+      "LD": "Right Back",
+      "VOL": "Defensive Mid",
+      "MC": "Central Mid",
+      "ME": "Left Mid",
+      "MD": "Right Mid",
+      "MEI": "Attacking Mid",
+      "PE": "Left Wing",
+      "PD": "Right Wing",
+      "SA": "Second Striker",
+      "ATA": "Striker"
+    }
+  },
+  "transfers": {
+    "title": "Transfer Hub",
+    "loading": "Loading transfers...",
+    "tabs": {
+      "current": "Current window",
+      "history": "History"
+    },
+    "newTransfer": "New transfer",
+    "pastSeasonBanner": "Viewing season {{season}}. Transfers are in read-only mode.",
+    "types": {
+      "all": "All types",
+      "compra": "Purchases",
+      "venda": "Sales",
+      "emprestimo_entrada": "Incoming loans",
+      "emprestimo_saida": "Outgoing loans",
+      "compraLabel": "Purchase",
+      "vendaLabel": "Sale",
+      "loanIn": "Loan in",
+      "loanOut": "Loan out",
+      "loanFee": "Loan",
+      "free": "Free"
+    },
+    "direction": {
+      "from": "From {{club}}",
+      "to": "To {{club}}"
+    },
+    "metrics": {
+      "available": "Available balance",
+      "budgetDetail": "Budget after current window",
+      "windowResult": "Window result",
+      "windowDetail": "{{revenue}} revenue · {{spent}} spent",
+      "incoming": "Incoming",
+      "incomingDetail": "{{purchases}} purchase(s) · {{loans}} loan(s)",
+      "outgoing": "Outgoing",
+      "outgoingDetail": "{{sales}} sale(s) · {{loans}} loan(s)"
+    },
+    "columns": {
+      "season": "Season",
+      "type": "Type",
+      "player": "Player",
+      "from": "From",
+      "to": "To",
+      "value": "Value",
+      "actions": "Actions"
+    },
+    "history": {
+      "title": "History filters",
+      "found": "{{count}} transfer(s) found",
+      "type": "Type",
+      "season": "Season",
+      "sort": "Sort",
+      "allSeasons": "All seasons",
+      "default": "Default",
+      "highestValue": "Highest value",
+      "lowestValue": "Lowest value",
+      "noTransfers": "No transfers recorded for the selected filters."
+    },
+    "current": {
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "noIncoming": "No purchases or incoming loans in this window.",
+      "noOutgoing": "No sales or outgoing loans in this window."
+    },
+    "highlights": {
+      "biggestPurchase": "Biggest purchase",
+      "biggestSale": "Biggest sale",
+      "noPurchases": "No paid purchases",
+      "noSales": "No paid sales",
+      "loans": "Loans",
+      "loansDesc": "Movements with no direct balance impact, but with squad impact.",
+      "noLoans": "No loans recorded in the current window."
+    },
+    "toasts": {
+      "updated": "Transfer updated!",
+      "registered": "Transfer registered!",
+      "playerAdded": "Player added! Fill in the details below.",
+      "playerSold": "Player sold and removed from squad.",
+      "playerLoaned": "Player sent on loan and removed from squad.",
+      "playerUpdated": "Player updated!",
+      "deleted": "Transfer removed."
+    }
+  },
+  "history": {
+    "loading": "Loading history...",
+    "legacy": {
+      "label": "Save legacy",
+      "title": "A career built in {{years}} year(s)",
+      "managed": "{{count}} club(s) managed, {{trophies}} title(s) and {{matches}} games recorded.",
+      "empty": "The legacy begins when the first clubs, games and titles are registered.",
+      "matches": "Games",
+      "wins": "Wins",
+      "draws": "Draws",
+      "losses": "Losses",
+      "winRate": "Win rate",
+      "goalDiff": "Goal difference",
+      "competitions": "Competitions",
+      "club": "Current"
+    },
+    "trophies": {
+      "room": "Trophy room",
+      "kicker": "Achievements",
+      "title": "Trophy cabinet",
+      "showcase": "Trophy cabinet",
+      "featured": "Featured title",
+      "latest": "Latest achievement",
+      "none": "No trophies won yet.",
+      "types": {
+        "League": "Leagues",
+        "NationalCup": "Cups",
+        "SuperCup": "Super Cups",
+        "EuropeanCup": "European"
+      },
+      "count": "{{index}} of {{total}}",
+      "selectPrev": "Select previous trophy",
+      "selectNext": "Select next trophy",
+      "select": "Select {{name}}"
+    },
+    "clubs": {
+      "kicker": "Journey",
+      "title": "Clubs managed",
+      "none": "No clubs registered yet.",
+      "present": "present"
+    },
+    "hallOfFame": {
+      "kicker": "Records",
+      "title": "Hall of Fame",
+      "topScorer": "All-time top scorer",
+      "topAssister": "All-time playmaker",
+      "mostMatches": "Most appearances",
+      "mostContributions": "Most contributions",
+      "noRecords": "Not enough records.",
+      "goals": "goals",
+      "assists": "assists.",
+      "matches": "games",
+      "contributions": "contrib."
+    },
+    "market": {
+      "kicker": "Market",
+      "title": "Historical balance",
+      "spent": "Spent on purchases",
+      "revenue": "Revenue from sales",
+      "balance": "Market balance",
+      "viewAll": "View full history"
+    },
+    "ranking": {
+      "leader": "Ranking leader",
+      "complete": "Full ranking",
+      "records": "{{count}} records",
+      "noRecord": "No records found for this ranking.",
+      "value": "value",
+      "free": "Free",
+      "to": "to",
+      "scorers": {
+        "title": "Top 20 all-time scorers",
+        "kicker": "Hall of Fame",
+        "desc": "Players who scored the most goals throughout the save.",
+        "valueLabel": "goals"
+      },
+      "assisters": {
+        "title": "Top 20 all-time assisters",
+        "kicker": "Creators",
+        "desc": "The list of those who provided the most goal assists during the career.",
+        "valueLabel": "assists."
+      },
+      "matches": {
+        "title": "Top 20 by appearances",
+        "kicker": "Locker room legends",
+        "desc": "The names who sustained the save's history on the pitch the most.",
+        "valueLabel": "games"
+      },
+      "contributions": {
+        "title": "Top 20 goal contributions",
+        "kicker": "Offensive impact",
+        "desc": "Goals and assists combined to reveal who decided the most.",
+        "valueLabel": "contrib."
+      },
+      "buys": {
+        "title": "Top 20 biggest purchases",
+        "kicker": "Historical market",
+        "desc": "The signings that cost the most investment in the save.",
+        "valueLabel": ""
+      },
+      "sales": {
+        "title": "Top 20 biggest sales",
+        "kicker": "Historical market",
+        "desc": "The departures that generated the most revenue for the career clubs.",
+        "valueLabel": ""
+      }
+    }
+  },
+  "stats": {
+    "loading": "Loading stats...",
+    "season": {
+      "ready": "Season ready for record",
+      "readyDesc": "Add results to turn this screen into a real campaign reading.",
+      "dominant": "Dominant campaign",
+      "dominantDesc": "The team controls the season and holds a clear advantage in goal difference.",
+      "onTrack": "Season on track"
+    }
+  },
+  "dashboard": {
+    "loading": "Loading...",
+    "loanFee": "Loan",
+    "free": "Free"
+  },
+  "auth": {
+    "login": {
+      "welcomeBack": "Welcome back",
+      "headline": "Your saves\nare waiting.",
+      "subheadline": "Continue where you left off. Seasons, squads and achievements — all exactly where you left them.",
+      "season": "Season {{season}}",
+      "trustBadges": {
+        "cloud": "Cloud data",
+        "secure": "Secure session",
+        "free": "Free to start"
+      },
+      "back": "Back",
+      "backToHome": "Back to home",
+      "title": "Sign in",
+      "subtitle": "Access your account to continue your career.",
+      "email": "E-mail",
+      "password": "Password",
+      "passwordPlaceholder": "Your password",
+      "submit": "Sign in",
+      "or": "or",
+      "noAccount": "Don't have an account?",
+      "createFree": "Create free account",
+      "success": "Logged in successfully!",
+      "wrongCredentials": "Incorrect email or password. Check your details and try again."
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Start your career for free.",
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "E-mail",
+      "password": "Password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "submit": "Create account",
+      "or": "or",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "guards": {
+      "loading": "Verifying session..."
+    }
+  },
+  "pages": {
+    "notFound": {
+      "title": "Page not found",
+      "subtitle": "The page you're looking for doesn't exist.",
+      "back": "Go back"
+    },
+    "unauthorized": {
+      "title": "Unauthorized",
+      "subtitle": "You don't have permission to access this page.",
+      "back": "Go back"
+    }
+  },
+  "playerModal": {
+    "addTitle": "Add Player",
+    "editTitle": "Edit Player",
+    "status": {
+      "Crucial": "Crucial",
+      "Important": "Important",
+      "Role": "Rotation",
+      "Sporadic": "Sporadic",
+      "Promising": "Promising"
+    }
+  },
+  "statsModal": {
+    "title": "Team Stats"
+  },
+  "newSeason": {
+    "title": "New Season",
+    "confirm": "Confirm"
+  },
+  "saves": {
+    "loading": "Loading saves...",
+    "noSaves": "No saves found.",
+    "createSave": "New save",
+    "manageSaves": "My saves"
+  },
+  "changeClub": {
+    "title": "Change Club"
+  },
+  "field": {
+    "title": "Lineup"
+  },
+  "playbooks": {
+    "title": "Playbooks"
+  },
+  "tutorial": {
+    "next": "Next",
+    "prev": "Previous",
+    "finish": "Finish",
+    "skip": "Skip"
+  },
+  "competitions": {
+    "didNotParticipate": "Did not participate",
+    "champion": "Champion",
+    "competition": "Competition"
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "remove": "Remove",
+    "confirm": "Confirm",
+    "search": "Search",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Finish",
+    "or": "or",
+    "free": "Free",
+    "years": "{{count}} year(s)",
+    "year": "year",
+    "games": "{{count}} game(s)"
+  }
+}

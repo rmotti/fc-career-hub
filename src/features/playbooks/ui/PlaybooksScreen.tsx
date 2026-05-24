@@ -58,19 +58,19 @@ interface Props {
 }
 
 const OBJECTIVE_OPTIONS: Array<{ value: PlaybookObjective; label: string; color: string }> = [
-  { value: "balanced", label: "Equilibrado", color: "text-primary bg-primary/10 border-primary/25" },
-  { value: "title", label: "Brigar por título", color: "text-orange-400 bg-orange-400/10 border-orange-400/25" },
-  { value: "youth", label: "Desenvolver base", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/25" },
-  { value: "rebuild", label: "Reconstrução", color: "text-blue-400 bg-blue-400/10 border-blue-400/25" },
+  { value: "balanced", label: "Balanced", color: "text-primary bg-primary/10 border-primary/25" },
+  { value: "title", label: "Title contender", color: "text-orange-400 bg-orange-400/10 border-orange-400/25" },
+  { value: "youth", label: "Youth development", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/25" },
+  { value: "rebuild", label: "Rebuild", color: "text-blue-400 bg-blue-400/10 border-blue-400/25" },
 ];
 
 const WEIGHT_COMPONENTS: Array<{ key: keyof PlaybookWeights; label: string; description: string; defaultVal: number }> = [
-  { key: "overall", label: "Overall", description: "OVR do jogador (0–99)", defaultVal: 35 },
-  { key: "potential", label: "Potencial", description: "Potential do jogador (0–99)", defaultVal: 20 },
-  { key: "age", label: "Idade", description: "Penaliza fora da faixa ideal", defaultVal: 20 },
-  { key: "historicalFit", label: "Fit histórico", description: "Score ML baseado no clube/posição", defaultVal: 25 },
-  { key: "marketValue", label: "Valor de mercado", description: "Ativo apenas com limite definido", defaultVal: 0 },
-  { key: "wage", label: "Salário", description: "Ativo apenas com limite definido", defaultVal: 0 },
+  { key: "overall", label: "Overall", description: "Player OVR (0–99)", defaultVal: 35 },
+  { key: "potential", label: "Potential", description: "Player potential (0–99)", defaultVal: 20 },
+  { key: "age", label: "Age", description: "Penalizes outside ideal range", defaultVal: 20 },
+  { key: "historicalFit", label: "Historical fit", description: "ML score based on club/position", defaultVal: 25 },
+  { key: "marketValue", label: "Market value", description: "Active only with limit defined", defaultVal: 0 },
+  { key: "wage", label: "Wage", description: "Active only with limit defined", defaultVal: 0 },
 ];
 
 const OBJECTIVE_AGE_DEFAULTS: Record<PlaybookObjective, { min: number; max: number }> = {
@@ -263,7 +263,7 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
               )}
               {playbook.isDefault && !isSystem && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
-                  <Star size={10} /> Padrão
+                  <Star size={10} /> Default
                 </span>
               )}
             </div>
@@ -278,7 +278,7 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
                 <button
                   onClick={() => onSetDefault?.(playbook)}
                   disabled={settingDefault}
-                  title="Definir como padrão"
+                  title="Set as default"
                   className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary disabled:opacity-50"
                 >
                   {settingDefault ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}
@@ -286,14 +286,14 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
               )}
               <button
                 onClick={() => onEdit?.(playbook)}
-                title="Editar playbook"
+                title="Edit playbook"
                 className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
               >
                 <Pencil size={14} />
               </button>
               <button
                 onClick={() => onDelete?.(playbook)}
-                title="Excluir playbook"
+                title="Delete playbook"
                 className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 size={14} />
@@ -307,7 +307,7 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
             <WeightBar key={comp.key} label={comp.label} weight={weights[comp.key] ?? 0} total={total} />
           ))}
           {WEIGHT_COMPONENTS.filter((c) => (weights[c.key] ?? 0) > 0).length === 0 && (
-            <p className="text-xs text-muted-foreground">Nenhum peso configurado.</p>
+            <p className="text-xs text-muted-foreground">No weights configured.</p>
           )}
         </div>
       </div>
@@ -321,22 +321,22 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
             onClick={() => setExpanded((v) => !v)}
             className="flex w-full items-center justify-between px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-foreground"
           >
-            Preferências
+            Preferences
             {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
           {expanded && (
             <div className="grid grid-cols-2 gap-2 px-4 pb-4 text-xs">
               {playbook.preferences?.idealAgeMin != null && (
-                <Pref label="Idade min." value={playbook.preferences.idealAgeMin} />
+                <Pref label="Min age" value={playbook.preferences.idealAgeMin} />
               )}
               {playbook.preferences?.idealAgeMax != null && (
-                <Pref label="Idade máx." value={playbook.preferences.idealAgeMax} />
+                <Pref label="Max age" value={playbook.preferences.idealAgeMax} />
               )}
               {playbook.preferences?.maxMarketValue != null && (
-                <Pref label="Valor máx." value={`€${playbook.preferences.maxMarketValue}M`} />
+                <Pref label="Max value" value={`€${playbook.preferences.maxMarketValue}M`} />
               )}
               {playbook.preferences?.maxWage != null && (
-                <Pref label="Salário máx." value={playbook.preferences.maxWage} />
+                <Pref label="Max wage" value={playbook.preferences.maxWage} />
               )}
             </div>
           )}
@@ -346,7 +346,7 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
       {!isSystem && playbook.updatedAt && (
         <div className="border-t border-border px-4 py-2">
           <p className="text-[10px] text-muted-foreground/60">
-            Atualizado em {new Date(playbook.updatedAt).toLocaleDateString("pt-BR")}
+            Updated on {new Date(playbook.updatedAt).toLocaleDateString("en-US")}
           </p>
         </div>
       )}
@@ -519,7 +519,7 @@ function PlaybookSheet({
         <SheetHeader className="border-b border-border px-5 py-4">
           <div className="flex items-center justify-between gap-3">
             <SheetTitle className="font-display text-lg">
-              {isEditing ? "Editar playbook" : "Novo playbook"}
+              {isEditing ? "Edit playbook" : "New playbook"}
             </SheetTitle>
             <button
               onClick={onClose}
@@ -535,10 +535,10 @@ function PlaybookSheet({
             {/* Name */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Nome *
+                Name *
               </label>
               <Input
-                placeholder="Ex: Foco em jovens, Busca título..."
+                placeholder="E.g.: Youth focus, Title hunt..."
                 value={form.name}
                 maxLength={80}
                 onChange={(e) => onFormChange({ name: e.target.value })}
@@ -549,7 +549,7 @@ function PlaybookSheet({
             {/* Objective */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Objetivo
+                Objective
               </label>
               <ObjectiveSelect value={form.objective} onChange={handleObjectiveChange} />
             </div>
@@ -558,7 +558,7 @@ function PlaybookSheet({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Pesos
+                  Weights
                 </label>
                 <div className="flex items-center gap-2">
                   <span
@@ -571,14 +571,14 @@ function PlaybookSheet({
                     Total: {total} pts
                   </span>
                   <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground">
-                    {active} ativos
+                    {active} active
                   </span>
                 </div>
               </div>
 
               {total === 0 && (
                 <p className="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                  Ao menos um peso deve ser maior que zero.
+                  At least one weight must be greater than zero.
                 </p>
               )}
 
@@ -596,18 +596,18 @@ function PlaybookSheet({
               </div>
 
               <p className="text-[10px] text-muted-foreground/60">
-                O backend normaliza automaticamente — a soma não precisa ser 100.
+                The backend normalizes automatically — the sum does not need to be 100.
               </p>
             </div>
 
             {/* Age range */}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Faixa de idade ideal
+                Ideal age range
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Mínima</p>
+                  <p className="mb-1 text-[10px] text-muted-foreground">Minimum</p>
                   <Input
                     type="number"
                     min={15}
@@ -618,7 +618,7 @@ function PlaybookSheet({
                   />
                 </div>
                 <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Máxima</p>
+                  <p className="mb-1 text-[10px] text-muted-foreground">Maximum</p>
                   <Input
                     type="number"
                     min={15}
@@ -639,28 +639,28 @@ function PlaybookSheet({
                 </label>
                 {!budgetWeightsActive && (
                   <span className="text-[10px] text-muted-foreground/60">
-                    Ative pesos de mercado/salário para ter efeito
+                    Enable market/wage weights to take effect
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Valor máx. (M€)</p>
+                  <p className="mb-1 text-[10px] text-muted-foreground">Max value (M€)</p>
                   <Input
                     type="number"
                     min={0}
-                    placeholder="Ex: 30"
+                    placeholder="E.g.: 30"
                     value={form.maxMarketValue}
                     onChange={(e) => onFormChange({ maxMarketValue: e.target.value })}
                     disabled={!budgetWeightsActive}
                   />
                 </div>
                 <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Salário máx.</p>
+                  <p className="mb-1 text-[10px] text-muted-foreground">Max wage</p>
                   <Input
                     type="number"
                     min={0}
-                    placeholder="Formato FC26"
+                    placeholder="FC26 format"
                     value={form.maxWage}
                     onChange={(e) => onFormChange({ maxWage: e.target.value })}
                     disabled={!budgetWeightsActive}
@@ -672,9 +672,9 @@ function PlaybookSheet({
             {/* Set as default */}
             <div className="flex items-center justify-between rounded-md border border-border bg-background/35 px-3 py-3">
               <div>
-                <p className="text-sm font-semibold text-foreground">Definir como padrão</p>
+                <p className="text-sm font-semibold text-foreground">Set as default</p>
                 <p className="text-xs text-muted-foreground">
-                  Usado automaticamente nas buscas do scout
+                  Used automatically in scout searches
                 </p>
               </div>
               <Switch
@@ -687,7 +687,7 @@ function PlaybookSheet({
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
           <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             onClick={onSubmit}
@@ -697,9 +697,9 @@ function PlaybookSheet({
             {isPending ? (
               <Loader2 size={15} className="animate-spin" />
             ) : isEditing ? (
-              "Salvar alterações"
+              "Save changes"
             ) : (
-              "Criar playbook"
+              "Create playbook"
             )}
           </Button>
         </div>
@@ -781,7 +781,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
     setSettingDefaultId(playbook.id);
     try {
       await setDefaultMutation.mutateAsync({ saveId, playbookId: playbook.id });
-      toast.success(`"${playbook.name}" definido como playbook padrão.`);
+      toast.success(`"${playbook.name}" set as default playbook.`);
     } catch (err) {
       toast.error(extractErrorMessage(err));
     } finally {
@@ -793,7 +793,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
     if (!saveId || !deleteTarget?.id) return;
     try {
       await deleteMutation.mutateAsync({ saveId, playbookId: deleteTarget.id });
-      toast.success(`"${deleteTarget.name}" excluído.`);
+      toast.success(`"${deleteTarget.name}" deleted.`);
     } catch (err) {
       toast.error(extractErrorMessage(err));
     } finally {
@@ -817,7 +817,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
             </h2>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
               <Sliders size={13} />
-              Perfis de avaliação
+              Evaluation profiles
             </span>
           </div>
         </div>
@@ -826,17 +826,17 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
           <SummaryPill label="Playbooks" value={userPlaybooks.length} icon={BookOpen} />
           <SummaryPill
             label="Ativo"
-            value={userPlaybooks.find((p) => p.isDefault)?.name ?? "Padrão do sistema"}
+            value={userPlaybooks.find((p) => p.isDefault)?.name ?? "System default"}
             icon={Star}
           />
           <SummaryPill
-            label="Objetivo padrão"
+            label="Default objective"
             value={getObjectiveOption(userPlaybooks.find((p) => p.isDefault)?.preferences?.objective ?? defaultPlaybook?.preferences?.objective).label}
             icon={Target}
           />
           <Button onClick={openCreate} size="sm" className="gap-1.5">
             <Plus size={15} />
-            Novo playbook
+            New playbook
           </Button>
         </div>
       </div>
@@ -845,7 +845,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-24 text-muted-foreground">
           <Loader2 size={20} className="animate-spin" />
-          Carregando playbooks...
+          Loading playbooks...
         </div>
       ) : isError ? (
         <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive">
@@ -857,7 +857,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
           {defaultPlaybook && (
             <section className="space-y-2">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                Padrão do sistema
+                System default
               </p>
               <div className="max-w-sm">
                 <PlaybookCard playbook={defaultPlaybook} isSystem />
@@ -869,10 +869,10 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                Seus playbooks
+                Your playbooks
               </p>
               {userPlaybooks.length > 0 && (
-                <p className="text-xs text-muted-foreground">{userPlaybooks.length} criados</p>
+                <p className="text-xs text-muted-foreground">{userPlaybooks.length} created</p>
               )}
             </div>
 
@@ -885,9 +885,9 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
                   <Plus size={22} />
                 </div>
                 <div>
-                  <p className="font-display text-sm font-bold text-foreground">Criar primeiro playbook</p>
+                  <p className="font-display text-sm font-bold text-foreground">Create first playbook</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Configure pesos personalizados para pontuar jogadores no scout.
+                    Configure custom weights to score players in the scout.
                   </p>
                 </div>
               </button>
@@ -910,7 +910,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted/30 text-muted-foreground">
                     <Plus size={18} />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Novo playbook</p>
+                  <p className="text-sm font-medium text-muted-foreground">New playbook</p>
                 </button>
               </div>
             )}
@@ -935,23 +935,23 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
       <AlertDialog open={deleteTarget !== null} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir playbook?</AlertDialogTitle>
+            <AlertDialogTitle>Delete playbook?</AlertDialogTitle>
             <AlertDialogDescription>
-              O playbook <strong>&ldquo;{deleteTarget?.name}&rdquo;</strong> será excluído permanentemente.
+              The playbook <strong>&ldquo;{deleteTarget?.name}&rdquo;</strong> will be permanently deleted.
               {deleteTarget?.isDefault && (
                 <span className="mt-1 block text-orange-400">
-                  Atenção: este é o playbook padrão do save. O sistema voltará ao padrão global.
+                  Warning: this is the save's default playbook. The system will revert to the global default.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : "Excluir"}
+              {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

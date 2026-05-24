@@ -14,6 +14,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useFinancialSnapshot } from "@/features/dashboard/model/useFinancialSnapshot";
 import { usePlayers } from "@/features/squad/model/usePlayers";
 import { useTeamStats } from "@/features/stats/model/useTeamStats";
@@ -50,11 +51,12 @@ const isOutgoingTransfer = (transfer: ApiTransfer) =>
 const getTransferFeeLabel = (transfer: ApiTransfer) => {
   if (transfer.feeFormatted) return transfer.feeFormatted;
   if (transfer.fee) return formatCurrencyInMillions(transfer.fee);
-  if (transfer.type === "emprestimo_entrada" || transfer.type === "emprestimo_saida") return "Empréstimo";
-  return "Livre";
+  if (transfer.type === "emprestimo_entrada" || transfer.type === "emprestimo_saida") return "Loan";
+  return "Free";
 };
 
 const DashboardScreen = ({ saveId }: Props) => {
+  const { t } = useTranslation();
   const { data: save } = useFinancialSnapshot(saveId);
   const { data: players = [], isLoading: playersLoading } = usePlayers(saveId, true);
   const { data: teamStatsArr = [] } = useTeamStats(saveId, "current");
@@ -139,23 +141,23 @@ const DashboardScreen = ({ saveId }: Props) => {
     tone: HighlightTone;
   }> = [
     {
-      label: "Taxa de vitorias",
+      label: "Win rate",
       value: `${winRate}%`,
-      detail: `${teamStats?.wins ?? 0} vitorias em ${matches} jogos`,
+      detail: `${teamStats?.wins ?? 0} wins in ${matches} games`,
       icon: ShieldCheck,
       tone: winRate >= 65 ? "primary" : winRate >= 45 ? "warning" : "destructive",
     },
     {
-      label: "Saldo de gols",
+      label: "Goal difference",
       value: goalDifference > 0 ? `+${goalDifference}` : goalDifference,
-      detail: `${teamStats?.goalsPro ?? 0} feitos / ${teamStats?.goalsAgainst ?? 0} sofridos`,
+      detail: `${teamStats?.goalsPro ?? 0} scored / ${teamStats?.goalsAgainst ?? 0} conceded`,
       icon: Goal,
       tone: goalDifference >= 0 ? "accent" : "destructive",
     },
     {
-      label: "Competicoes",
+      label: "Competitions",
       value: teamStatsArr.length,
-      detail: leagueStats ? `Liga + ${cupStats.length} copa(s)` : `${cupStats.length} copa(s) registrada(s)`,
+      detail: leagueStats ? `League + ${cupStats.length} cup(s)` : `${cupStats.length} cup(s) registered`,
       icon: Users,
       tone: "gold",
     },
@@ -167,12 +169,12 @@ const DashboardScreen = ({ saveId }: Props) => {
         <div>
           <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{save.name}</p>
           <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">
-            Painel da Temporada
+            Season Dashboard
           </h2>
         </div>
         <div className="flex items-center gap-3 sm:text-right">
           <div>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Temporada</p>
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Season</p>
             <p className="font-display text-xl font-bold text-primary text-glow-primary">{save.currentSeason}</p>
           </div>
         </div>
@@ -193,14 +195,14 @@ const DashboardScreen = ({ saveId }: Props) => {
               <div>
                 <div className="mb-2 flex items-center gap-2">
                   <Crown size={16} className="text-primary" />
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Campanha geral</p>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Overall campaign</p>
                 </div>
                 <p className="max-w-xl text-sm text-muted-foreground">
-                  Resultado agregado de todas as competicoes cadastradas. Pontos aparecem apenas na linha da liga.
+                  Aggregate result of all registered competitions. Points appear only on the league row.
                 </p>
               </div>
               <div className="flex min-h-[58px] min-w-[72px] flex-col items-center justify-center rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Jogos</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Games</p>
                 <p className="font-display text-2xl font-bold leading-none text-primary text-glow-primary">{matches}</p>
               </div>
             </div>
@@ -208,15 +210,15 @@ const DashboardScreen = ({ saveId }: Props) => {
             <div className="grid grid-cols-3 divide-x divide-border">
               <div className="pr-4 text-center">
                 <p className="font-display text-6xl font-bold leading-none text-primary text-glow-primary">{teamStats?.wins ?? 0}</p>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Vitorias</p>
+                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Wins</p>
               </div>
               <div className="px-4 text-center">
                 <p className="font-display text-6xl font-bold leading-none text-[hsl(var(--warning))]">{teamStats?.draws ?? 0}</p>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Empates</p>
+                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Draws</p>
               </div>
               <div className="pl-4 text-center">
                 <p className="font-display text-6xl font-bold leading-none text-destructive">{teamStats?.losses ?? 0}</p>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Derrotas</p>
+                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Losses</p>
               </div>
             </div>
 
@@ -238,7 +240,7 @@ const DashboardScreen = ({ saveId }: Props) => {
 
             {teamStatsArr.length > 0 && (
               <div className="mt-5 space-y-2">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Distribuicao por competicao</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Distribution by competition</p>
                 <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                   {teamStatsArr.map((stat) => {
                     const statMatches = stat.wins + stat.draws + stat.losses;
@@ -252,7 +254,7 @@ const DashboardScreen = ({ saveId }: Props) => {
                       <div key={stat.id} className="rounded-md border border-border bg-background/30 px-3 py-2.5">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">{stat.competition?.name ?? "Competicao"}</p>
+                            <p className="truncate text-sm font-semibold text-foreground">{stat.competition?.name ?? "Competition"}</p>
                             <p className="text-xs text-muted-foreground">{competitionMeta}</p>
                           </div>
                           <span className={`shrink-0 font-display text-sm font-bold ${statGoalDiff >= 0 ? "text-primary" : "text-destructive"}`}>
@@ -274,32 +276,32 @@ const DashboardScreen = ({ saveId }: Props) => {
         <div className="card-gamer p-6">
           <div className="mb-5 flex items-center gap-2">
             <Sparkles size={15} className="text-[hsl(var(--gold))]" />
-            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Protagonistas</p>
+            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Key players</p>
           </div>
           <div className="space-y-3">
             <PlayerSpotlight
-              label="Maior impacto"
+              label="Top impact"
               playerName={keyPlayer?.name}
               meta={keyPlayer ? `${getPlayerStats(keyPlayer)?.goals ?? 0} G / ${getPlayerStats(keyPlayer)?.assists ?? 0} A` : undefined}
               icon={Crown}
               tone="gold"
             />
             <PlayerSpotlight
-              label="Artilheiro"
+              label="Top Scorer"
               playerName={topScorer?.name}
-              meta={topScorer ? `${getPlayerStats(topScorer)?.goals ?? 0} gols` : undefined}
+              meta={topScorer ? `${getPlayerStats(topScorer)?.goals ?? 0} goals` : undefined}
               icon={Target}
               tone="primary"
             />
             <PlayerSpotlight
-              label="Garcom"
+              label="Playmaker"
               playerName={topAssistant?.name}
-              meta={topAssistant ? `${getPlayerStats(topAssistant)?.assists ?? 0} assistencias` : undefined}
+              meta={topAssistant ? `${getPlayerStats(topAssistant)?.assists ?? 0} assists` : undefined}
               icon={Zap}
               tone="accent"
             />
             <PlayerSpotlight
-              label="Maior OVR"
+              label="Best OVR"
               playerName={bestOvrPlayer?.name}
               meta={bestOvrPlayer ? `${bestOvrPlayer.ovr} OVR` : undefined}
               icon={Medal}
@@ -314,20 +316,20 @@ const DashboardScreen = ({ saveId }: Props) => {
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <CircleDollarSign size={15} className={isLowBalance ? "text-destructive" : "text-primary"} />
-              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Saude financeira</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Financial health</p>
             </div>
             <span className={`text-xs font-semibold ${isLowBalance ? "text-destructive" : "text-primary"}`}>
-              {Math.round(balancePct)}% restante
+              {Math.round(balancePct)}% remaining
             </span>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Orcamento inicial</p>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Initial budget</p>
               <p className="mt-2 font-display text-3xl font-bold leading-none text-foreground">{displayBudget}</p>
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Saldo disponivel</p>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Available balance</p>
               <p className={`mt-2 font-display text-3xl font-bold leading-none ${isLowBalance ? "text-destructive" : "text-primary text-glow-primary"}`}>
                 {displayBalance}
               </p>
@@ -345,7 +347,7 @@ const DashboardScreen = ({ saveId }: Props) => {
           </div>
           {topScorer && topScorerShare >= 40 && topScorerGoals > 0 && (
             <p className="mt-4 text-xs text-muted-foreground">
-              {topScorer.name} concentra {topScorerShare}% dos gols do elenco.
+              {topScorer.name} accounts for {topScorerShare}% of the squad's goals.
             </p>
           )}
         </div>
@@ -353,9 +355,9 @@ const DashboardScreen = ({ saveId }: Props) => {
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <DashboardListCard
-          title="Evolucao do elenco"
+          title="Squad development"
           icon={Dumbbell}
-          empty="Nenhuma evolucao de OVR registrada."
+          empty="No OVR development recorded."
           items={topOvr.map((player) => ({
             id: player.id,
             title: player.name,
@@ -366,9 +368,9 @@ const DashboardScreen = ({ saveId }: Props) => {
         />
 
         <DashboardListCard
-          title="Valorizacao"
+          title="Value appreciation"
           icon={ArrowUpRight}
-          empty="Nenhuma valorizacao registrada."
+          empty="No appreciation recorded."
           items={topValue.map((player) => ({
             id: player.id,
             title: player.name,
@@ -382,7 +384,7 @@ const DashboardScreen = ({ saveId }: Props) => {
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Trophy size={15} className="text-[hsl(var(--gold))]" />
-              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Legado</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Legacy</p>
             </div>
             <p className="font-display text-3xl font-bold leading-none text-[hsl(var(--gold))]">{trophies.length}</p>
           </div>
@@ -396,7 +398,7 @@ const DashboardScreen = ({ saveId }: Props) => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhum titulo registrado ainda.</p>
+            <p className="text-sm text-muted-foreground">No titles recorded yet.</p>
           )}
         </div>
       </section>
@@ -405,16 +407,16 @@ const DashboardScreen = ({ saveId }: Props) => {
         <div className="card-gamer p-6">
           <div className="mb-5 flex items-center gap-2">
             <Goal size={15} className="text-primary" />
-            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Producao ofensiva</p>
+            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Offensive output</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <CompactMetric label="Gols por jogo" value={goalsPerMatch.toFixed(2)} tone="primary" />
-            <CompactMetric label="Sofridos por jogo" value={concededPerMatch.toFixed(2)} tone={concededPerMatch <= 1 ? "accent" : "warning"} />
+            <CompactMetric label="Goals per game" value={goalsPerMatch.toFixed(2)} tone="primary" />
+            <CompactMetric label="Conceded per game" value={concededPerMatch.toFixed(2)} tone={concededPerMatch <= 1 ? "accent" : "warning"} />
           </div>
           <div className="mt-5">
             {playersLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 size={14} className="animate-spin" /> Carregando...
+                <Loader2 size={14} className="animate-spin" /> Loading...
               </div>
             ) : sortedByContribution.length > 0 ? (
               <div className="space-y-2">
@@ -434,7 +436,7 @@ const DashboardScreen = ({ saveId }: Props) => {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Nenhum jogador no elenco.</p>
+              <p className="text-sm text-muted-foreground">No players in squad.</p>
             )}
           </div>
         </div>
@@ -443,25 +445,25 @@ const DashboardScreen = ({ saveId }: Props) => {
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex items-center gap-2">
               <ArrowDownRight size={15} className="text-accent" />
-              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Mercado da temporada</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Season market</p>
             </div>
-            <p className="text-xs text-muted-foreground">{boughtCount} entradas · {soldCount} saidas</p>
+            <p className="text-xs text-muted-foreground">{boughtCount} in · {soldCount} out</p>
           </div>
           {transfers.length > 0 ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <CompactMetric label="Saldo" value={formatSignedCurrencyInMillions(transferNet)} tone={transferNet >= 0 ? "primary" : "destructive"} />
-                <CompactMetric label="Gasto" value={formatCurrencyInMillions(transferSpend)} tone={transferSpend > 0 ? "warning" : "muted"} />
-                <CompactMetric label="Receita" value={formatCurrencyInMillions(transferRevenue)} tone={transferRevenue > 0 ? "accent" : "muted"} />
+                <CompactMetric label="Balance" value={formatSignedCurrencyInMillions(transferNet)} tone={transferNet >= 0 ? "primary" : "destructive"} />
+                <CompactMetric label="Spent" value={formatCurrencyInMillions(transferSpend)} tone={transferSpend > 0 ? "warning" : "muted"} />
+                <CompactMetric label="Revenue" value={formatCurrencyInMillions(transferRevenue)} tone={transferRevenue > 0 ? "accent" : "muted"} />
               </div>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <MarketHighlight label="Maior compra" transfer={biggestPurchase} empty="Sem compras pagas" tone="primary" />
-                <MarketHighlight label="Maior venda" transfer={biggestSale} empty="Sem vendas pagas" tone="accent" />
+                <MarketHighlight label="Biggest purchase" transfer={biggestPurchase} empty="No paid purchases" tone="primary" />
+                <MarketHighlight label="Biggest sale" transfer={biggestSale} empty="No paid sales" tone="accent" />
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhuma movimentacao registrada nesta temporada.</p>
+            <p className="text-sm text-muted-foreground">No transfers recorded this season.</p>
           )}
         </div>
       </section>

@@ -70,7 +70,7 @@ export interface SessionResponse {
 
 export function extractErrorMessage(err: any): string {
   if (err?.isNetworkError || err?.message === "Failed to fetch" || err?.message?.includes("NetworkError")) {
-    return "Não foi possível conectar ao servidor. Verifique sua conexão.";
+    return "Could not connect to the server. Check your connection.";
   }
 
   if (err?.data?.error === "SHIRT_NUMBER_CONFLICT") {
@@ -80,14 +80,14 @@ export function extractErrorMessage(err: any): string {
   const status = err?.status || err?.response?.status;
   const apiError = err?.data?.error || err?.response?.data?.error;
 
-  if (status === 400) return apiError || err.message || "Dados inválidos. Verifique as informações e tente novamente.";
-  if (status === 401) return apiError || err.message || "Sessão expirada. Faça login novamente.";
-  if (status === 403) return apiError || err.message || "Você não tem permissão para realizar esta ação.";
-  if (status === 404) return apiError || err.message || "Recurso não encontrado.";
-  if (status === 409) return apiError || err.message || "Conflito ao salvar os dados. Tente novamente.";
-  if (status >= 500) return "Erro interno. Tente novamente em instantes.";
+  if (status === 400) return apiError || err.message || "Invalid data. Check the information and try again.";
+  if (status === 401) return apiError || err.message || "Session expired. Please sign in again.";
+  if (status === 403) return apiError || err.message || "You don't have permission to perform this action.";
+  if (status === 404) return apiError || err.message || "Resource not found.";
+  if (status === 409) return apiError || err.message || "Conflict while saving data. Try again.";
+  if (status >= 500) return "Internal error. Try again in a moment.";
 
-  return apiError || err?.message || "Erro inesperado. Tente novamente.";
+  return apiError || err?.message || "Unexpected error. Try again.";
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -111,7 +111,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+    const err = await res.json().catch(() => ({ error: "Unknown error" }));
     const retryAfter = res.status === 429
       ? parseInt(res.headers.get("Retry-After") ?? "60", 10)
       : undefined;

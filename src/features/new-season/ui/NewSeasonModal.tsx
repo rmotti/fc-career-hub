@@ -78,7 +78,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   const handleFinish = async () => {
     if (parsedBudget === null) {
-      setBudgetError("Digite um valor válido em milhões. Ex.: 150 = 150M.");
+      setBudgetError("Enter a valid value in millions. E.g.: 150 = 150M.");
       return;
     }
 
@@ -111,10 +111,10 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
         {step === "confirm" ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-lg">Encerrar Temporada</DialogTitle>
+              <DialogTitle className="font-display text-lg">End Season</DialogTitle>
               <DialogDescription>
-                Tem certeza que deseja encerrar a temporada <strong>{currentSeason}</strong>?
-                As estatísticas da temporada serão resetadas.
+                Are you sure you want to end season <strong>{currentSeason}</strong>?
+                Season statistics will be reset.
               </DialogDescription>
             </DialogHeader>
 
@@ -123,7 +123,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-3 border border-border space-y-2">
                   {teamStats.leaguePosition && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Posição na liga</span>
+                      <span className="text-muted-foreground">League position</span>
                       <span className="font-display font-bold text-primary">{teamStats.leaguePosition}º</span>
                     </div>
                   )}
@@ -131,13 +131,13 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                     .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
                     .map((item) => (
                       <div key={item.id} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{item.competition?.name ?? "Competição"}</span>
+                        <span className="text-muted-foreground">{item.competition?.name ?? "Competition"}</span>
                         <span className="font-display font-semibold">{CUP_LABELS[item.cupResult!] ?? item.cupResult}</span>
                       </div>
                     ))}
                   {!!save?.balance && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Saldo final</span>
+                      <span className="text-muted-foreground">Final balance</span>
                       <span className="font-display font-bold">{displayBalance}</span>
                     </div>
                   )}
@@ -145,7 +145,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
 
               <p className="text-xs text-muted-foreground italic">
-                ℹ️ Se você estiver em 1º lugar na liga ou tiver conquistado alguma copa, os troféus serão adicionados automaticamente.
+                ℹ️ If you finish 1st in the league or win a cup, trophies will be added automatically.
               </p>
             </div>
 
@@ -154,36 +154,36 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 onClick={handleConfirm}
                 className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
               >
-                Confirmar
+                Confirm
               </button>
               <button
                 onClick={() => handleClose(false)}
                 className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
               >
-                Cancelar
+                Cancel
               </button>
             </div>
           </>
         ) : step === "budget" ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-lg">Nova Temporada</DialogTitle>
-              <DialogDescription>Defina o orçamento para a próxima temporada.</DialogDescription>
+              <DialogTitle className="font-display text-lg">New Season</DialogTitle>
+              <DialogDescription>Set the budget for the next season.</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 my-2">
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Temporada</span>
+                  <span className="text-muted-foreground">Season</span>
                   {nextSeason
                     ? <span className="font-display font-bold text-primary">{nextSeason}</span>
-                    : <span className="text-destructive text-xs">Temporada atual inválida.</span>
+                    : <span className="text-destructive text-xs">Invalid current season.</span>
                   }
                 </div>
               </div>
 
               <div>
-                <label className={labelClass}>Orçamento da temporada</label>
+                <label className={labelClass}>Season budget</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -197,24 +197,24 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                     onBlur={() => {
                       if (!budgetInput.trim()) return;
                       if (parsedBudget === null) {
-                        setBudgetError("Digite um valor válido em milhões. Ex.: 150 = 150M.");
+                        setBudgetError("Enter a valid value in millions. E.g.: 150 = 150M.");
                       }
                     }}
                     placeholder="85"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">Digite o valor em milhões. Ex.: `150` = `150M`.</p>
+                <p className="text-xs text-muted-foreground mt-1.5">Enter the value in millions. E.g.: `150` = `150M`.</p>
                 {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
               </div>
               <div>
-                <label className={labelClass}>Competição europeia</label>
+                <label className={labelClass}>European competition</label>
                 <select
                   className={inputClass}
                   value={nextEuropeanCompetitionId}
                   onChange={(e) => setNextEuropeanCompetitionId(e.target.value)}
                 >
-                  <option value="none">Nenhuma</option>
+                  <option value="none">None</option>
                   {europeanCompetitions.map((competition) => (
                     <option key={competition.id} value={competition.id}>{competition.name}</option>
                   ))}
@@ -228,14 +228,14 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 disabled={!budgetInput.trim() || parsedBudget === null || !nextSeason || isSubmitting}
                 className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <><span>Confirmar</span><ChevronRight size={16} /></>}
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <><span>Confirm</span><ChevronRight size={16} /></>}
               </button>
               <button
                 onClick={() => handleClose(false)}
                 disabled={isSubmitting}
                 className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50"
               >
-                Cancelar
+                Cancel
               </button>
             </div>
           </>
@@ -243,10 +243,10 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-xl text-center">
-                📋 Resumo da Temporada {currentSeason}
+                📋 Season Summary {currentSeason}
               </DialogTitle>
               <DialogDescription className="text-center">
-                {currentClub} — Temporada encerrada
+                {currentClub} — Season ended
               </DialogDescription>
             </DialogHeader>
 
@@ -256,10 +256,10 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Desempenho na Liga</span>
+                    <span className="font-display font-semibold text-sm">League performance</span>
                     {teamStats.leaguePosition && (
                       <span className="ml-auto bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold">
-                        {teamStats.leaguePosition}º lugar
+                        {teamStats.leaguePosition}th place
                       </span>
                     )}
                   </div>
@@ -267,20 +267,20 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                     <div className="flex gap-4 text-center">
                       <div>
                         <p className="text-lg font-display font-bold text-primary">{teamStats.wins}</p>
-                        <p className="text-xs text-muted-foreground">V</p>
+                        <p className="text-xs text-muted-foreground">W</p>
                       </div>
                       <div>
                         <p className="text-lg font-display font-bold text-warning">{teamStats.draws}</p>
-                        <p className="text-xs text-muted-foreground">E</p>
+                        <p className="text-xs text-muted-foreground">D</p>
                       </div>
                       <div>
                         <p className="text-lg font-display font-bold text-destructive">{teamStats.losses}</p>
-                        <p className="text-xs text-muted-foreground">D</p>
+                        <p className="text-xs text-muted-foreground">L</p>
                       </div>
                     </div>
                     <div className="text-center">
                       <p className="text-lg font-display font-bold text-foreground">{totalMatches}</p>
-                      <p className="text-xs text-muted-foreground">Jogos</p>
+                      <p className="text-xs text-muted-foreground">Games</p>
                     </div>
                   </div>
                 </div>
@@ -291,14 +291,14 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Star size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Competições de Copa</span>
+                    <span className="font-display font-semibold text-sm">Cup competitions</span>
                   </div>
                   <div className="space-y-2">
                     {cupStats
                       .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
                       .map((item) => (
                         <div key={item.id} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{item.competition?.name ?? "Competição"}</span>
+                          <span className="text-muted-foreground">{item.competition?.name ?? "Competition"}</span>
                           <span className={`font-display font-semibold ${item.cupResult === "Campeao" ? "text-yellow-500" : ""}`}>
                             {CUP_LABELS[item.cupResult!] ?? item.cupResult}
                           </span>
@@ -313,16 +313,16 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Financeiro</span>
+                    <span className="font-display font-semibold text-sm">Finances</span>
                   </div>
                   <div className="flex justify-around text-center">
                     <div>
                       <p className="text-lg font-display font-bold text-foreground">{displayBudget}</p>
-                      <p className="text-xs text-muted-foreground">Orçamento</p>
+                      <p className="text-xs text-muted-foreground">Budget</p>
                     </div>
                     <div>
                       <p className="text-lg font-display font-bold text-primary">{displayBalance}</p>
-                      <p className="text-xs text-muted-foreground">Saldo final</p>
+                      <p className="text-xs text-muted-foreground">Final balance</p>
                     </div>
                   </div>
                 </div>
@@ -333,23 +333,23 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Swords size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Gols</span>
+                    <span className="font-display font-semibold text-sm">Goals</span>
                   </div>
                   <div className="flex justify-around text-center">
                     <div>
                       <p className="text-2xl font-display font-bold text-primary">{teamStats.goalsPro}</p>
-                      <p className="text-xs text-muted-foreground">Marcados</p>
+                      <p className="text-xs text-muted-foreground">Scored</p>
                     </div>
                     <div>
                       <p className="text-2xl font-display font-bold text-destructive">{teamStats.goalsAgainst}</p>
-                      <p className="text-xs text-muted-foreground">Sofridos</p>
+                      <p className="text-xs text-muted-foreground">Conceded</p>
                     </div>
                     <div>
                       <p className="text-2xl font-display font-bold text-foreground">
                         {teamStats.goalsPro - teamStats.goalsAgainst > 0 ? "+" : ""}
                         {teamStats.goalsPro - teamStats.goalsAgainst}
                       </p>
-                      <p className="text-xs text-muted-foreground">Saldo</p>
+                      <p className="text-xs text-muted-foreground">GD</p>
                     </div>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Trophy size={16} className="text-yellow-500" />
-                    <span className="font-display font-semibold text-sm">Títulos Conquistados</span>
+                    <span className="font-display font-semibold text-sm">Titles Won</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {seasonTrophies.map((t) => (
@@ -380,7 +380,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Target size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Artilheiros</span>
+                    <span className="font-display font-semibold text-sm">Top Scorers</span>
                   </div>
                   <div className="space-y-2">
                     {topScorers.filter((p) => ((p.currentSeasonStats || p.totalStats)?.goals ?? 0) > 0).map((p, i) => (
@@ -392,7 +392,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{p.position}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals} gols</span>
+                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals} goals</span>
                       </div>
                     ))}
                   </div>
@@ -404,7 +404,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 <div className="bg-muted/50 rounded-lg p-4 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <BarChart3 size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Garçons</span>
+                    <span className="font-display font-semibold text-sm">Top Assisters</span>
                   </div>
                   <div className="space-y-2">
                     {topAssisters.filter((p) => ((p.currentSeasonStats || p.totalStats)?.assists ?? 0) > 0).map((p, i) => (
@@ -416,7 +416,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{p.position}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.assists} assist.</span>
+                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.assists} ast.</span>
                       </div>
                     ))}
                   </div>
@@ -430,7 +430,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                 onClick={() => setStep("budget")}
                 className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
-                <span>Iniciar Nova Temporada</span>
+                <span>Start New Season</span>
                 <ChevronRight size={16} />
               </button>
             </div>

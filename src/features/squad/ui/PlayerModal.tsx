@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   BadgeEuro,
@@ -45,15 +46,8 @@ const EMPTY_PLAYER = {
 const inputClass = "h-10 w-full rounded-md border border-border bg-background/40 px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus:border-primary/60 focus:ring-1 focus:ring-primary/30 disabled:opacity-60";
 const labelClass = "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground";
 
-const STATUS_LABELS: Record<string, string> = {
-  Crucial: "Crucial",
-  Important: "Importante",
-  Role: "Rotação",
-  Sporadic: "Esporádico",
-  Promising: "Promissor",
-};
-
 const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState(EMPTY_PLAYER);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!player;
@@ -163,7 +157,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
             cleanSheets: submissionForm.cleanSheets,
           },
         });
-        toast.success("Estatísticas atualizadas!", { duration: 3000 });
+        toast.success("Stats updated!", { duration: 3000 });
       }
       setForm(EMPTY_PLAYER);
       onOpenChange(false);
@@ -179,13 +173,13 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
       <DialogContent data-tour="player-modal" className="max-w-4xl border-border bg-card p-0" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            {isEdit ? "Atualizar jogador" : "Novo jogador"}
+            {isEdit ? t("playerModal.editTitle") : t("playerModal.addTitle")}
           </p>
           <DialogTitle className="font-display text-2xl leading-none">
-            {isEdit ? "Editar jogador" : "Adicionar ao elenco"}
+            {isEdit ? t("playerModal.editTitle") : t("playerModal.addTitle")}
           </DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-2">
-            Dados do atleta, estatísticas da temporada e informações de mercado em um só lugar.
+            Player data, season stats and market information in one place.
             {badge && (
               <span
                 className="rounded px-2 py-0.5 text-xs font-semibold"
@@ -199,12 +193,12 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
           <fieldset className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_0.9fr]" disabled={isSubmitting}>
-            <FormSection dataTour="player-modal-identity" icon={UserRound} title="Identidade">
+            <FormSection dataTour="player-modal-identity" icon={UserRound} title="Identity">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.35fr]">
-                <Field label="Nome">
+                <Field label="Name">
                   <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                 </Field>
-                <Field label="Nação">
+                <Field label="Nation">
                   <Select value={form.nation || "none"} onValueChange={(value) => setForm({ ...form, nation: value === "none" ? "" : value })}>
                     <SelectTrigger className="h-10 border-border bg-background/40 text-left text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30 [&>span:first-child]:!flex [&>span:first-child]:min-w-0 [&>span:first-child]:flex-1 [&>span:first-child]:items-center [&>span:first-child]:justify-start">
                       {selectedCountry ? (
@@ -213,12 +207,12 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                           <span className="truncate">{selectedCountry.name}</span>
                         </span>
                       ) : (
-                        <SelectValue placeholder="Selecionar" />
+                        <SelectValue placeholder="Select" />
                       )}
                     </SelectTrigger>
                     <SelectContent className="max-h-72 border-border bg-card text-foreground shadow-xl shadow-black/30">
                       <SelectItem value="none" className="text-muted-foreground focus:bg-muted focus:text-foreground">
-                        Selecionar
+                        Select
                       </SelectItem>
                       {COUNTRIES.map((country) => (
                         <SelectItem key={country.code} value={country.code} className="focus:bg-primary/10 focus:text-primary">
@@ -234,7 +228,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-[0.85fr_1.35fr_0.8fr_0.8fr]">
-                <Field label="Posição" icon={Shirt}>
+                <Field label="Position" icon={Shirt}>
                   <Select
                     value={form.position}
                     onValueChange={(value) => setForm({
@@ -261,24 +255,24 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
-                      <SelectItem value="Crucial" className="focus:bg-primary/10 focus:text-primary">Crucial</SelectItem>
-                      <SelectItem value="Important" className="focus:bg-primary/10 focus:text-primary">Importante</SelectItem>
-                      <SelectItem value="Role" className="focus:bg-primary/10 focus:text-primary">Rotação</SelectItem>
-                      <SelectItem value="Sporadic" className="focus:bg-primary/10 focus:text-primary">Esporádico</SelectItem>
-                      <SelectItem value="Promising" className="focus:bg-primary/10 focus:text-primary">Promissor</SelectItem>
+                      <SelectItem value="Crucial" className="focus:bg-primary/10 focus:text-primary">{t("playerModal.status.Crucial")}</SelectItem>
+                      <SelectItem value="Important" className="focus:bg-primary/10 focus:text-primary">{t("playerModal.status.Important")}</SelectItem>
+                      <SelectItem value="Role" className="focus:bg-primary/10 focus:text-primary">{t("playerModal.status.Role")}</SelectItem>
+                      <SelectItem value="Sporadic" className="focus:bg-primary/10 focus:text-primary">{t("playerModal.status.Sporadic")}</SelectItem>
+                      <SelectItem value="Promising" className="focus:bg-primary/10 focus:text-primary">{t("playerModal.status.Promising")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Idade">
+                <Field label="Age">
                   <input type="number" className={inputClass} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value === "" ? "" : parseInt(e.target.value) })} min={15} max={45} />
                 </Field>
-                <Field label="Camisa">
+                <Field label="Shirt">
                   <input type="number" className={inputClass} value={form.shirtNumber} onChange={(e) => setForm({ ...form, shirtNumber: e.target.value === "" ? "" : parseInt(e.target.value) })} min={1} max={99} placeholder="—" />
                 </Field>
               </div>
 
               {form.position !== "GOL" && (
-                <Field label="Posições alternativas">
+                <Field label="Alternative positions">
                   <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                     {PLAYER_POSITIONS.filter((pos) => pos !== form.position && pos !== "GOL").map((pos) => {
                       const isSelected = form.alternativePositions.includes(pos);
@@ -312,26 +306,26 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
               )}
             </FormSection>
 
-            <FormSection dataTour="player-modal-development" icon={Activity} title="Desenvolvimento" compact>
+            <FormSection dataTour="player-modal-development" icon={Activity} title="Development" compact>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="OVR atual">
+                <Field label="Current OVR">
                   <input type="number" className={inputClass} value={form.ovr} onChange={(e) => setForm({ ...form, ovr: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} />
                 </Field>
-                <Field label="Potencial">
+                <Field label="Potential">
                   <input type="number" className={inputClass} value={form.potential} onChange={(e) => setForm({ ...form, potential: e.target.value === "" ? "" : parseInt(e.target.value) })} min={40} max={99} placeholder="—" />
                 </Field>
               </div>
             </FormSection>
 
-            <FormSection dataTour="player-modal-stats" icon={BarChart3} title="Estatísticas da temporada">
+            <FormSection dataTour="player-modal-stats" icon={BarChart3} title="Season Stats">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <Field label="Partidas">
+                <Field label="Apps">
                   <input type="number" className={inputClass} value={form.matches} onChange={(e) => setForm({ ...form, matches: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
                 </Field>
-                <Field label="Gols" icon={Target}>
+                <Field label="Goals" icon={Target}>
                   <input type="number" className={inputClass} value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
                 </Field>
-                <Field label="Assist.">
+                <Field label="Assists">
                   <input type="number" className={inputClass} value={form.assists} onChange={(e) => setForm({ ...form, assists: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
                 </Field>
                 {CLEAN_SHEETS_POSITIONS.has(form.position) && (
@@ -339,18 +333,18 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                     <input type="number" className={inputClass} value={form.cleanSheets} onChange={(e) => setForm({ ...form, cleanSheets: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
                   </Field>
                 )}
-                <Field label="Amarelos">
+                <Field label="Yellow cards">
                   <input type="number" className={inputClass} value={form.yellowCards} onChange={(e) => setForm({ ...form, yellowCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
                 </Field>
-                <Field label="Vermelhos">
+                <Field label="Red cards">
                   <input type="number" className={inputClass} value={form.redCards} onChange={(e) => setForm({ ...form, redCards: e.target.value === "" ? "" : parseInt(e.target.value) })} min={0} />
                 </Field>
               </div>
             </FormSection>
 
-            <FormSection dataTour="player-modal-market" icon={CircleDollarSign} title="Mercado" compact>
+            <FormSection dataTour="player-modal-market" icon={CircleDollarSign} title="Market" compact>
               <div className="grid grid-cols-1 gap-3">
-                <Field label="Salário semanal" icon={BadgeEuro}>
+                <Field label="Weekly salary" icon={BadgeEuro}>
                   <div className="relative">
                     <input
                       type="number"
@@ -364,7 +358,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">K€</span>
                   </div>
                 </Field>
-                <Field label="Valor de mercado">
+                <Field label="Market value">
                   <div className="relative">
                     <input
                       type="number"
@@ -390,7 +384,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                 className="flex items-center justify-center gap-2 rounded-md bg-muted px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
                 <X size={14} />
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 data-tour="player-modal-save"
@@ -399,7 +393,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                 className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
               >
                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={15} />}
-                {isEdit ? "Salvar alterações" : "Adicionar jogador"}
+                {isEdit ? t("common.save") : t("playerModal.addTitle")}
               </button>
             </div>
           </fieldset>

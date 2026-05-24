@@ -26,12 +26,12 @@ const planSaveLimit: Partial<Record<UserPlan, number>> = {
 };
 
 const formatUpdatedAt = (value?: string) => {
-  if (!value) return "Sem data recente";
+  if (!value) return "No recent date";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Sem data recente";
+  if (Number.isNaN(date.getTime())) return "No recent date";
 
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -68,7 +68,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
   const handleBudgetBlur = () => {
     const num = parseBudgetInMillionsInput(newBudget);
     if (num === null) {
-      setBudgetError("Orçamento deve ser um número válido em milhões (ex: 100 para 100M)");
+      setBudgetError("Budget must be a valid number in millions (e.g. 100 for 100M)");
     } else {
       setBudgetError("");
     }
@@ -78,7 +78,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
     const num = parseBudgetInMillionsInput(newBudget);
     if (!newName.trim() || !newClub) return;
     if (num === null) {
-      setBudgetError("Orçamento obrigatório e deve ser um número válido em milhões");
+      setBudgetError("Budget is required and must be a valid number in millions");
       return;
     }
     setBudgetError("");
@@ -108,8 +108,8 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
           <div className="card-gamer flex min-w-[280px] flex-col items-center gap-4 p-8 text-center">
             <Loader2 size={28} className="animate-spin text-primary" />
             <div className="space-y-1">
-              <p className="font-display text-lg font-bold text-foreground">Preparando seu save</p>
-              <p className="text-sm text-muted-foreground">Criando a carreira e abrindo o dashboard...</p>
+              <p className="font-display text-lg font-bold text-foreground">Preparing your save</p>
+              <p className="text-sm text-muted-foreground">Creating the career and opening the dashboard...</p>
             </div>
           </div>
         </div>
@@ -123,7 +123,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             </div>
             <div>
               <p className="font-display text-xs font-bold uppercase tracking-[0.22em] text-primary">FC Career Hub</p>
-              <h1 className="font-display text-3xl font-bold leading-none tracking-tight sm:text-4xl">Suas carreiras</h1>
+              <h1 className="font-display text-3xl font-bold leading-none tracking-tight sm:text-4xl">Your careers</h1>
             </div>
           </div>
 
@@ -131,7 +131,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             <div data-tour="save-user-summary" className="rounded-lg border border-border bg-card/70 px-4 py-2 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{userName}</span>
               <span className="mx-2 text-border">/</span>
-              <span>Plano {userPlan}</span>
+              <span>Plan {userPlan}</span>
               <span className="mx-2 text-border">/</span>
               <span>{saveCountLabel}</span>
             </div>
@@ -139,10 +139,10 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
               type="button"
               onClick={onSignOut}
               className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card/70 px-4 font-display text-sm font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-              title="Sair e voltar para a tela inicial"
+              title="Sign out and return to the home screen"
             >
               <LogOut size={16} />
-              Sair
+              Sign out
             </button>
             <div data-tour="save-help">
               <SaveSelectTutorial />
@@ -154,7 +154,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
           <div className="flex flex-1 items-center justify-center">
             <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4 text-muted-foreground">
               <Loader2 size={22} className="animate-spin text-primary" />
-              <span className="font-medium">Carregando saves...</span>
+              <span className="font-medium">Loading saves...</span>
             </div>
           </div>
         ) : showForm ? (
@@ -190,8 +190,8 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
         ) : (
           <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center py-8">
             <div className="mb-6">
-              <p className="font-display text-xl font-bold leading-none">Escolha um save</p>
-              <p className="mt-1 text-sm text-muted-foreground">Abra uma carreira existente ou crie uma nova jornada.</p>
+              <p className="font-display text-xl font-bold leading-none">Choose a save</p>
+              <p className="mt-1 text-sm text-muted-foreground">Open an existing career or start a new journey.</p>
             </div>
 
             <Carousel
@@ -209,7 +209,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
                       save={save}
                       onSelectSave={onSelectSave}
                       onDelete={(selectedSave) => {
-                        if (confirm(`Deletar o save "${selectedSave.name}"? Esta ação não pode ser desfeita.`)) {
+                        if (confirm(`Delete save "${selectedSave.name}"? This action cannot be undone.`)) {
                           deleteSave.mutate(selectedSave.id, {
                             onError: (error) => {
                               toast.error(extractErrorMessage(error), { duration: 5000 });
@@ -232,7 +232,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card/45 px-5 py-5 font-display text-lg font-bold text-primary transition-colors hover:border-primary/60 hover:bg-primary/5"
             >
               <Plus size={22} />
-              Criar novo save
+              Create new save
             </button>
           </section>
         )}
@@ -262,20 +262,20 @@ const SaveCard = ({ save, onSelectSave, onDelete, deleting }: SaveCardProps) => 
       <div className="mt-5 space-y-3">
         <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
           <Shield size={16} className="shrink-0 text-primary/80" />
-          <span className="font-medium text-foreground">{save.currentClubStint?.club ?? "Clube indefinido"}</span>
+          <span className="font-medium text-foreground">{save.currentClubStint?.club ?? "Club not set"}</span>
         </p>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Trophy size={16} className="shrink-0 text-muted-foreground/80" />
-          <span>Temporada {save.currentSeason}</span>
+          <span>Season {save.currentSeason}</span>
         </p>
       </div>
 
       <div className="mt-5">
-        <MiniStat label="Atualizado" value={formatUpdatedAt(save.updatedAt ?? save.createdAt)} />
+        <MiniStat label="Updated" value={formatUpdatedAt(save.updatedAt ?? save.createdAt)} />
       </div>
 
       <span className="mt-5 inline-flex items-center gap-2 font-display text-sm font-bold text-primary">
-        Abrir carreira
+        Open career
         <ArrowRight size={16} />
       </span>
     </button>
@@ -284,7 +284,7 @@ const SaveCard = ({ save, onSelectSave, onDelete, deleting }: SaveCardProps) => 
       onClick={() => onDelete(save)}
       disabled={deleting}
       className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-      title="Deletar save"
+      title="Delete save"
     >
       {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
     </button>
@@ -338,34 +338,34 @@ const CreateSavePanel = ({
     <aside className="card-gamer h-fit p-5">
       <button onClick={onCancel} className="mb-5 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ChevronLeft size={16} />
-        Voltar para carreiras
+        Back to careers
       </button>
-      <p className="font-display text-3xl font-bold leading-none">Nova carreira</p>
+      <p className="font-display text-3xl font-bold leading-none">New career</p>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        Defina a base do save uma vez. O resto da história começa no dashboard.
+        Set the save foundation once. The rest of the story starts on the dashboard.
       </p>
       <div className="mt-6 space-y-3">
-        <Step done={!!newName.trim()} label="Identidade" />
-        <Step done={!!newClub} label="Clube inicial" />
-        <Step done={parseBudgetInMillionsInput(newBudget) !== null} label="Orçamento" />
-        <Step done label="Competição opcional" />
+        <Step done={!!newName.trim()} label="Identity" />
+        <Step done={!!newClub} label="Starting club" />
+        <Step done={parseBudgetInMillionsInput(newBudget) !== null} label="Budget" />
+        <Step done label="Optional competition" />
       </div>
     </aside>
 
     <div data-tour="save-form" className="card-gamer p-5 sm:p-7">
       <div className="grid gap-5">
-        <Field label="Nome do save">
+        <Field label="Save name">
           <input
             type="text"
             value={newName}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Ex: A Dinastia"
+            placeholder="E.g.: The Dynasty"
             className="h-12 w-full rounded-lg border border-border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/50"
           />
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Liga">
+          <Field label="League">
             <Select
               value={newLeague}
               onValueChange={(value) => {
@@ -374,7 +374,7 @@ const CreateSavePanel = ({
               }}
             >
               <SelectTrigger className="h-12 rounded-lg border-border bg-background/70 px-4 font-display text-sm font-semibold text-foreground transition-shadow hover:border-primary/40 focus:ring-primary/50 focus:ring-offset-0">
-                <SelectValue placeholder="Selecione a liga..." />
+                <SelectValue placeholder="Select league..." />
               </SelectTrigger>
               <SelectContent className="border-border bg-card text-foreground shadow-[0_18px_48px_hsl(220_20%_3%/0.55)]">
                 {leagueNames.map((league) => (
@@ -390,14 +390,14 @@ const CreateSavePanel = ({
             </Select>
           </Field>
 
-          <Field label="Clube inicial">
+          <Field label="Starting club">
             <Select
               value={newClub}
               disabled={!newLeague}
               onValueChange={onClubChange}
             >
               <SelectTrigger className="h-12 rounded-lg border-border bg-background/70 px-4 font-display text-sm font-semibold text-foreground transition-shadow hover:border-primary/40 focus:ring-primary/50 focus:ring-offset-0">
-                <SelectValue placeholder="Selecione o time..." />
+                <SelectValue placeholder="Select club..." />
               </SelectTrigger>
               <SelectContent className="border-border bg-card text-foreground shadow-[0_18px_48px_hsl(220_20%_3%/0.55)]">
                 {clubsForLeague.map((club) => (
@@ -415,32 +415,32 @@ const CreateSavePanel = ({
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Orçamento inicial">
+          <Field label="Initial budget">
             <input
               type="text"
               value={newBudget}
               onChange={(e) => onBudgetChange(e.target.value)}
               onBlur={onBudgetBlur}
-              placeholder="Ex: 100"
+              placeholder="E.g.: 100"
               className={`h-12 w-full rounded-lg border bg-background/70 px-4 text-sm text-foreground outline-none transition-shadow placeholder:text-muted-foreground/50 focus:ring-2 ${
                 budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/50"
               }`}
             />
-            <p className="mt-1.5 text-xs text-muted-foreground">Digite em milhões. Ex.: 100 = 100M.</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">Enter in millions. E.g.: 100 = 100M.</p>
             {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive">{budgetError}</p>}
           </Field>
 
-          <Field label="Competição europeia inicial">
+          <Field label="Initial European competition">
             <Select
               value={newEuropeanCompetitionId}
               onValueChange={onEuropeanCompetitionChange}
             >
               <SelectTrigger className="h-12 rounded-lg border-border bg-background/70 px-4 font-display text-sm font-semibold text-foreground transition-shadow hover:border-primary/40 focus:ring-primary/50 focus:ring-offset-0">
-                <SelectValue placeholder="Nenhuma" />
+                <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent className="border-border bg-card text-foreground shadow-[0_18px_48px_hsl(220_20%_3%/0.55)]">
                 <SelectItem value="none" className="font-display text-sm font-semibold focus:bg-primary focus:text-primary-foreground">
-                  Nenhuma
+                  None
                 </SelectItem>
                 {europeanCompetitions.map((competition) => (
                   <SelectItem
@@ -453,7 +453,7 @@ const CreateSavePanel = ({
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-1.5 text-xs text-muted-foreground">Opcional para a primeira temporada.</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">Optional for the first season.</p>
           </Field>
         </div>
 
@@ -462,7 +462,7 @@ const CreateSavePanel = ({
             onClick={onCancel}
             className="rounded-lg border border-border bg-background/50 px-5 py-3 font-display text-sm font-bold text-foreground transition-colors hover:border-primary/40"
           >
-            Cancelar
+            Cancel
           </button>
           <button
             onClick={onCreate}
@@ -470,7 +470,7 @@ const CreateSavePanel = ({
             className="landing-btn-primary flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             {creating ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
-            Iniciar carreira
+            Start career
           </button>
         </div>
       </div>
@@ -484,9 +484,9 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
       <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
         <Trophy size={27} />
       </div>
-      <h2 className="font-display text-4xl font-bold leading-none">Nenhum save criado ainda</h2>
+      <h2 className="font-display text-4xl font-bold leading-none">No saves created yet</h2>
       <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-muted-foreground">
-        Crie seu primeiro save para registrar temporadas, elenco, mercado, estatísticas e conquistas.
+        Create your first save to track seasons, squad, transfers, statistics, and achievements.
       </p>
       <button
         data-tour="save-create-action"
@@ -494,7 +494,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
         className="landing-btn-primary mx-auto mt-7 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-sm font-bold text-primary-foreground"
       >
         <Plus size={18} />
-        Criar primeiro save
+        Create first save
       </button>
     </div>
   </section>

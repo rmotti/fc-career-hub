@@ -48,7 +48,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     if (transfer?.playerId && !options.some((player) => player.id === transfer.playerId)) {
       options.unshift({
         id: transfer.playerId,
-        label: `${transfer.playerName} (fora do elenco)`,
+        label: `${transfer.playerName} (not in squad)`,
       });
     }
 
@@ -115,7 +115,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isExit && !form.playerId) {
-      toast.error("Selecione um jogador do elenco.", { duration: 3000 });
+      toast.error("Select a player from the squad.", { duration: 3000 });
       return;
     }
 
@@ -138,36 +138,36 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
       <DialogContent data-tour="transfer-modal" className="max-w-3xl border-border bg-card p-0" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            {transfer ? "Atualizar transferência" : "Nova transferência"}
+            {transfer ? "Update transfer" : "New transfer"}
           </p>
           <DialogTitle className="flex items-center gap-2 font-display text-2xl leading-none">
             {isEntry ? <ArrowDownLeft size={20} className="text-primary" /> : <ArrowUpRight size={20} className="text-accent" />}
-            {transfer ? "Editar movimento" : "Registrar movimento"}
+            {transfer ? "Edit movement" : "Register movement"}
           </DialogTitle>
           <DialogDescription>
-            Registre entradas, saídas e empréstimos com impacto financeiro e atualização automática do elenco.
+            Register incoming, outgoing and loan transfers with financial impact and automatic squad update.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
           <fieldset className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.9fr]" disabled={isSubmitting}>
-            <FormSection dataTour="transfer-modal-player" icon={UserRound} title="Jogador" compact>
+            <FormSection dataTour="transfer-modal-player" icon={UserRound} title="Player" compact>
               <div className="grid grid-cols-1 gap-3">
-                <Field label="Tipo de movimento" icon={Repeat2}>
+                <Field label="Transfer type" icon={Repeat2}>
                   <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value as TransferType })}>
                     <SelectTrigger className="h-10 border-border bg-background/40 text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
-                      <SelectItem value="compra" className="focus:bg-primary/10 focus:text-primary">Compra</SelectItem>
-                      <SelectItem value="venda" className="focus:bg-primary/10 focus:text-primary">Venda</SelectItem>
-                      <SelectItem value="emprestimo_entrada" className="focus:bg-primary/10 focus:text-primary">Empréstimo de entrada</SelectItem>
-                      <SelectItem value="emprestimo_saida" className="focus:bg-primary/10 focus:text-primary">Empréstimo de saída</SelectItem>
+                      <SelectItem value="compra" className="focus:bg-primary/10 focus:text-primary">Purchase</SelectItem>
+                      <SelectItem value="venda" className="focus:bg-primary/10 focus:text-primary">Sale</SelectItem>
+                      <SelectItem value="emprestimo_entrada" className="focus:bg-primary/10 focus:text-primary">Loan in</SelectItem>
+                      <SelectItem value="emprestimo_saida" className="focus:bg-primary/10 focus:text-primary">Loan out</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
 
-                <Field label="Jogador">
+                <Field label="Player">
                   {isExit ? (
                     <Select value={form.playerId || "none"} onValueChange={(value) => handlePlayerSelect(value === "none" ? "" : value)}>
                       <SelectTrigger className="h-10 border-border bg-background/40 text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
@@ -175,7 +175,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                       </SelectTrigger>
                       <SelectContent className="max-h-72 border-border bg-card text-foreground shadow-xl shadow-black/30">
                         <SelectItem value="none" className="text-muted-foreground focus:bg-muted focus:text-foreground">
-                          Selecionar jogador do elenco
+                          Select a squad player
                         </SelectItem>
                         {exitPlayerOptions.map((player) => (
                           <SelectItem key={player.id} value={player.id} className="focus:bg-primary/10 focus:text-primary">
@@ -189,7 +189,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                       className={inputClass}
                       value={form.playerName}
                       onChange={(e) => setForm({ ...form, playerName: e.target.value })}
-                      placeholder="Nome do jogador"
+                      placeholder="Player name"
                       required
                     />
                   )}
@@ -197,9 +197,9 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
               </div>
             </FormSection>
 
-            <FormSection dataTour="transfer-modal-market" icon={BadgeEuro} title="Mercado" compact>
+            <FormSection dataTour="transfer-modal-market" icon={BadgeEuro} title="Market" compact>
               <div className="grid grid-cols-1 gap-3">
-                <Field label="Valor">
+                <Field label="Value">
                   <div className="relative">
                     <input
                       type="number"
@@ -213,11 +213,11 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">M€</span>
                   </div>
                   {(form.type === "emprestimo_entrada" || form.type === "emprestimo_saida") && (
-                    <p className="mt-1.5 text-xs text-muted-foreground">Empréstimos não afetam o saldo da equipe.</p>
+                    <p className="mt-1.5 text-xs text-muted-foreground">Loans do not affect the team balance.</p>
                   )}
                 </Field>
 
-                <Field label="Temporada">
+                <Field label="Season">
                   <div className="relative">
                     <input className={`${inputClass} ${lockedClass}`} value={currentSeason} disabled />
                     <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -226,29 +226,29 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
               </div>
             </FormSection>
 
-            <FormSection dataTour="transfer-modal-clubs" icon={Building2} title="Clubes">
+            <FormSection dataTour="transfer-modal-clubs" icon={Building2} title="Clubs">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="De">
+                <Field label="From">
                   <div className="relative">
                     <input
                       className={`${inputClass} ${isExit ? lockedClass : ""}`}
                       value={isExit ? currentClub : form.from}
                       onChange={(e) => !isExit && setForm({ ...form, from: e.target.value })}
                       disabled={isExit}
-                      placeholder="Clube de origem"
+                      placeholder="Origin club"
                       required
                     />
                     {isExit && <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />}
                   </div>
                 </Field>
-                <Field label="Para">
+                <Field label="To">
                   <div className="relative">
                     <input
                       className={`${inputClass} ${isEntry ? lockedClass : ""}`}
                       value={isEntry ? currentClub : form.to}
                       onChange={(e) => !isEntry && setForm({ ...form, to: e.target.value })}
                       disabled={isEntry}
-                      placeholder="Clube de destino"
+                      placeholder="Destination club"
                       required
                     />
                     {isEntry && <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />}
@@ -266,7 +266,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                 className="flex items-center justify-center gap-2 rounded-md bg-muted px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
                 <X size={14} />
-                Cancelar
+                Cancel
               </button>
               <button
                 data-tour="transfer-modal-save"
@@ -275,7 +275,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                 className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
               >
                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={15} />}
-                {transfer ? "Salvar alterações" : "Registrar transferência"}
+                {transfer ? "Save changes" : "Register transfer"}
               </button>
             </div>
           </fieldset>

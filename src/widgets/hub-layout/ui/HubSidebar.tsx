@@ -1,5 +1,6 @@
 import { Fragment, useState, useEffect, type ElementType, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
@@ -24,28 +25,6 @@ interface HubSidebarProps {
   onToggleCollapse: () => void;
 }
 
-const navItems: { to: string; label: string; icon: ElementType }[] = [
-  { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
-  { to: "/squad", label: "Elenco", icon: Users },
-  { to: "/field", label: "Escalação", icon: Shirt },
-  { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
-  { to: "/stats", label: "Estatísticas", icon: BarChart3 },
-  { to: "/history", label: "História", icon: History },
-];
-
-const careerItems: { type: "button" | "link"; label: string; description?: string; icon: ElementType; to?: string; onClick?: "newSeason" }[] = [
-  { type: "button", label: "Nova Temporada", description: "Avançar calendário", icon: CalendarPlus, onClick: "newSeason" },
-  { type: "link", label: "Mudar de Clube", icon: RefreshCw, to: "/change-club" },
-];
-
-const scoutItems: { to: string; label: string; icon: ElementType }[] = [
-  { to: "/scout/ia", label: "AIssistent Coach", icon: Bot },
-  { to: "/scout/filtros", label: "Buscar Jogadores", icon: Search },
-  { to: "/scout/consultas", label: "Consultas Salvas", icon: Folder },
-  { to: "/scout/shortlist", label: "Shortlist", icon: ListChecks },
-  { to: "/scout/playbooks", label: "Playbooks", icon: Sliders },
-];
-
 const HubSidebar = ({
   userName,
   userPlan,
@@ -58,11 +37,34 @@ const HubSidebar = ({
   collapsed,
   onToggleCollapse,
 }: HubSidebarProps) => {
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapseAnimating, setIsCollapseAnimating] = useState(false);
   const location = useLocation();
   const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
   const canUseScout = canAccessProFeature(userPlan);
+
+  const navItems: { to: string; label: string; icon: ElementType }[] = [
+    { to: "/dashboard", label: t("sidebar.nav.overview"), icon: LayoutDashboard },
+    { to: "/squad", label: t("sidebar.nav.squad"), icon: Users },
+    { to: "/field", label: t("sidebar.nav.lineup"), icon: Shirt },
+    { to: "/transfers", label: t("sidebar.nav.transfers"), icon: ArrowLeftRight },
+    { to: "/stats", label: t("sidebar.nav.stats"), icon: BarChart3 },
+    { to: "/history", label: t("sidebar.nav.history"), icon: History },
+  ];
+
+  const careerItems: { type: "button" | "link"; label: string; description?: string; icon: ElementType; to?: string; onClick?: "newSeason" }[] = [
+    { type: "button", label: t("sidebar.career.newSeason"), description: t("sidebar.career.newSeasonDesc"), icon: CalendarPlus, onClick: "newSeason" },
+    { type: "link", label: t("sidebar.career.changeClub"), icon: RefreshCw, to: "/change-club" },
+  ];
+
+  const scoutItems: { to: string; label: string; icon: ElementType }[] = [
+    { to: "/scout/ia", label: t("sidebar.scout.aiCoach"), icon: Bot },
+    { to: "/scout/filtros", label: t("sidebar.scout.searchPlayers"), icon: Search },
+    { to: "/scout/consultas", label: t("sidebar.scout.savedQueries"), icon: Folder },
+    { to: "/scout/shortlist", label: t("sidebar.scout.shortlist"), icon: ListChecks },
+    { to: "/scout/playbooks", label: t("sidebar.scout.playbooks"), icon: Sliders },
+  ];
 
   useEffect(() => {
     setMobileOpen(false);
@@ -153,7 +155,7 @@ const HubSidebar = ({
         {!collapsed && (
           <div>
             <p className="font-display text-sm font-bold leading-none text-foreground">FC Career Hub</p>
-            <p className="mt-0.5 font-body text-[10px] uppercase tracking-widest text-muted-foreground">Modo Carreira</p>
+            <p className="mt-0.5 font-body text-[10px] uppercase tracking-widest text-muted-foreground">{t("sidebar.careerMode")}</p>
           </div>
         )}
       </div>
@@ -183,7 +185,7 @@ const HubSidebar = ({
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-sidebar-border pt-2">
-              <span className="text-[10px] font-body font-semibold uppercase tracking-[0.18em] text-muted-foreground">Temporada</span>
+              <span className="text-[10px] font-body font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("sidebar.season")}</span>
               <span className="rounded-sm bg-primary/10 px-2 py-0.5 font-display text-xs font-bold text-primary">{season}</span>
             </div>
           </div>
@@ -198,7 +200,7 @@ const HubSidebar = ({
           scrollbars="vertical"
         >
           <section className="space-y-2 overflow-x-hidden">
-            <p className={sectionTitleClass}>Principal</p>
+            <p className={sectionTitleClass}>{t("sidebar.sections.main")}</p>
             <nav data-tour={enableTourTargets ? "hub-navigation" : undefined} className="space-y-1 overflow-x-hidden">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -223,7 +225,7 @@ const HubSidebar = ({
 
           {canUseScout && (
             <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
-              <p className={sectionTitleClass}>Scout</p>
+              <p className={sectionTitleClass}>{t("sidebar.sections.scout")}</p>
               <div className="space-y-1 overflow-x-hidden">
                 {scoutItems.map((item) => {
                   const Icon = item.icon;
@@ -248,7 +250,7 @@ const HubSidebar = ({
           )}
 
           <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
-            <p className={sectionTitleClass}>Carreira</p>
+            <p className={sectionTitleClass}>{t("sidebar.sections.career")}</p>
             <div className="space-y-1 overflow-x-hidden">
               {careerItems.map((item) => {
                 const Icon = item.icon;
@@ -296,23 +298,23 @@ const HubSidebar = ({
           </section>
 
           <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
-            <p className={sectionTitleClass}>Workspace</p>
+            <p className={sectionTitleClass}>{t("sidebar.sections.workspace")}</p>
             <div className="space-y-1 overflow-x-hidden">
               {renderSidebarTooltip(
-                "Mudar Save",
+                t("sidebar.workspace.switchSave"),
                 <button
                   onClick={handleExitSave}
                   className={actionButtonClass}
                 >
                   <BriefcaseBusiness size={18} className="shrink-0" />
-                  {!collapsed && <span className="min-w-0 truncate">Mudar Save</span>}
+                  {!collapsed && <span className="min-w-0 truncate">{t("sidebar.workspace.switchSave")}</span>}
                 </button>
               )}
             </div>
           </section>
 
           <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
-            <p className={sectionTitleClass}>Conta</p>
+            <p className={sectionTitleClass}>{t("sidebar.sections.account")}</p>
             {!collapsed && (
               <div className="mb-2 flex items-center gap-2 rounded-md px-3 py-2">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent font-display text-xs font-bold text-sidebar-accent-foreground">
@@ -320,12 +322,12 @@ const HubSidebar = ({
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{userName}</p>
-                  <p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Plano {userPlan}</p>
+                  <p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{t("sidebar.plan", { plan: userPlan })}</p>
                 </div>
               </div>
             )}
             {renderSidebarTooltip(
-              "Sair da conta",
+              t("sidebar.account.signOut"),
               <button
                 onClick={handleSignOut}
                 className={`flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-destructive transition-all min-h-[42px] hover:bg-destructive/10 ${
@@ -333,18 +335,18 @@ const HubSidebar = ({
                 }`}
               >
                 <LogOut size={18} className="shrink-0" />
-                {!collapsed && <span className="min-w-0 truncate">Sair da Conta</span>}
+                {!collapsed && <span className="min-w-0 truncate">{t("sidebar.account.signOut")}</span>}
               </button>
             )}
 
             {renderSidebarTooltip(
-              collapsed ? "Expandir menu" : "Recolher menu",
+              collapsed ? t("sidebar.account.expandMenu") : t("sidebar.account.collapseMenu"),
               <button
                 onClick={handleToggleSidebar}
                 className="hidden md:flex w-full min-w-0 items-center gap-3 overflow-x-hidden rounded-md px-2 py-2.5 text-sm font-medium text-muted-foreground transition-all min-h-[42px] hover:bg-sidebar-accent hover:text-primary"
               >
                 {collapsed ? <ChevronsRight size={18} className="shrink-0" /> : <ChevronsLeft size={18} className="shrink-0" />}
-                {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Recolher</span>}
+                {!collapsed && <span className="min-w-0 flex-1 truncate text-left">{t("sidebar.account.collapse")}</span>}
               </button>
             )}
           </section>
@@ -360,7 +362,7 @@ const HubSidebar = ({
       <button
         onClick={() => setMobileOpen(true)}
         className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-card border border-border text-foreground hover:text-primary transition-colors"
-        aria-label="Abrir menu"
+        aria-label={t("sidebar.aria.openMenu")}
       >
         <Menu size={20} />
       </button>
@@ -382,7 +384,7 @@ const HubSidebar = ({
         <button
           onClick={() => setMobileOpen(false)}
           className="absolute top-3 right-3 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Fechar menu"
+          aria-label={t("sidebar.aria.closeMenu")}
         >
           <X size={18} />
         </button>

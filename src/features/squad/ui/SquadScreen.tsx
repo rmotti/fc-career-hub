@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   AlertTriangle,
@@ -60,19 +61,19 @@ const MIDFIELD_POSITIONS = new Set(["VOL", "MC", "ME", "MD", "MEI"]);
 const DEFENSE_POSITIONS = new Set(["GOL", "LD", "LE", "ZAG"]);
 
 const formatDecimal = (value: number, maximumFractionDigits = 1) =>
-  new Intl.NumberFormat("pt-BR", {
+  new Intl.NumberFormat("en-US", {
     maximumFractionDigits,
     minimumFractionDigits: value % 1 === 0 ? 0 : 1,
   }).format(value);
 
 const formatSquadMarketTotal = (valueInMillions: number) => {
-  if (valueInMillions >= 1000) return `€${formatDecimal(valueInMillions / 1000, 2)} bi`;
+  if (valueInMillions >= 1000) return `€${formatDecimal(valueInMillions / 1000, 2)}B`;
   return formatCurrencyInMillions(valueInMillions);
 };
 
 const formatWeeklyWageTotal = (valueInThousands: number) => {
-  if (valueInThousands >= 1000) return `€${formatDecimal(valueInThousands / 1000, 2)} mi/sem`;
-  return `${formatCurrencyInThousands(valueInThousands)}/sem`;
+  if (valueInThousands >= 1000) return `€${formatDecimal(valueInThousands / 1000, 2)}M/wk`;
+  return `${formatCurrencyInThousands(valueInThousands)}/wk`;
 };
 
 const positionColor: Record<string, string> = {
@@ -92,6 +93,7 @@ const positionColor: Record<string, string> = {
 };
 
 const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
+  const { t } = useTranslation();
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [modalOpen, setModalOpen] = useState(false);
@@ -120,9 +122,9 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     const topAssister = players.reduce((a, b) => getAssists(a) >= getAssists(b) ? a : b);
     const topMatches = players.reduce((a, b) => getMatches(a) >= getMatches(b) ? a : b);
 
-    if (getGoals(topScorer) > 0) roles.set(topScorer.id, "artilheiro");
-    if (getAssists(topAssister) > 0 && !roles.has(topAssister.id)) roles.set(topAssister.id, "garçom");
-    if (getMatches(topMatches) > 0 && !roles.has(topMatches.id)) roles.set(topMatches.id, "motor");
+    if (getGoals(topScorer) > 0) roles.set(topScorer.id, "scorer");
+    if (getAssists(topAssister) > 0 && !roles.has(topAssister.id)) roles.set(topAssister.id, "playmaker");
+    if (getMatches(topMatches) > 0 && !roles.has(topMatches.id)) roles.set(topMatches.id, "engine");
 
     return roles;
   }, [players]);
@@ -138,10 +140,9 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       { saveId },
       {
         onSuccess: (res) => {
+          const skipped = res.skipped > 0 ? `, ${res.skipped} already existed` : "";
           toast.success(
-            `Elenco importado: ${res.imported} novo${res.imported === 1 ? "" : "s"}${
-              res.skipped > 0 ? `, ${res.skipped} já existia${res.skipped === 1 ? "" : "m"}` : ""
-            }.`,
+            t("squad.toasts.imported", { count: res.imported, skipped }),
             { duration: 4000 },
           );
         },
@@ -260,7 +261,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         valA = (a as any)[sortField] ?? 0;
         valB = (b as any)[sortField] ?? 0;
       }
-      
+
       if (typeof valA === "string" && typeof valB === "string") {
         if (sortField === "position") {
           const idxA = POSITION_ORDER.indexOf(valA);
@@ -288,7 +289,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     const { goals, assists, yellowCards, redCards, matches, cleanSheets, ...playerData } = data;
     if (playerId) {
       await updatePlayer.mutateAsync({ saveId, playerId, data: playerData });
-      toast.success("Jogador atualizado!", { duration: 3000 });
+      toast.success(t("squad.toasts.playerUpdated"), { duration: 3000 });
     } else {
       const newPlayer = await createPlayer.mutateAsync({
         saveId,
@@ -304,68 +305,68 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         });
       }
 
-      toast.success("Jogador adicionado ao elenco!", { duration: 3000 });
+      toast.success(t("squad.toasts.playerAdded"), { duration: 3000 });
     }
   };
 
   const handleDelete = (player: ApiPlayer) => {
     releasePlayer.mutate({ saveId, playerId: player.id }, {
-      onSuccess: () => toast.success(`${player.name} foi dispensado.`, { duration: 3000 }),
+      onSuccess: () => toast.success(t("squad.toasts.playerReleased", { name: player.name }), { duration: 3000 }),
       onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
   };
 
   const allColumns: SquadViewColumn[] = [
-    { key: "name", label: "Nome", views: ["all", "management", "stats", "market", "development"] },
-    { key: "position", label: "Pos", views: ["all", "management", "stats", "market", "development"] },
-    { key: "age", label: "Idade", views: ["all", "management", "market", "development"] },
+    { key: "name", label: t("squad.columns.name"), views: ["all", "management", "stats", "market", "development"] },
+    { key: "position", label: t("squad.columns.pos"), views: ["all", "management", "stats", "market", "development"] },
+    { key: "age", label: t("squad.columns.age"), views: ["all", "management", "market", "development"] },
     { key: "ovr", label: "OVR", views: ["all", "management", "market", "development"] },
-    { key: "potential", label: "POT", views: ["all", "development"] },
-    { key: "matches", label: "Part.", views: ["all", "stats"] },
-    { key: "goals", label: "Gols", views: ["all", "stats"] },
-    { key: "assists", label: "Assist.", views: ["all", "stats"] },
-    { key: "goalContributions", label: "Partic.", views: ["all", "stats"] },
-    { key: "cleanSheets", label: "CS", views: ["stats"] },
-    { key: "salary", label: "Salário", views: ["all", "management", "market"], align: "right" },
-    { key: "marketValue", label: "Valor", views: ["all", "market"], align: "right" },
+    { key: "potential", label: t("squad.columns.potential"), views: ["all", "development"] },
+    { key: "matches", label: t("squad.columns.matches"), views: ["all", "stats"] },
+    { key: "goals", label: t("squad.columns.goals"), views: ["all", "stats"] },
+    { key: "assists", label: t("squad.columns.assists"), views: ["all", "stats"] },
+    { key: "goalContributions", label: t("squad.columns.contributions"), views: ["all", "stats"] },
+    { key: "cleanSheets", label: t("squad.columns.cleanSheets"), views: ["stats"] },
+    { key: "salary", label: t("squad.columns.salary"), views: ["all", "management", "market"], align: "right" },
+    { key: "marketValue", label: t("squad.columns.value"), views: ["all", "market"], align: "right" },
   ];
   const columns = allColumns.filter((column) => column.views.includes(activeView));
   const loanedBaseColumns: SquadColumn[] = [
-    { key: "name", label: "Nome" },
-    { key: "position", label: "Pos" },
-    { key: "age", label: "Idade" },
+    { key: "name", label: t("squad.columns.name") },
+    { key: "position", label: t("squad.columns.pos") },
+    { key: "age", label: t("squad.columns.age") },
     { key: "ovr", label: "OVR" },
-    { key: "potential", label: "POT" },
-    { key: "matches", label: "Part." },
-    { key: "goals", label: "Gols" },
-    { key: "assists", label: "Assist." },
-    { key: "goalContributions", label: "Partic." },
-    { key: "cleanSheets", label: "CS" },
-    { key: "salary", label: "Salário", align: "right" },
-    { key: "marketValue", label: "Valor", align: "right" },
+    { key: "potential", label: t("squad.columns.potential") },
+    { key: "matches", label: t("squad.columns.matches") },
+    { key: "goals", label: t("squad.columns.goals") },
+    { key: "assists", label: t("squad.columns.assists") },
+    { key: "goalContributions", label: t("squad.columns.contributions") },
+    { key: "cleanSheets", label: t("squad.columns.cleanSheets") },
+    { key: "salary", label: t("squad.columns.salary"), align: "right" },
+    { key: "marketValue", label: t("squad.columns.value"), align: "right" },
   ];
 
   const viewOptions: Array<{ key: SquadView; label: string; icon: React.ElementType }> = [
-    { key: "all", label: "Todos", icon: Users },
-    { key: "management", label: "Gestão", icon: SlidersHorizontal },
-    { key: "stats", label: "Estatísticas", icon: BarChart3 },
-    { key: "market", label: "Mercado", icon: CircleDollarSign },
-    { key: "development", label: "Desenvolvimento", icon: Dumbbell },
+    { key: "all", label: t("squad.views.all"), icon: Users },
+    { key: "management", label: t("squad.views.management"), icon: SlidersHorizontal },
+    { key: "stats", label: t("squad.views.stats"), icon: BarChart3 },
+    { key: "market", label: t("squad.views.market"), icon: CircleDollarSign },
+    { key: "development", label: t("squad.views.development"), icon: Dumbbell },
   ];
 
   const filterOptions: Array<{ key: SquadFilter; label: string }> = [
-    { key: "all", label: "Todos" },
-    { key: "attack", label: "Ataque" },
-    { key: "midfield", label: "Meio" },
-    { key: "defense", label: "Defesa" },
-    { key: "prospects", label: "Promessas" },
-    { key: "incomplete", label: "Sem stats" },
+    { key: "all", label: t("squad.filters.all") },
+    { key: "attack", label: t("squad.filters.attack") },
+    { key: "midfield", label: t("squad.filters.midfield") },
+    { key: "defense", label: t("squad.filters.defense") },
+    { key: "prospects", label: t("squad.filters.prospects") },
+    { key: "incomplete", label: t("squad.filters.noStats") },
   ];
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" /> Carregando elenco...
+        <Loader2 size={20} className="animate-spin" /> {t("squad.loadingSquad")}
       </div>
     );
   }
@@ -375,11 +376,11 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       <div data-tour="squad-header" className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
         <div>
           <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            {save?.currentClubStint?.club ?? save?.name ?? "Modo Carreira"}
+            {save?.currentClubStint?.club ?? save?.name ?? "Career Mode"}
           </p>
-          <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">Central do Elenco</h2>
+          <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{t("squad.title")}</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Gerencie dados, estatísticas da temporada e sinais de mercado jogador por jogador.
+            {t("squad.subtitle")}
           </p>
         </div>
         {!isPastSeason && (
@@ -388,17 +389,17 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
               onClick={handleImportClick}
               disabled={importFc26.isPending}
               className="flex items-center gap-2 rounded-md border border-border bg-background/35 px-4 py-2 text-sm font-semibold text-foreground transition-[opacity,transform,border-color] hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.97]"
-              title="Importa o elenco do clube atual a partir do dataset FC26"
+              title={t("squad.importBtn")}
             >
               {importFc26.isPending ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              Importar elenco do FC26
+              {t("squad.importBtn")}
             </button>
             <button
               data-tour="squad-create-player"
               onClick={() => { setEditingPlayer(null); setModalOpen(true); }}
               className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
             >
-              <Plus size={16} /> Adicionar Jogador
+              <Plus size={16} /> {t("squad.addPlayer")}
             </button>
           </div>
         )}
@@ -406,51 +407,59 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
       {isPastSeason && (
         <div className="mb-4 px-4 py-2 rounded-md bg-muted border border-border text-sm text-muted-foreground flex items-center gap-2">
-          📅 Visualizando temporada {selectedSeason} — modo somente leitura
+          {t("squad.pastSeasonBanner", { season: selectedSeason })}
         </div>
       )}
 
       <section data-tour="squad-metrics" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <SquadMetric icon={Users} label="Jogadores" value={squadSummary.totalPlayers} detail={`${squadSummary.averageAge || "-"} anos em média`} />
-        <SquadMetric icon={Activity} label="OVR médio" value={squadSummary.averageOvr || "-"} detail={`${squadSummary.prospects} promessa(s)`} tone="primary" />
-        <SquadMetric icon={Target} label="Produção" value={`${squadSummary.totalGoals}G`} detail={`${squadSummary.totalAssists} assistências`} tone="accent" />
+        <SquadMetric icon={Users} label={t("squad.metrics.players")} value={squadSummary.totalPlayers} detail={t("squad.metrics.avgAge", { age: squadSummary.averageAge || "-" })} />
+        <SquadMetric icon={Activity} label={t("squad.metrics.avgOvr")} value={squadSummary.averageOvr || "-"} detail={t("squad.metrics.prospects", { count: squadSummary.prospects })} tone="primary" />
+        <SquadMetric icon={Target} label={t("squad.metrics.output")} value={`${squadSummary.totalGoals}G`} detail={t("squad.metrics.assists", { count: squadSummary.totalAssists })} tone="accent" />
         <SquadMetric
           icon={CircleDollarSign}
-          label="Valor do elenco"
+          label={t("squad.metrics.squadValue")}
           value={formatSquadMarketTotal(squadSummary.totalMarketValue)}
-          detail={`Folha salarial: ${formatWeeklyWageTotal(squadSummary.weeklyWages)}`}
+          detail={t("squad.metrics.wageBill", { value: formatWeeklyWageTotal(squadSummary.weeklyWages) })}
           tone="gold"
         />
       </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         <SquadHighlight
-          label="Maior impacto"
+          label={t("squad.highlights.topImpact")}
           player={squadHighlights.impactPlayer}
-          value={squadHighlights.impactPlayer ? `${(squadHighlights.impactPlayer.currentSeasonStats || squadHighlights.impactPlayer.totalStats)?.goalContributions ?? 0} particip.` : "-"}
+          value={squadHighlights.impactPlayer ? `${(squadHighlights.impactPlayer.currentSeasonStats || squadHighlights.impactPlayer.totalStats)?.goalContributions ?? 0} contrib.` : "-"}
           icon={Target}
           tone="gold"
+          emptyText={t("squad.highlights.monitorSquad")}
+          emptyDetail={t("squad.highlights.useFilters")}
         />
         <SquadHighlight
-          label="Evolução"
+          label={t("squad.highlights.growth")}
           player={squadHighlights.growthPlayer}
           value={squadHighlights.growthPlayer ? `+${squadHighlights.growthPlayer.ovrDelta} OVR` : "-"}
           icon={Dumbbell}
           tone="primary"
+          emptyText={t("squad.highlights.monitorSquad")}
+          emptyDetail={t("squad.highlights.useFilters")}
         />
         <SquadHighlight
-          label="Valorização"
+          label={t("squad.highlights.appreciation")}
           player={squadHighlights.valuePlayer}
           value={squadHighlights.valuePlayer ? `+${formatCurrencyInMillions(squadHighlights.valuePlayer.marketValueDelta ?? 0)}` : "-"}
           icon={CircleDollarSign}
           tone="accent"
+          emptyText={t("squad.highlights.monitorSquad")}
+          emptyDetail={t("squad.highlights.useFilters")}
         />
         <SquadHighlight
-          label="Atenção"
+          label={t("squad.highlights.attention")}
           player={null}
-          value={squadHighlights.agingCore > 0 ? `${squadHighlights.agingCore} veterano(s)` : `${squadSummary.incompleteStats} sem stats`}
+          value={squadHighlights.agingCore > 0 ? t("squad.highlights.veteran", { count: squadHighlights.agingCore }) : t("squad.highlights.noStats", { count: squadSummary.incompleteStats })}
           icon={ShieldAlert}
           tone={squadHighlights.agingCore > 0 ? "warning" : "muted"}
+          emptyText={t("squad.highlights.monitorSquad")}
+          emptyDetail={t("squad.highlights.useFilters")}
         />
       </section>
 
@@ -485,7 +494,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                 <input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Buscar jogador..."
+                  placeholder={t("squad.searchPlaceholder")}
                   className="h-9 w-full rounded-md border border-border bg-background/35 pl-9 pr-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
                 />
               </div>
@@ -522,7 +531,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                     {col.label} {sortField === col.key && (sortOrder === "asc" ? "↑" : "↓")}
                   </th>
                 ))}
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Ações</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -534,7 +543,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                       <button
                         onClick={() => { setViewingPlayer(p); setViewModalOpen(true); }}
                         className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                        title="Ver detalhes"
+                        title={t("squad.viewDetails")}
                       >
                         <Eye size={14} />
                       </button>
@@ -544,15 +553,15 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                             data-tour="squad-edit-player"
                             onClick={() => { setEditingPlayer(p); setModalOpen(true); }}
                             className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
-                            title="Editar dados e estatísticas"
+                            title={t("squad.editTitle")}
                           >
                             <Pencil size={13} />
-                            <span>Editar</span>
+                            <span>{t("squad.edit")}</span>
                           </button>
                           <button
                             onClick={() => handleDelete(p)}
                             className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                            title="Dispensar"
+                            title={t("squad.release")}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -563,10 +572,10 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                 </tr>
               ))}
               {players.length === 0 && (
-                <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador no elenco.</td></tr>
+                <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-muted-foreground">{t("squad.noPlayers")}</td></tr>
               )}
               {players.length > 0 && sortedPlayers.length === 0 && (
-                <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-muted-foreground">Nenhum jogador encontrado com esses filtros.</td></tr>
+                <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-muted-foreground">{t("squad.noPlayersFiltered")}</td></tr>
               )}
             </tbody>
           </table>
@@ -580,23 +589,23 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
               <ArrowRightLeft size={18} />
             </span>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Fora do elenco ativo</p>
-              <h3 className="font-display text-xl font-bold leading-none text-foreground">Jogadores emprestados</h3>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{t("squad.loaned.sectionLabel")}</p>
+              <h3 className="font-display text-xl font-bold leading-none text-foreground">{t("squad.loaned.title")}</h3>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
-              {loanedPlayers.length} jogador{loanedPlayers.length === 1 ? "" : "es"}
+              {t("squad.loaned.players", { count: loanedPlayers.length })}
             </span>
             <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
-              OVR médio {loanedSummary.averageOvr || "—"}
+              {t("squad.loaned.avgOvr", { value: loanedSummary.averageOvr || "—" })}
             </span>
             <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
-              {loanedSummary.destinationCount} destino{loanedSummary.destinationCount === 1 ? "" : "s"}
+              {t("squad.loaned.destinations", { count: loanedSummary.destinationCount })}
             </span>
             <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
-              {loanedSummary.withoutStats} sem stats
+              {t("squad.loaned.noStats", { count: loanedSummary.withoutStats })}
             </span>
           </div>
         </div>
@@ -613,8 +622,8 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                     {col.label}
                   </th>
                 ))}
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Emprestado para</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Temporada</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.loanedTo")}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.seasonCol")}</th>
               </tr>
             </thead>
             <tbody>
@@ -622,7 +631,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                 <tr>
                   <td colSpan={loanedBaseColumns.length + 2} className="px-4 py-8 text-center text-muted-foreground">
                     <span className="inline-flex items-center gap-2">
-                      <Loader2 size={16} className="animate-spin" /> Carregando emprestados...
+                      <Loader2 size={16} className="animate-spin" /> {t("squad.loaned.loading")}
                     </span>
                   </td>
                 </tr>
@@ -637,7 +646,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
               {!isLoadingLoanedPlayers && loanedPlayers.length === 0 && (
                 <tr>
                   <td colSpan={loanedBaseColumns.length + 2} className="px-4 py-8 text-center text-muted-foreground">
-                    Nenhum jogador emprestado pelo clube atual.
+                    {t("squad.loaned.noLoaned")}
                   </td>
                 </tr>
               )}
@@ -657,24 +666,24 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       <AlertDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Importar elenco do FC26?</AlertDialogTitle>
+            <AlertDialogTitle>{t("squad.import.dialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  Vamos buscar o elenco do clube atual no dataset oficial do FC26 e adicionar ao seu save. {players.length > 0 ? "Jogadores já existentes serão mantidos (não duplicados)." : ""}
+                  {t("squad.import.body")} {players.length > 0 ? t("squad.import.existing") : ""}
                 </p>
                 <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
                   <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
                   <span>
-                    O dataset pode não refletir a última atualização do jogo. Mesmo após importar, talvez você precise ajustar manualmente alguns jogadores para deixar o elenco igual ao do seu save.
+                    {t("squad.import.warning")}
                   </span>
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={runFc26Import}>Importar</AlertDialogAction>
+            <AlertDialogCancel>{t("squad.import.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={runFc26Import}>{t("squad.import.import")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -845,9 +854,11 @@ interface SquadHighlightProps {
   value: string;
   icon: React.ElementType;
   tone: Tone;
+  emptyText: string;
+  emptyDetail: string;
 }
 
-function SquadHighlight({ label, player, value, icon: Icon, tone }: SquadHighlightProps) {
+function SquadHighlight({ label, player, value, icon: Icon, tone, emptyText, emptyDetail }: SquadHighlightProps) {
   const alternativePositions = player ? getAlternativePositions(player) : [];
 
   return (
@@ -859,9 +870,9 @@ function SquadHighlight({ label, player, value, icon: Icon, tone }: SquadHighlig
         </div>
         <span className={`shrink-0 font-display text-sm font-bold ${toneClass[tone]}`}>{value}</span>
       </div>
-      <p className="truncate text-sm font-semibold text-foreground">{player?.name ?? "Monitorar elenco"}</p>
+      <p className="truncate text-sm font-semibold text-foreground">{player?.name ?? emptyText}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {player ? `${[player.position, ...alternativePositions].join("/")} · ${player.ovr} OVR` : "Use filtros para ajustar dados e detectar lacunas."}
+        {player ? `${[player.position, ...alternativePositions].join("/")} · ${player.ovr} OVR` : emptyDetail}
       </p>
     </div>
   );

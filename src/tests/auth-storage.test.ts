@@ -13,13 +13,13 @@ describe("auth-storage", () => {
     window.localStorage.clear();
   });
 
-  it("persiste e recupera o token da sessão", () => {
+  it("persists and retrieves the session token", () => {
     setStoredToken("token-123");
 
     expect(getStoredToken()).toBe("token-123");
   });
 
-  it("persiste e recupera o usuário autenticado", () => {
+  it("persists and retrieves the authenticated user", () => {
     const user = {
       id: "user-1",
       name: "Rodrigo",
@@ -31,14 +31,14 @@ describe("auth-storage", () => {
     expect(getStoredUser<typeof user>()).toEqual(user);
   });
 
-  it("remove snapshot inválido de usuário do storage", () => {
+  it("removes invalid user snapshot from storage", () => {
     window.localStorage.setItem("session_user", "{invalid-json");
 
     expect(getStoredUser()).toBeNull();
     expect(window.localStorage.getItem("session_user")).toBeNull();
   });
 
-  it("limpa token e usuário armazenados", () => {
+  it("clears stored token and user", () => {
     setStoredToken("token-123");
     setStoredUser({ id: "user-1" });
 

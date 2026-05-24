@@ -453,7 +453,7 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
             }
             onSlotClick();
           }}
-          title={canDragPosition ? "Arraste o card selecionado para mudar a posicao" : undefined}
+          title={canDragPosition ? "Drag the selected card to change position" : undefined}
         >
           <div className={`group transition-opacity ${isSelectionActive && !isSelected && !isValidForSelection ? "opacity-40" : ""}`}>
             <Draggable id={player.id} disabled={canDragPosition}>
@@ -495,7 +495,7 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
         className={`${w} border border-dashed ${emptyBorder} ${ringClass} rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.22)]`}
         style={{ height: h }}
         onPointerDown={canDragPosition ? handlePositionPointerDown : undefined}
-        title={showPosition ? "Clique para selecionar ou arraste o card para mudar a posicao" : undefined}
+        title={showPosition ? "Click to select or drag the card to change position" : undefined}
       >
         {!isActiveMode ? (
           <button
@@ -557,11 +557,11 @@ type SelectingSlot = { type: "starter"; index: number } | { type: "bench"; index
 type ReserveFilter = "all" | "goalkeepers" | "defenders" | "midfielders" | "attackers";
 
 const RESERVE_FILTERS: { value: ReserveFilter; label: string }[] = [
-  { value: "all", label: "Todos" },
-  { value: "goalkeepers", label: "GOL" },
+  { value: "all", label: "All" },
+  { value: "goalkeepers", label: "GK" },
   { value: "defenders", label: "DEF" },
-  { value: "midfielders", label: "MEI" },
-  { value: "attackers", label: "ATA" },
+  { value: "midfielders", label: "MID" },
+  { value: "attackers", label: "ATT" },
 ];
 
 const matchesReserveFilter = (player: ApiPlayer, filter: ReserveFilter) => {
@@ -931,9 +931,9 @@ const FieldScreen = ({ saveId }: Props) => {
         {/* Header */}
         <div data-tour="field-header" className="flex flex-col gap-3 rounded-lg border border-border/80 bg-card/70 px-4 py-3 shadow-[0_14px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Escalação</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Lineup</h1>
             <p className="text-sm text-muted-foreground">
-              Monte titulares, banco e reservas disponíveis.
+              Set starters, bench and available reserves.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -955,7 +955,7 @@ const FieldScreen = ({ saveId }: Props) => {
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-background/40 px-3 text-sm font-display font-bold text-muted-foreground transition-colors hover:border-destructive/50 hover:text-foreground"
             >
               <RotateCcw size={15} />
-              Limpar
+              Clear
             </button>
           </div>
         </div>
@@ -1073,7 +1073,7 @@ const FieldScreen = ({ saveId }: Props) => {
             <section data-tour="field-bench" className="order-2 min-w-0 rounded-lg border border-border bg-card/70 p-4 xl:order-1 xl:sticky xl:top-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest">
-                  Banco de Reservas
+                  Bench
                 </h2>
                 <span className="text-xs text-muted-foreground font-display">{filledBench}/11</span>
               </div>
@@ -1110,7 +1110,7 @@ const FieldScreen = ({ saveId }: Props) => {
           <aside data-tour="field-reserves" className="order-3 flex min-w-0 flex-col rounded-lg border border-border bg-card/70 p-4 xl:sticky xl:top-4 xl:h-full xl:max-h-[calc(100vh-2rem)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest">
-                Disponíveis
+                Available
               </h2>
               <span className="text-xs font-display font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                 {reservePlayers.length}
@@ -1123,7 +1123,7 @@ const FieldScreen = ({ saveId }: Props) => {
                 <input
                   value={reserveSearch}
                   onChange={(e) => setReserveSearch(e.target.value)}
-                  placeholder="Buscar jogador ou posição"
+                  placeholder="Search player or position"
                   className="h-10 w-full rounded-md border border-border bg-background/50 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/60"
                 />
               </div>
@@ -1148,14 +1148,14 @@ const FieldScreen = ({ saveId }: Props) => {
 
             <ScrollArea className="mt-4 max-h-[420px] xl:min-h-0 xl:max-h-none xl:flex-1" viewportClassName="pr-2 xl:pr-4" scrollbars="vertical">
               {isLoading ? (
-                <p className="text-sm text-muted-foreground">Carregando...</p>
+                <p className="text-sm text-muted-foreground">Loading...</p>
               ) : reservePlayers.length === 0 ? (
                 <p className="rounded-md border border-border bg-background/35 p-3 text-sm text-muted-foreground">
-                  Todos os jogadores estão alocados.
+                  All players are allocated.
                 </p>
               ) : visibleReservePlayers.length === 0 ? (
                 <p className="rounded-md border border-border bg-background/35 p-3 text-sm text-muted-foreground">
-                  Nenhum jogador encontrado.
+                  No players found.
                 </p>
               ) : (
                 <div className="space-y-1.5">
@@ -1204,7 +1204,7 @@ const FieldScreen = ({ saveId }: Props) => {
         <DialogContent className="max-w-sm max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="font-display tracking-tight">
-              Selecionar Jogador
+              Select Player
               {selectingSlot?.type === "starter" && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
                   — {starterPositions[selectingSlot.index]}
@@ -1213,8 +1213,8 @@ const FieldScreen = ({ saveId }: Props) => {
             </DialogTitle>
             <DialogDescription>
               {availableForSelection.length === 0
-                ? "Nenhum jogador disponível para esta posição."
-                : `${availableForSelection.length} disponível${availableForSelection.length !== 1 ? "eis" : ""}`}
+                ? "No players available for this position."
+                : `${availableForSelection.length} available`}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="mt-1 h-[min(52vh,420px)]" viewportClassName="pr-4" scrollbars="vertical">

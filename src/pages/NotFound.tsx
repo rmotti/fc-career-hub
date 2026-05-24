@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, ArrowLeft, Compass } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 import { useAuth } from "@/features/auth/model/useAuth";
 
 export default function NotFound() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
 
@@ -52,18 +54,18 @@ export default function NotFound() {
         </p>
 
         {/* Headline */}
-        <h1 className="mb-3 font-display text-2xl font-bold">Página não encontrada</h1>
+        <h1 className="mb-3 font-display text-2xl font-bold">{t("pages.notFound.title")}</h1>
 
         {/* Description */}
         <p className="mx-auto mb-2 max-w-sm font-body text-base leading-relaxed text-muted-foreground">
-          A rota{" "}
+          The route{" "}
           <code className="rounded bg-card/60 px-1.5 py-0.5 font-body text-sm text-muted-foreground">
             {location.pathname}
           </code>{" "}
-          não existe.
+          does not exist.
         </p>
         <p className="mx-auto mb-8 max-w-sm font-body text-sm text-muted-foreground/60">
-          Pode ter sido removida, renomeada ou nunca existiu.
+          {t("pages.notFound.subtitle")}
         </p>
 
         {/* CTAs */}
@@ -72,7 +74,7 @@ export default function NotFound() {
             to="/"
             className="landing-btn-primary group flex items-center justify-center gap-2 rounded-2xl bg-primary px-7 py-3.5 font-display text-sm font-bold text-primary-foreground"
           >
-            Ir para o início
+            {t("pages.notFound.back")}
             <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
           {isAuthenticated && (
@@ -80,7 +82,7 @@ export default function NotFound() {
               to="/app"
               className="landing-btn-secondary flex items-center justify-center gap-2 rounded-2xl border border-border px-7 py-3.5 font-display text-sm font-semibold text-foreground/80 transition-colors hover:border-primary/40 hover:text-foreground"
             >
-              Meus saves
+              My saves
             </Link>
           )}
         </div>
@@ -92,7 +94,7 @@ export default function NotFound() {
             className="inline-flex items-center gap-1.5 font-body text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
           >
             <ArrowLeft size={12} />
-            Voltar à página anterior
+            Go back to previous page
           </button>
         </div>
       </div>

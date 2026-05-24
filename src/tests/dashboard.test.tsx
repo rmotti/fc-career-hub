@@ -34,9 +34,9 @@ vi.mock("@/features/history/model/useTrophies", () => ({
 }));
 
 describe("DashboardScreen", () => {
-  it("renderiza o primeiro carregamento mesmo sem jogadores", () => {
+  it("renders initial load even without players", () => {
     expect(() => render(<DashboardScreen saveId="save-1" />)).not.toThrow();
-    expect(screen.getByText("Painel da Temporada")).toBeInTheDocument();
+    expect(screen.getByText("Season Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Save inicial")).toBeInTheDocument();
   });
 });

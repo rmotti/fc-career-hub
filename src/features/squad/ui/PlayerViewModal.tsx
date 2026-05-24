@@ -37,11 +37,11 @@ interface Props {
 
 const STATUS_LABELS: Record<string, string> = {
   Crucial: "Crucial",
-  Important: "Importante",
-  Role: "Rotação",
-  Sporadic: "Esporádico",
-  Promising: "Promissor",
-  Loan: "Emprestado",
+  Important: "Important",
+  Role: "Rotation",
+  Sporadic: "Sporadic",
+  Promising: "Promising",
+  Loan: "Loaned",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -107,7 +107,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] max-w-3xl overflow-hidden border-border bg-card p-0">
         <DialogHeader className="border-b border-border px-6 py-5">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Perfil do jogador</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Player profile</p>
           <DialogTitle className="font-display text-2xl leading-none">
             {player.name}
           </DialogTitle>
@@ -146,7 +146,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
                         {badge.icon} {badge.label}
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground">{player.age} anos</span>
+                    <span className="text-xs text-muted-foreground">{player.age} yrs</span>
                     {player.potential && <span className="text-xs text-muted-foreground">POT {player.potential}</span>}
                   </div>
                 </div>
@@ -161,16 +161,16 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
               </div>
               {player.potential && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Potencial <span className="font-semibold text-foreground">{player.potential}</span>
+                  Potential <span className="font-semibold text-foreground">{player.potential}</span>
                 </p>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <PlayerStatCard icon={Calendar} label="Partidas" value={stats?.matches ?? 0} />
-            <PlayerStatCard icon={Target} label="Gols" value={stats?.goals ?? 0} tone="primary" />
-            <PlayerStatCard icon={ChartNoAxesColumnIncreasing} label="Assist." value={stats?.assists ?? 0} tone="accent" />
+            <PlayerStatCard icon={Calendar} label="Apps" value={stats?.matches ?? 0} />
+            <PlayerStatCard icon={Target} label="Goals" value={stats?.goals ?? 0} tone="primary" />
+            <PlayerStatCard icon={ChartNoAxesColumnIncreasing} label="Assists" value={stats?.assists ?? 0} tone="accent" />
             <PlayerStatCard
               icon={CLEAN_SHEETS_POSITIONS.has(player.position) ? ShieldCheck : Medal}
               label={CLEAN_SHEETS_POSITIONS.has(player.position) ? "Clean sheets" : "Particip."}
@@ -182,19 +182,19 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
           <section className="rounded-lg border border-border bg-muted/20">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
               <ClipboardList size={15} className="text-primary" />
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Dados de gestão</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Management data</p>
             </div>
             <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
-              <PlayerDetail icon={Shirt} label="Posição" value={player.position} badgeClass={positionColor} />
-              <PlayerDetail icon={Shirt} label="Alternativas" value={alternativePositionsLabel} />
-              <PlayerDetail icon={FlagIcon} label="Nação" value={player.nation ?? "—"} flag={player.nation} />
-              <PlayerDetail icon={BadgeEuro} label="Salário" value={player.salary != null ? `${formatCurrencyInThousands(player.salary)}/sem` : "—"} />
-              <PlayerDetail icon={CircleDollarSign} label="Valor de mercado" value={player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—"} delta={<Delta value={player.marketValueDelta} moneyUnit="M" />} />
-              <PlayerDetail icon={Calendar} label="Idade" value={`${player.age} anos`} />
+              <PlayerDetail icon={Shirt} label="Position" value={player.position} badgeClass={positionColor} />
+              <PlayerDetail icon={Shirt} label="Alternatives" value={alternativePositionsLabel} />
+              <PlayerDetail icon={FlagIcon} label="Nation" value={player.nation ?? "—"} flag={player.nation} />
+              <PlayerDetail icon={BadgeEuro} label="Salary" value={player.salary != null ? `${formatCurrencyInThousands(player.salary)}/wk` : "—"} />
+              <PlayerDetail icon={CircleDollarSign} label="Market value" value={player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—"} delta={<Delta value={player.marketValueDelta} moneyUnit="M" />} />
+              <PlayerDetail icon={Calendar} label="Age" value={`${player.age} yrs`} />
               <PlayerDetail
                 icon={ShieldCheck}
-                label="Cartões"
-                value={`${stats?.yellowCards ?? 0} amarelos / ${stats?.redCards ?? 0} vermelhos`}
+                label="Cards"
+                value={`${stats?.yellowCards ?? 0} yellow / ${stats?.redCards ?? 0} red`}
               />
             </div>
           </section>
@@ -202,16 +202,16 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
           {history.length > 0 && (
           <div className="overflow-hidden rounded-lg border border-border bg-muted/20">
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">Histórico de Overall e Valor de Mercado</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">OVR & Market Value History</p>
             </div>
             <ScrollArea scrollbars="horizontal" className="w-full">
               <table className="min-w-[560px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
-                    <th className="px-4 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-body">Temporada</th>
+                    <th className="px-4 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-body">Season</th>
                     <th className="px-4 py-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body">OVR</th>
-                    <th className="px-4 py-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body">Variação</th>
-                    <th className="px-4 py-2 text-right text-[10px] uppercase tracking-wider text-muted-foreground font-body">Valor de Mercado</th>
+                    <th className="px-4 py-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body">Change</th>
+                    <th className="px-4 py-2 text-right text-[10px] uppercase tracking-wider text-muted-foreground font-body">Market Value</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -226,7 +226,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
                       <tr key={entry.season} className={`border-b border-border/30 ${isLatest ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}>
                         <td className="px-4 py-2.5 font-medium text-foreground">
                           {entry.season}
-                          {isLatest && <span className="ml-2 text-[10px] text-primary font-semibold uppercase tracking-wider">Atual</span>}
+                          {isLatest && <span className="ml-2 text-[10px] text-primary font-semibold uppercase tracking-wider">Current</span>}
                         </td>
                         <td className="px-4 py-2.5 text-center">
                           <span className={`font-display font-bold ${entry.ovr >= 83 ? "text-primary" : entry.ovr >= 80 ? "text-accent" : "text-foreground"}`}>
@@ -256,13 +256,13 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
           {player.history && player.history.length > 1 && (
           <div className="overflow-hidden rounded-lg border border-border bg-muted/20">
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">Histórico de Estatísticas</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">Statistics History</p>
             </div>
             <ScrollArea scrollbars="horizontal" className="w-full">
               <table className="min-w-[640px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
-                    {["Temporada", "Part.", "Gols", "Assist.", "Partic.", ...(CLEAN_SHEETS_POSITIONS.has(player.position) ? ["CS"] : []), "🟨", "🟥"].map((h) => (
+                    {["Season", "Apps", "Goals", "Assists", "Contrib.", ...(CLEAN_SHEETS_POSITIONS.has(player.position) ? ["CS"] : []), "🟨", "🟥"].map((h) => (
                       <th key={h} className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-body">{h}</th>
                     ))}
                   </tr>
@@ -297,14 +297,14 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
               onClick={() => onOpenChange(false)}
               className="rounded-md bg-muted px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Fechar
+              Close
             </button>
             <button
               type="button"
               onClick={() => { onOpenChange(false); onEdit(); }}
               className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
             >
-              <Pencil size={14} /> Editar jogador
+              <Pencil size={14} /> Edit player
             </button>
           </div>
         </div>

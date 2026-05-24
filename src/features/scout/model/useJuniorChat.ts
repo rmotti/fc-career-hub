@@ -74,7 +74,7 @@ function saveHistory(userId: string, history: ConversationEntry[]) {
 
 function deriveTitle(messages: JuniorChatMessage[]): string {
   const firstUserMsg = messages.find((m) => m.role === "user");
-  if (!firstUserMsg) return "Conversa sem título";
+  if (!firstUserMsg) return "Untitled conversation";
   return firstUserMsg.content.length > 45
     ? firstUserMsg.content.slice(0, 42) + "…"
     : firstUserMsg.content;
@@ -156,16 +156,16 @@ export function useJuniorChat(userId: string | undefined) {
             ? err.retryAfter!
             : 60;
           setRetryAfterSeconds(seconds);
-          toast.warning(`Muitas mensagens. Aguarde ${seconds} segundos para continuar.`);
+          toast.warning(`Too many messages. Please wait ${seconds} seconds to continue.`);
         } else if (err.status === 502) {
-          toast.error("O Junior não respondeu. Tente novamente.", {
-            action: { label: "Tentar de novo", onClick: () => void sendMessage(text) },
+          toast.error("Junior did not respond. Please try again.", {
+            action: { label: "Try again", onClick: () => void sendMessage(text) },
           });
         } else {
           toast.error(extractErrorMessage(err));
         }
       } else {
-        toast.error("Erro de conexão. Verifique sua rede.");
+        toast.error("Connection error. Check your network.");
       }
     } finally {
       setIsLoading(false);

@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2, Check, ArrowLeft, Trophy, Users, TrendingUp, Repeat2 } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { extractErrorMessage } from "@/shared/api/client";
+import type React from "react";
 
 // ─── Decorative left panel ───────────────────────────────────────────────────
 
 const perks = [
-  { icon: Users, label: "Elenco completo", desc: "Cada jogador com posição, OVR, salário e valor." },
-  { icon: TrendingUp, label: "Estatísticas por temporada", desc: "Gols, assists e desempenho consolidados." },
-  { icon: Repeat2, label: "Transferências documentadas", desc: "Entradas, saídas e empréstimos registrados." },
-  { icon: Trophy, label: "Sala de troféus", desc: "Cada título com clube e ano da conquista." },
+  { icon: Users, labelKey: "Squad management", desc: "Every player with position, OVR, salary and value." },
+  { icon: TrendingUp, labelKey: "Season stats", desc: "Goals, assists and performance consolidated." },
+  { icon: Repeat2, labelKey: "Transfer records", desc: "Arrivals, departures and loans documented." },
+  { icon: Trophy, labelKey: "Trophy room", desc: "Every title with club and season won." },
 ];
 
 function LeftPanel() {
@@ -42,21 +44,21 @@ function LeftPanel() {
       {/* Headline + perks */}
       <div className="relative space-y-8">
         <div className="space-y-3">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-accent">Comece agora, é grátis</p>
+          <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-accent">Start now, it's free</p>
           <h1 className="font-display text-5xl font-bold leading-[1.08] tracking-tight">
-            Crie seu hub.<br />
-            <span className="text-glow-primary text-primary">Registre tudo.</span>
+            Build your hub.<br />
+            <span className="text-glow-primary text-primary">Track everything.</span>
           </h1>
           <p className="max-w-sm font-body text-base leading-relaxed text-muted-foreground">
-            Um hub completo para acompanhar cada detalhe do seu Modo Carreira no FC.
+            A complete hub to track every detail of your Career Mode in FC.
           </p>
         </div>
 
         {/* Feature list */}
         <div className="space-y-3">
-          {perks.map(({ icon: Icon, label, desc }, i) => (
+          {perks.map(({ icon: Icon, labelKey, desc }, i) => (
             <div
-              key={label}
+              key={labelKey}
               className="flex items-start gap-3.5 rounded-2xl border border-border/50 bg-card/40 px-4 py-3.5 backdrop-blur-sm"
               style={{ animationDelay: `${i * 60 + 200}ms` }}
             >
@@ -64,7 +66,7 @@ function LeftPanel() {
                 <Icon size={14} />
               </div>
               <div>
-                <div className="font-display text-sm font-bold leading-none">{label}</div>
+                <div className="font-display text-sm font-bold leading-none">{labelKey}</div>
                 <div className="mt-0.5 font-body text-xs leading-relaxed text-muted-foreground">{desc}</div>
               </div>
             </div>
@@ -76,9 +78,9 @@ function LeftPanel() {
       <div className="relative flex items-center gap-2.5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
         <Check size={14} className="shrink-0 text-primary" />
         <p className="font-body text-xs text-muted-foreground">
-          Plano <strong className="text-foreground">FREE</strong> para começar, sem cartão de crédito.{" "}
+          <strong className="text-foreground">FREE</strong> plan to start, no credit card required.{" "}
           <Link to="/pricing" className="font-semibold text-primary hover:underline">
-            Ver todos os planos →
+            See all plans →
           </Link>
         </p>
       </div>
@@ -89,6 +91,7 @@ function LeftPanel() {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Register() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const [name, setName] = useState("");
@@ -102,12 +105,12 @@ export default function Register() {
     try {
       await signUp({ name, email, password });
       navigate("/app", { replace: true });
-      toast.success("Conta criada com sucesso!");
+      toast.success("Account created successfully!");
     } catch (error: any) {
       const status = error?.status || error?.response?.status;
       const message =
         status === 409
-          ? "Este e-mail já está cadastrado. Tente fazer login."
+          ? "This email is already registered. Try logging in."
           : extractErrorMessage(error);
       toast.error(message, { duration: 5000 });
     } finally {
@@ -129,7 +132,7 @@ export default function Register() {
           </div>
           <Link to="/" className="flex items-center gap-1 font-body text-xs text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft size={12} />
-            Início
+            {t("auth.login.back")}
           </Link>
         </div>
 
@@ -140,14 +143,14 @@ export default function Register() {
             className="hidden items-center gap-1.5 font-body text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground lg:flex"
           >
             <ArrowLeft size={12} />
-            Voltar ao início
+            {t("auth.login.backToHome")}
           </Link>
 
           {/* Header */}
           <div>
-            <h2 className="font-display text-3xl font-bold">Criar conta</h2>
+            <h2 className="font-display text-3xl font-bold">{t("auth.register.title")}</h2>
             <p className="mt-1.5 font-body text-sm leading-relaxed text-muted-foreground">
-              Cadastre-se e comece a registrar sua carreira agora.
+              {t("auth.register.subtitle")}
             </p>
           </div>
 
@@ -155,13 +158,13 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1.5 block font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Nome
+                {t("auth.register.name")}
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="João Silva"
+                placeholder={t("auth.register.namePlaceholder")}
                 className="auth-input w-full rounded-xl border border-border bg-card/40 px-4 py-3 font-body text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 required
               />
@@ -169,7 +172,7 @@ export default function Register() {
 
             <div>
               <label className="mb-1.5 block font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                E-mail
+                {t("auth.register.email")}
               </label>
               <input
                 type="email"
@@ -183,13 +186,13 @@ export default function Register() {
 
             <div>
               <label className="mb-1.5 block font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Senha
+                {t("auth.register.password")}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
+                placeholder={t("auth.register.passwordPlaceholder")}
                 className="auth-input w-full rounded-xl border border-border bg-card/40 px-4 py-3 font-body text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 required
                 minLength={8}
@@ -202,26 +205,26 @@ export default function Register() {
               className="landing-btn-primary mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-display text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? <Loader2 size={15} className="animate-spin" /> : null}
-              Criar e entrar
+              {t("auth.register.submit")}
             </button>
 
             <p className="text-center font-body text-xs leading-relaxed text-muted-foreground/60">
-              Ao criar uma conta você concorda com os termos de uso do serviço.
+              By creating an account you agree to the service terms of use.
             </p>
           </form>
 
           {/* Divider */}
           <div className="relative flex items-center gap-3">
             <div className="h-px flex-1 bg-border/60" />
-            <span className="font-body text-xs text-muted-foreground/50">ou</span>
+            <span className="font-body text-xs text-muted-foreground/50">{t("auth.register.or")}</span>
             <div className="h-px flex-1 bg-border/60" />
           </div>
 
           {/* Footer */}
           <p className="text-center font-body text-sm text-muted-foreground">
-            Já tem conta?{" "}
+            {t("auth.register.hasAccount")}{" "}
             <Link to="/login" className="font-semibold text-primary transition-opacity hover:opacity-80">
-              Fazer login
+              {t("auth.register.signIn")}
             </Link>
           </p>
         </div>

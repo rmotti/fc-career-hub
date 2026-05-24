@@ -24,22 +24,22 @@ describe("ApiError", () => {
 
 describe("extractErrorMessage", () => {
   describe("erros de rede", () => {
-    it("retorna mensagem de conexão quando isNetworkError é true", () => {
+    it("returns connection message when isNetworkError is true", () => {
       const err = new ApiError("Failed to fetch", undefined, undefined, true);
       expect(extractErrorMessage(err)).toBe(
-        "Não foi possível conectar ao servidor. Verifique sua conexão."
+        "Could not connect to the server. Check your connection."
       );
     });
 
-    it("retorna mensagem de conexão para 'Failed to fetch'", () => {
+    it("returns connection message for 'Failed to fetch'", () => {
       expect(extractErrorMessage({ message: "Failed to fetch" })).toBe(
-        "Não foi possível conectar ao servidor. Verifique sua conexão."
+        "Could not connect to the server. Check your connection."
       );
     });
 
-    it("retorna mensagem de conexão quando message contém 'NetworkError'", () => {
+    it("returns connection message when message contains 'NetworkError'", () => {
       expect(extractErrorMessage({ message: "A NetworkError occurred" })).toBe(
-        "Não foi possível conectar ao servidor. Verifique sua conexão."
+        "Could not connect to the server. Check your connection."
       );
     });
   });
@@ -89,20 +89,20 @@ describe("extractErrorMessage", () => {
   });
 
   describe("erros 5xx", () => {
-    it("retorna mensagem genérica para status 500", () => {
+    it("returns generic message for status 500", () => {
       const err = { status: 500, data: { error: "INTERNAL_ERROR" } };
-      expect(extractErrorMessage(err)).toBe("Erro interno. Tente novamente em instantes.");
+      expect(extractErrorMessage(err)).toBe("Internal error. Try again in a moment.");
     });
 
-    it("retorna mensagem genérica para status 503", () => {
+    it("returns generic message for status 503", () => {
       const err = { status: 503 };
-      expect(extractErrorMessage(err)).toBe("Erro interno. Tente novamente em instantes.");
+      expect(extractErrorMessage(err)).toBe("Internal error. Try again in a moment.");
     });
   });
 
   describe("fallback", () => {
-    it("retorna mensagem padrão para erros sem status conhecido", () => {
-      expect(extractErrorMessage({})).toBe("Erro inesperado. Tente novamente.");
+    it("returns default message for errors without known status", () => {
+      expect(extractErrorMessage({})).toBe("Unexpected error. Try again.");
     });
 
     it("usa err.message quando disponível no fallback", () => {

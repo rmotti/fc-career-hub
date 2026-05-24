@@ -6,7 +6,7 @@ export interface PlayerBadge {
   color: string;
 }
 
-export type SquadRole = "artilheiro" | "garçom" | "motor";
+export type SquadRole = "scorer" | "playmaker" | "engine";
 
 export function getBadge(player: Pick<ApiPlayer, "ovr" | "potential" | "age" | "ovrDelta">, squadRole?: SquadRole): PlayerBadge | null {
   const { ovr, potential, age, ovrDelta } = player;
@@ -14,26 +14,26 @@ export function getBadge(player: Pick<ApiPlayer, "ovr" | "potential" | "age" | "
   if (ovr >= 88)
     return { label: "Elite", icon: "🌟", color: "#F0C040" };
 
-  if (squadRole === "artilheiro")
-    return { label: "Artilheiro", icon: "⚽", color: "#E74C3C" };
+  if (squadRole === "scorer")
+    return { label: "Top Scorer", icon: "⚽", color: "#E74C3C" };
 
-  if (squadRole === "garçom")
-    return { label: "Garçom", icon: "🎯", color: "#3498DB" };
+  if (squadRole === "playmaker")
+    return { label: "Playmaker", icon: "🎯", color: "#3498DB" };
 
-  if (squadRole === "motor")
-    return { label: "Motor", icon: "⚙️", color: "#E67E22" };
+  if (squadRole === "engine")
+    return { label: "Engine", icon: "⚙️", color: "#E67E22" };
 
   if (ovrDelta != null && ovrDelta >= 5)
-    return { label: "Em ascensão", icon: "📈", color: "#3498DB" };
+    return { label: "Rising", icon: "📈", color: "#3498DB" };
 
   if (age <= 21 && potential && potential >= 88 && potential < 90)
-    return { label: "Promessa", icon: "🔥", color: "#E74C3C" };
+    return { label: "Prospect", icon: "🔥", color: "#E74C3C" };
 
   if (age <= 21 && potential && potential >= 92)
-    return { label: "Diamante", icon: "💎", color: "#9B59B6" };
+    return { label: "Diamond", icon: "💎", color: "#9B59B6" };
 
   if (age >= 34 && ovr >= 85)
-    return { label: "Veterano", icon: "🧊", color: "#95A5A6" };
+    return { label: "Veteran", icon: "🧊", color: "#95A5A6" };
 
   return null;
 }

@@ -139,8 +139,8 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
   const isLeague = stat.competition?.type === "League";
   const competitionName = stat.competition?.name ?? "Competição";
   const resultLabel = isLeague
-    ? form.leaguePosition === "" ? "Posição pendente" : `${form.leaguePosition}º lugar`
-    : CUP_OPTIONS.find((opt) => opt.value === form.cupResult)?.label ?? "Resultado pendente";
+    ? form.leaguePosition === "" ? "Position pending" : `${form.leaguePosition}th place`
+    : CUP_OPTIONS.find((opt) => opt.value === form.cupResult)?.label ?? "Result pending";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
@@ -154,21 +154,21 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
                     <Trophy size={15} />
                   </div>
                   <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                    Editar estatísticas
+                    Edit statistics
                   </span>
                 </div>
                 <DialogTitle className="truncate font-display text-2xl leading-none">
                   {competitionName}
                 </DialogTitle>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {isLeague ? "Liga" : "Copa"} · {resultLabel}
+                  {isLeague ? "League" : "Cup"} · {resultLabel}
                 </p>
               </div>
 
               <div className="grid min-w-[210px] grid-cols-3 gap-2 rounded-md border border-border bg-card/80 p-2">
                 <div className="text-center">
                   <p className="font-display text-xl font-bold text-primary">{derived.matches}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Jogos</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Games</p>
                 </div>
                 <div className="text-center">
                   <p className="font-display text-xl font-bold text-[hsl(var(--warning))]">{derived.points}</p>
@@ -178,7 +178,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
                   <p className={`font-display text-xl font-bold ${derived.goalDiff >= 0 ? "text-primary" : "text-destructive"}`}>
                     {derived.goalDiff > 0 ? `+${derived.goalDiff}` : derived.goalDiff}
                   </p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Saldo</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">GD</p>
                 </div>
               </div>
             </div>
@@ -190,37 +190,37 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
             <section data-tour="stats-modal-campaign">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Campanha</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Atualize o record principal da competição.</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Campaign</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Update the competition's main record.</p>
                 </div>
                 <span className="rounded-md border border-border bg-background/30 px-2 py-1 font-display text-sm font-bold text-muted-foreground">
-                  {derived.winRate}% aprov.
+                  {derived.winRate}% win rate
                 </span>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <NumberField label="Vitórias" value={form.wins} tone="primary" onChange={(v) => setForm({ ...form, wins: v })} />
-                <NumberField label="Empates" value={form.draws} tone="warning" onChange={(v) => setForm({ ...form, draws: v })} />
-                <NumberField label="Derrotas" value={form.losses} tone="destructive" onChange={(v) => setForm({ ...form, losses: v })} />
+                <NumberField label="Wins" value={form.wins} tone="primary" onChange={(v) => setForm({ ...form, wins: v })} />
+                <NumberField label="Draws" value={form.draws} tone="warning" onChange={(v) => setForm({ ...form, draws: v })} />
+                <NumberField label="Losses" value={form.losses} tone="destructive" onChange={(v) => setForm({ ...form, losses: v })} />
               </div>
             </section>
 
             <section data-tour="stats-modal-goals">
               <div className="mb-3">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gols</p>
-                <p className="mt-1 text-xs text-muted-foreground">Use o placar agregado da competição inteira.</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Goals</p>
+                <p className="mt-1 text-xs text-muted-foreground">Use the aggregate score for the entire competition.</p>
               </div>
 
               <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                 <NumberField
-                  label="Marcados"
+                  label="Scored"
                   value={form.goalsPro}
                   icon={Target}
                   onChange={(v) => setForm({ ...form, goalsPro: v })}
                 />
                 <span className="mb-4 font-display text-xl font-bold text-muted-foreground">:</span>
                 <NumberField
-                  label="Sofridos"
+                  label="Conceded"
                   value={form.goalsAgainst}
                   icon={ShieldAlert}
                   onChange={(v) => setForm({ ...form, goalsAgainst: v })}
@@ -231,17 +231,17 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
             <section data-tour="stats-modal-result">
               <div className="mb-3">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  {isLeague ? "Tabela" : "Resultado final"}
+                  {isLeague ? "Table" : "Final result"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {isLeague ? "Informe a colocação final ou atual." : "Escolha a fase atingida nesta copa."}
+                  {isLeague ? "Enter the final or current standing." : "Choose the phase reached in this cup."}
                 </p>
               </div>
 
               {isLeague ? (
                 <label className="block">
                   <span className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <Medal size={10} /> Posição
+                    <Medal size={10} /> Position
                   </span>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-display text-sm font-bold text-muted-foreground">
@@ -300,7 +300,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
               className="flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
             >
               <X size={14} />
-              Cancelar
+              Cancel
             </button>
             <button
               data-tour="stats-modal-save"
@@ -309,7 +309,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
               className="flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 font-display text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-70"
             >
               {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Salvar estatísticas
+              Save statistics
             </button>
           </div>
         </form>

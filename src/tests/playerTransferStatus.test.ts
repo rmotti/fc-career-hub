@@ -35,14 +35,14 @@ function createTransfer(overrides: Partial<ApiTransfer>): ApiTransfer {
 }
 
 describe("playerTransferStatus", () => {
-  it("remove do elenco em venda e empréstimo de saída", () => {
+  it("removes from squad on sale and outgoing loan", () => {
     expect(shouldRemovePlayerFromSquad("venda")).toBe(true);
     expect(shouldRemovePlayerFromSquad("emprestimo_saida")).toBe(true);
     expect(shouldRemovePlayerFromSquad("compra")).toBe(false);
     expect(shouldRemovePlayerFromSquad("emprestimo_entrada")).toBe(false);
   });
 
-  it("identifica vendas já registradas que ainda deixaram o jogador ativo", () => {
+  it("identifies registered sales that still left the player active", () => {
     const players = [
       createPlayer({ id: "sold-active", isActive: true }),
       createPlayer({ id: "loaned-out", isActive: false }),
@@ -57,7 +57,7 @@ describe("playerTransferStatus", () => {
     expect(getActiveSoldPlayers(players, transfers).map((player) => player.id)).toEqual(["sold-active"]);
   });
 
-  it("reativa só quem estava fora por empréstimo na virada de temporada", () => {
+  it("reactivates only players who were out on loan at the season turnover", () => {
     const players = [
       createPlayer({ id: "sold-player", isActive: false }),
       createPlayer({ id: "loaned-player", isActive: false }),

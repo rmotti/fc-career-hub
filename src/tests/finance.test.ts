@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateBalanceFromTransfers } from "@/shared/lib/finance";
 
 describe("finance", () => {
-  it("recalcula o saldo a partir do orçamento e das transferências atuais", () => {
+  it("recalculates the balance from budget and current transfers", () => {
     const balance = calculateBalanceFromTransfers(85_000_000, [
       {
         id: "1",
@@ -39,7 +39,7 @@ describe("finance", () => {
     expect(balance).toBe(77_500_000);
   });
 
-  it("ignora transferências sem impacto financeiro", () => {
+  it("ignores transfers with no financial impact", () => {
     const balance = calculateBalanceFromTransfers(50_000_000, [
       {
         id: "1",

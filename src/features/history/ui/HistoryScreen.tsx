@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useClubStints } from "@/features/history/model/useClubStints";
 import { useTrophies } from "@/features/history/model/useTrophies";
 import { useTransfers } from "@/features/transfers/model/useTransfers";
@@ -80,10 +81,10 @@ const toneBgClass: Record<Tone, string> = {
 };
 
 const trophyTypeLabel: Record<string, string> = {
-  League: "Ligas",
-  NationalCup: "Copas",
-  SuperCup: "Supercopas",
-  EuropeanCup: "Europa",
+  League: "Leagues",
+  NationalCup: "Cups",
+  SuperCup: "Super Cups",
+  EuropeanCup: "European",
 };
 
 const feeToNum = (fee?: string | number | null) => {
@@ -99,6 +100,7 @@ const formatSignedCurrency = (value: number) => {
 };
 
 const HistoryScreen = ({ saveId }: Props) => {
+  const { t } = useTranslation();
   const { data: clubStints = [], isLoading } = useClubStints(saveId);
   const { data: trophies = [] } = useTrophies(saveId);
   const { data: transfers = [] } = useTransfers(saveId);
@@ -142,7 +144,7 @@ const HistoryScreen = ({ saveId }: Props) => {
   const careerYears = firstYear && lastYear ? Math.max(1, lastYear - firstYear + 1) : totals.seasons;
 
   const sortedTrophies = useMemo(
-    () => [...trophies].sort((a, b) => b.year - a.year || a.competition.name.localeCompare(b.competition.name)),
+    () => [...trophies].sort((a, b) => b.year - a.year || a.competition.name.localeCompare(b.competition.name, "en")),
     [trophies],
   );
   const latestTrophy = sortedTrophies[0];
@@ -225,7 +227,7 @@ const HistoryScreen = ({ saveId }: Props) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" /> Carregando histórico...
+        <Loader2 size={20} className="animate-spin" /> {t("history.loading")}
       </div>
     );
   }
@@ -241,36 +243,36 @@ const HistoryScreen = ({ saveId }: Props) => {
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-[hsl(var(--gold)/0.25)] bg-[hsl(var(--gold)/0.09)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--gold))]">
                 <History size={14} />
-                Legado do save
+                {t("history.legacy.label")}
               </div>
               <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground md:text-4xl">
-                Uma carreira construída em {careerYears || 0} {careerYears === 1 ? "ano" : "anos"}
+                {t("history.legacy.title", { years: careerYears || 0 })}
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                 {sortedClubStints.length > 0
-                  ? `${sortedClubStints.length} ${sortedClubStints.length === 1 ? "clube comandado" : "clubes comandados"}, ${trophies.length} ${trophies.length === 1 ? "título" : "títulos"} e ${totals.matches} jogos registrados.`
-                  : "O legado começa quando os primeiros clubes, jogos e títulos forem registrados."}
+                  ? t("history.legacy.managed", { count: sortedClubStints.length, trophies: trophies.length, matches: totals.matches })
+                  : t("history.legacy.empty")}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <LegacyMetric label="Jogos" value={totals.matches} icon={Users} tone="primary" />
-              <LegacyMetric label="Vitórias" value={totals.wins} icon={ArrowUpRight} tone="primary" />
-              <LegacyMetric label="Empates" value={totals.draws} icon={Handshake} tone="warning" />
-              <LegacyMetric label="Derrotas" value={totals.losses} icon={ArrowDownRight} tone="destructive" />
+              <LegacyMetric label={t("history.legacy.matches")} value={totals.matches} icon={Users} tone="primary" />
+              <LegacyMetric label={t("history.legacy.wins")} value={totals.wins} icon={ArrowUpRight} tone="primary" />
+              <LegacyMetric label={t("history.legacy.draws")} value={totals.draws} icon={Handshake} tone="warning" />
+              <LegacyMetric label={t("history.legacy.losses")} value={totals.losses} icon={ArrowDownRight} tone="destructive" />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <CompactLegacyStat label="Aproveitamento" value={`${totals.winRate}%`} tone={totals.winRate >= 60 ? "primary" : totals.winRate >= 45 ? "warning" : "destructive"} />
-              <CompactLegacyStat label="Saldo de gols" value={`${totals.goalDiff > 0 ? "+" : ""}${totals.goalDiff}`} tone={totals.goalDiff >= 0 ? "accent" : "destructive"} />
-              <CompactLegacyStat label="Competições" value={totals.competitions || "-"} tone="gold" />
+              <CompactLegacyStat label={t("history.legacy.winRate")} value={`${totals.winRate}%`} tone={totals.winRate >= 60 ? "primary" : totals.winRate >= 45 ? "warning" : "destructive"} />
+              <CompactLegacyStat label={t("history.legacy.goalDiff")} value={`${totals.goalDiff > 0 ? "+" : ""}${totals.goalDiff}`} tone={totals.goalDiff >= 0 ? "accent" : "destructive"} />
+              <CompactLegacyStat label={t("history.legacy.competitions")} value={totals.competitions || "-"} tone="gold" />
             </div>
           </div>
 
           <div className="rounded-lg border border-[hsl(var(--gold)/0.24)] bg-[linear-gradient(135deg,hsl(var(--gold)/0.12),hsl(var(--card)/0.25))] p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sala de troféus</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("history.trophies.room")}</p>
                 <p className="mt-2 font-display text-6xl font-bold leading-none text-[hsl(var(--gold))]">{trophies.length}</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-md border border-[hsl(var(--gold)/0.25)] bg-[hsl(var(--gold)/0.12)] text-[hsl(var(--gold))]">
@@ -280,13 +282,13 @@ const HistoryScreen = ({ saveId }: Props) => {
 
             {latestTrophy ? (
               <div className="mt-6 rounded-md border border-border/80 bg-background/25 p-3">
-                <p className="text-xs text-muted-foreground">Última conquista</p>
+                <p className="text-xs text-muted-foreground">{t("history.trophies.latest")}</p>
                 <p className="mt-1 truncate font-display text-xl font-bold text-foreground">{latestTrophy.competition.name}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{formatTrophyLabel(latestTrophy)}</p>
               </div>
             ) : (
               <div className="mt-6 rounded-md border border-dashed border-border bg-background/20 p-3 text-sm text-muted-foreground">
-                Nenhum troféu conquistado ainda.
+                {t("history.trophies.none")}
               </div>
             )}
 
@@ -304,7 +306,7 @@ const HistoryScreen = ({ saveId }: Props) => {
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div data-tour="history-clubs" className="card-gamer p-5 md:p-6">
-          <SectionTitle icon={Footprints} kicker="Trajetória" title="Clubes gerenciados" />
+          <SectionTitle icon={Footprints} kicker={t("history.clubs.kicker")} title={t("history.clubs.title")} />
 
           {sortedClubStints.length > 0 ? (
             <div className="mt-5 space-y-3">
@@ -323,25 +325,25 @@ const HistoryScreen = ({ saveId }: Props) => {
                       <p className="font-display text-lg font-bold text-foreground">{club.club}</p>
                       {club.isCurrent && (
                         <span className="rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
-                          Atual
+                          {t("history.legacy.club")}
                         </span>
                       )}
                     </div>
                     <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                       <CalendarDays size={14} />
-                      {club.startYear}-{club.endYear ?? "presente"}
+                      {club.startYear}-{club.endYear ?? t("history.clubs.present")}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyPanel text="Nenhum clube registrado ainda." />
+            <EmptyPanel text={t("history.clubs.none")} />
           )}
         </div>
 
         <div data-tour="history-trophies" className="card-gamer p-5 md:p-6">
-          <SectionTitle icon={Trophy} kicker="Conquistas" title="Vitrine de títulos" />
+          <SectionTitle icon={Trophy} kicker={t("history.trophies.kicker")} title={t("history.trophies.title")} />
 
           {sortedTrophies.length > 0 ? (
             <TrophyRoom
@@ -351,49 +353,49 @@ const HistoryScreen = ({ saveId }: Props) => {
               onSelect={setSelectedTrophyId}
             />
           ) : (
-            <EmptyPanel text="A sala ainda está vazia. O primeiro título vai aparecer aqui." />
+            <EmptyPanel text={t("history.trophies.none")} />
           )}
         </div>
       </section>
 
       <section className="card-gamer p-5 md:p-6">
-        <SectionTitle icon={Star} kicker="Recordes" title="Hall da fama" />
+        <SectionTitle icon={Star} kicker={t("history.hallOfFame.kicker")} title={t("history.hallOfFame.title")} />
 
         <div className="mt-5 grid gap-4 lg:grid-cols-4">
           <HallOfFameCard
-            label="Artilheiro histórico"
+            label={t("history.hallOfFame.topScorer")}
             icon={Goal}
             tone="primary"
             player={allScorers[0]}
-            meta={allScorers[0] ? `${allScorers[0].matches || "-"} jogos` : undefined}
-            valueLabel="gols"
+            meta={allScorers[0] ? `${allScorers[0].matches || "-"} ${t("history.hallOfFame.matches")}` : undefined}
+            valueLabel={t("history.hallOfFame.goals")}
             onExpand={() => setOpenModal("scorers")}
           />
           <HallOfFameCard
-            label="Garçom histórico"
+            label={t("history.hallOfFame.topAssister")}
             icon={Sparkles}
             tone="accent"
             player={allAssisters[0]}
-            meta={allAssisters[0] ? `${allAssisters[0].matches || "-"} jogos` : undefined}
-            valueLabel="assist."
+            meta={allAssisters[0] ? `${allAssisters[0].matches || "-"} ${t("history.hallOfFame.matches")}` : undefined}
+            valueLabel={t("history.hallOfFame.assists")}
             onExpand={() => setOpenModal("assisters")}
           />
           <HallOfFameCard
-            label="Mais partidas"
+            label={t("history.hallOfFame.mostMatches")}
             icon={Shield}
             tone="gold"
             player={allByMatches[0]}
             meta={allByMatches[0] ? `${allByMatches[0].goals}G ${allByMatches[0].assists}A` : undefined}
-            valueLabel="jogos"
+            valueLabel={t("history.hallOfFame.matches")}
             onExpand={() => setOpenModal("matches")}
           />
           <HallOfFameCard
-            label="Mais participações"
+            label={t("history.hallOfFame.mostContributions")}
             icon={Medal}
             tone="primary"
             player={allByGoalContributions[0]}
             meta={allByGoalContributions[0] ? `${allByGoalContributions[0].goals}G ${allByGoalContributions[0].assists}A` : undefined}
-            valueLabel="part."
+            valueLabel={t("history.hallOfFame.contributions")}
             onExpand={() => setOpenModal("contributions")}
           />
         </div>
@@ -401,38 +403,38 @@ const HistoryScreen = ({ saveId }: Props) => {
 
       <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="card-gamer p-5 md:p-6">
-          <SectionTitle icon={CircleDollarSign} kicker="Mercado" title="Balanço histórico" />
+          <SectionTitle icon={CircleDollarSign} kicker={t("history.market.kicker")} title={t("history.market.title")} />
 
           <div className="mt-5 grid gap-3">
-            <CompactLegacyStat label="Gasto em compras" value={formatCurrencyInMillions(transferSpend)} tone="destructive" />
-            <CompactLegacyStat label="Receita em vendas" value={formatCurrencyInMillions(transferRevenue)} tone="accent" />
-            <CompactLegacyStat label="Saldo de mercado" value={formatSignedCurrency(transferNet)} tone={transferNet >= 0 ? "primary" : "destructive"} />
+            <CompactLegacyStat label={t("history.market.spent")} value={formatCurrencyInMillions(transferSpend)} tone="destructive" />
+            <CompactLegacyStat label={t("history.market.revenue")} value={formatCurrencyInMillions(transferRevenue)} tone="accent" />
+            <CompactLegacyStat label={t("history.market.balance")} value={formatSignedCurrency(transferNet)} tone={transferNet >= 0 ? "primary" : "destructive"} />
           </div>
 
           <Link
             to="/transfers"
             className="mt-5 inline-flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
           >
-            Ver histórico completo
+            {t("history.market.viewAll")}
             <ArrowUpRight size={14} />
           </Link>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <TransferRecordCard
-            title="Maior compra"
+            title={t("transfers.highlights.biggestPurchase")}
             icon={ArrowDownRight}
             tone="primary"
             transfers={top5Buys}
-            empty="Sem compras pagas"
+            empty={t("transfers.highlights.noPurchases")}
             onExpand={() => setOpenModal("buys")}
           />
           <TransferRecordCard
-            title="Maior venda"
+            title={t("transfers.highlights.biggestSale")}
             icon={ArrowUpRight}
             tone="accent"
             transfers={top5Sales}
-            empty="Sem vendas pagas"
+            empty={t("transfers.highlights.noSales")}
             onExpand={() => setOpenModal("sales")}
           />
         </div>
@@ -528,7 +530,7 @@ const TrophyRoom = ({
               <div className="relative w-44 bg-[hsl(var(--gold))] px-4 pb-5 pt-4 text-center text-[hsl(var(--gold-foreground))] shadow-[0_0_36px_hsl(var(--gold)/0.22)]">
                 <div className="absolute inset-x-0 -bottom-6 mx-auto h-0 w-0 border-l-[88px] border-r-[88px] border-t-[24px] border-l-transparent border-r-transparent border-t-[hsl(var(--gold))]" />
                 <p className="font-display text-lg font-bold leading-none">FC</p>
-                <p className="mt-1 text-[10px] font-bold uppercase tracking-wider opacity-75">Sala de troféus</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-wider opacity-75">Trophy Room</p>
                 <div className="my-3 h-px bg-black/25" />
                 <div className="mx-auto mb-2 flex justify-center">
                   <CssTrophy type={activeTrophy.competition.type} selected miniature />
@@ -539,10 +541,10 @@ const TrophyRoom = ({
               </div>
               <div className="mt-8 flex items-center gap-2">
                 <span className={`rounded-md border px-2 py-1 text-xs font-semibold uppercase tracking-wider ${activeAccent.borderClass} ${activeAccent.bgClass} text-muted-foreground`}>
-                  {trophyTypeLabel[activeTrophy.competition.type] ?? "Título"}
+                  {trophyTypeLabel[activeTrophy.competition.type] ?? "Title"}
                 </span>
                 <span className="rounded-md border border-[hsl(var(--gold)/0.2)] bg-[hsl(var(--gold)/0.08)] px-2 py-1 text-xs font-semibold text-[hsl(var(--gold))]">
-                  {selectedIndex + 1} de {trophies.length}
+                  {selectedIndex + 1} / {trophies.length}
                 </span>
               </div>
             </div>
@@ -561,7 +563,7 @@ const TrophyRoom = ({
 
       <div className="grid gap-4 bg-card/80 p-4 lg:grid-cols-[1fr_auto]">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título em destaque</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Featured title</p>
           <p className="mt-1 truncate font-display text-2xl font-bold text-foreground">{activeTrophy.competition.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">{formatTrophyLabel(activeTrophy)}</p>
         </div>
@@ -571,8 +573,8 @@ const TrophyRoom = ({
               type="button"
               onClick={() => selectByOffset(-1)}
               className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-[hsl(var(--gold)/0.35)] hover:text-[hsl(var(--gold))]"
-              aria-label="Selecionar troféu anterior"
-              title="Selecionar troféu anterior"
+              aria-label="Select previous trophy"
+              title="Select previous trophy"
             >
               <ChevronLeft size={17} />
             </button>
@@ -580,8 +582,8 @@ const TrophyRoom = ({
               type="button"
               onClick={() => selectByOffset(1)}
               className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-[hsl(var(--gold)/0.35)] hover:text-[hsl(var(--gold))]"
-              aria-label="Selecionar próximo troféu"
-              title="Selecionar próximo troféu"
+              aria-label="Select next trophy"
+              title="Select next trophy"
             >
               <ChevronRight size={17} />
             </button>
@@ -606,7 +608,7 @@ const TrophyRoom = ({
                       ? "border-[hsl(var(--gold)/0.52)] bg-[hsl(var(--gold)/0.1)] shadow-[0_0_24px_hsl(var(--gold)/0.14)]"
                       : `${accent.borderClass} ${accent.bgClass} hover:-translate-y-0.5 hover:border-[hsl(var(--gold)/0.35)]`
                   }`}
-                  aria-label={`Selecionar ${trophy.competition.name}`}
+                  aria-label={`Select ${trophy.competition.name}`}
                   title={trophy.competition.name}
                 >
                   <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-colors ${
@@ -755,7 +757,8 @@ const RankingModalContent = ({
   top20Buys: TransferRankingItem[];
   top20Sales: TransferRankingItem[];
 }) => {
-  const config = getRankingModalConfig(openModal);
+  const { t } = useTranslation();
+  const config = getRankingModalConfig(openModal, t);
 
   if (!config) return null;
 
@@ -799,19 +802,19 @@ const RankingModalContent = ({
           {isTransferRanking ? (
             <TransferPodium transfer={leadingEntry as TransferRankingItem} tone={config.tone} />
           ) : (
-            <PlayerPodium player={leadingEntry as PlayerRankingItem} tone={config.tone} valueLabel={config.valueLabel} meta={getPlayerMeta(leadingEntry as PlayerRankingItem, openModal)} />
+            <PlayerPodium player={leadingEntry as PlayerRankingItem} tone={config.tone} valueLabel={config.valueLabel} meta={getPlayerMeta(leadingEntry as PlayerRankingItem, openModal, t)} />
           )}
         </div>
       ) : (
         <div className="border-b border-border bg-background/30 px-5 py-4 text-sm text-muted-foreground">
-          Nenhum registro encontrado para este ranking.
+          {t("history.ranking.noRecord")}
         </div>
       )}
 
       <div className="bg-card">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ranking completo</p>
-          <span className={`font-display text-sm font-bold ${toneClass[config.tone]}`}>{totalEntries} registros</span>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("history.ranking.complete")}</p>
+          <span className={`font-display text-sm font-bold ${toneClass[config.tone]}`}>{t("history.ranking.records", { count: totalEntries })}</span>
         </div>
 
         <ScrollArea className="h-[min(46vh,420px)]" viewportClassName="px-3 py-3 pr-5" scrollbars="vertical">
@@ -826,7 +829,7 @@ const RankingModalContent = ({
                     index={index}
                     name={player.name}
                     clubs={player.clubs}
-                    meta={getPlayerMeta(player, openModal)}
+                    meta={getPlayerMeta(player, openModal, t)}
                     value={`${player.total} ${config.valueLabel}`}
                     tone={config.tone}
                   />
@@ -838,64 +841,64 @@ const RankingModalContent = ({
   );
 };
 
-const getRankingModalConfig = (openModal: ModalType) => {
+const getRankingModalConfig = (openModal: ModalType, t: (key: string) => string) => {
   switch (openModal) {
     case "scorers":
       return {
-        title: "Top 20 artilheiros historicos",
-        kicker: "Hall da fama",
-        description: "Os jogadores que mais deixaram marca no placar ao longo do save.",
-        valueLabel: "gols",
+        title: t("history.ranking.scorers.title"),
+        kicker: t("history.ranking.scorers.kicker"),
+        description: t("history.ranking.scorers.desc"),
+        valueLabel: t("history.ranking.scorers.valueLabel"),
         tone: "primary" as Tone,
         icon: Goal,
         glowClass: "bg-primary/10",
       };
     case "assisters":
       return {
-        title: "Top 20 assistentes historicos",
-        kicker: "Criadores",
-        description: "A lista de quem mais serviu gols durante a carreira.",
-        valueLabel: "assist.",
+        title: t("history.ranking.assisters.title"),
+        kicker: t("history.ranking.assisters.kicker"),
+        description: t("history.ranking.assisters.desc"),
+        valueLabel: t("history.ranking.assisters.valueLabel"),
         tone: "accent" as Tone,
         icon: Sparkles,
         glowClass: "bg-accent/10",
       };
     case "matches":
       return {
-        title: "Top 20 em partidas",
-        kicker: "Lendas de vestiario",
-        description: "Os nomes que mais sustentaram a historia do save em campo.",
-        valueLabel: "jogos",
+        title: t("history.ranking.matches.title"),
+        kicker: t("history.ranking.matches.kicker"),
+        description: t("history.ranking.matches.desc"),
+        valueLabel: t("history.ranking.matches.valueLabel"),
         tone: "gold" as Tone,
         icon: Shield,
         glowClass: "bg-[hsl(var(--gold)/0.12)]",
       };
     case "contributions":
       return {
-        title: "Top 20 participacoes em gol",
-        kicker: "Impacto ofensivo",
-        description: "Gols e assistencias somados para revelar quem decidiu mais.",
-        valueLabel: "part.",
+        title: t("history.ranking.contributions.title"),
+        kicker: t("history.ranking.contributions.kicker"),
+        description: t("history.ranking.contributions.desc"),
+        valueLabel: t("history.ranking.contributions.valueLabel"),
         tone: "primary" as Tone,
         icon: Medal,
         glowClass: "bg-primary/10",
       };
     case "buys":
       return {
-        title: "Top 20 maiores compras",
-        kicker: "Mercado historico",
-        description: "As contratacoes que mais pesaram no investimento do save.",
-        valueLabel: "",
+        title: t("history.ranking.buys.title"),
+        kicker: t("history.ranking.buys.kicker"),
+        description: t("history.ranking.buys.desc"),
+        valueLabel: t("history.ranking.buys.valueLabel"),
         tone: "primary" as Tone,
         icon: ArrowDownRight,
         glowClass: "bg-primary/10",
       };
     case "sales":
       return {
-        title: "Top 20 maiores vendas",
-        kicker: "Mercado historico",
-        description: "As saidas que mais geraram receita para os clubes da carreira.",
-        valueLabel: "",
+        title: t("history.ranking.sales.title"),
+        kicker: t("history.ranking.sales.kicker"),
+        description: t("history.ranking.sales.desc"),
+        valueLabel: t("history.ranking.sales.valueLabel"),
         tone: "accent" as Tone,
         icon: ArrowUpRight,
         glowClass: "bg-accent/10",
@@ -905,12 +908,12 @@ const getRankingModalConfig = (openModal: ModalType) => {
   }
 };
 
-const getPlayerMeta = (player: PlayerRankingItem, openModal: ModalType) => {
+const getPlayerMeta = (player: PlayerRankingItem, openModal: ModalType, t: (key: string) => string) => {
   if (openModal === "matches" || openModal === "contributions") {
     return `${player.goals ?? 0}G ${player.assists ?? 0}A`;
   }
 
-  return player.matches ? `${player.matches} jogos` : undefined;
+  return player.matches ? `${player.matches} ${t("history.hallOfFame.matches")}` : undefined;
 };
 
 const PlayerPodium = ({
@@ -929,7 +932,7 @@ const PlayerPodium = ({
       <div className="min-w-0">
         <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-[hsl(var(--gold)/0.25)] bg-[hsl(var(--gold)/0.1)] px-2 py-1 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--gold))]">
           <Crown size={14} />
-          Lider do ranking
+          Ranking leader
         </div>
         <p className="truncate font-display text-3xl font-bold leading-none text-foreground">{player.name}</p>
         <p className="mt-2 truncate text-sm text-muted-foreground">{player.clubs.length > 0 ? player.clubs.join(", ") : meta}</p>
@@ -949,16 +952,16 @@ const TransferPodium = ({ transfer, tone }: { transfer: TransferRankingItem; ton
       <div className="min-w-0">
         <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-[hsl(var(--gold)/0.25)] bg-[hsl(var(--gold)/0.1)] px-2 py-1 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--gold))]">
           <Crown size={14} />
-          Lider do ranking
+          Ranking leader
         </div>
         <p className="truncate font-display text-3xl font-bold leading-none text-foreground">{transfer.playerName}</p>
-        <p className="mt-2 truncate text-sm text-muted-foreground">{transfer.from} para {transfer.to} · {transfer.season}</p>
+        <p className="mt-2 truncate text-sm text-muted-foreground">{transfer.from} to {transfer.to} · {transfer.season}</p>
       </div>
       <div className="shrink-0 text-right">
         <p className={`font-display text-3xl font-bold leading-none ${toneClass[tone]}`}>
-          {transfer.fee ? formatCurrencyInMillions(transfer.fee) : "Livre"}
+          {transfer.fee ? formatCurrencyInMillions(transfer.fee) : "Free"}
         </p>
-        <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">valor</p>
+        <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">value</p>
       </div>
     </div>
   </div>
@@ -991,8 +994,8 @@ const HallOfFameCard = ({
         type="button"
         onClick={onExpand}
         className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        aria-label={`Ver ranking de ${label}`}
-        title={`Ver ranking de ${label}`}
+        aria-label={`View ranking: ${label}`}
+        title={`View ranking: ${label}`}
       >
         <Plus size={14} />
       </button>
@@ -1010,7 +1013,7 @@ const HallOfFameCard = ({
         </div>
       </>
     ) : (
-      <p className="text-sm text-muted-foreground">Sem registros suficientes.</p>
+      <p className="text-sm text-muted-foreground">Not enough records.</p>
     )}
   </article>
 );
@@ -1040,8 +1043,8 @@ const TransferRecordCard = ({
         type="button"
         onClick={onExpand}
         className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        aria-label={`Ver ranking de ${title}`}
-        title={`Ver ranking de ${title}`}
+        aria-label={`View ranking: ${title}`}
+        title={`View ranking: ${title}`}
       >
         <Plus size={14} />
       </button>
@@ -1107,7 +1110,7 @@ const TransferRecordRow = ({
       </div>
     </div>
     <span className={`shrink-0 text-sm font-bold ${toneClass[tone]}`}>
-      {transfer.fee ? formatCurrencyInMillions(transfer.fee) : "Livre"}
+      {transfer.fee ? formatCurrencyInMillions(transfer.fee) : "Free"}
     </span>
   </div>
 );

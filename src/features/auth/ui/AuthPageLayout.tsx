@@ -13,9 +13,9 @@ interface AuthPageLayoutProps {
 }
 
 const highlights = [
-  "Seus saves agora ficam isolados por conta.",
-  "Role e plano do usuário disponíveis globalmente.",
-  "Sessão validada automaticamente ao abrir o app.",
+  "Your saves are now isolated by account.",
+  "User role and plan available globally.",
+  "Session validated automatically on app open.",
 ];
 
 export default function AuthPageLayout({
@@ -39,10 +39,10 @@ export default function AuthPageLayout({
                 FC Career Hub
               </div>
               <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-                Sua carreira, sua conta, seu histórico.
+                Your career, your account, your history.
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Entre para continuar registrando temporadas, elencos, transferências e títulos com sessão protegida.
+                Sign in to continue recording seasons, squads, transfers and titles with a protected session.
               </p>
             </div>
 

@@ -119,30 +119,30 @@ function Reveal({
 // ─── Static data ─────────────────────────────────────────────────────────────
 
 const features = [
-  { icon: ClipboardList, title: "Registre sua carreira", desc: "Acompanhe cada temporada, clube gerenciado e conquistas do seu Modo Carreira ao longo dos anos." },
-  { icon: BarChart2, title: "Estatísticas completas", desc: "Gols, assistências, partidas e cartões documentados por jogador e consolidados por temporada." },
-  { icon: Trophy, title: "Sala de troféus", desc: "Guarde cada título conquistado, com clube e temporada registrados na sua galeria pessoal." },
+  { icon: ClipboardList, title: "Track your career", desc: "Follow every season, managed club and Career Mode achievement over the years." },
+  { icon: BarChart2, title: "Complete statistics", desc: "Goals, assists, appearances and cards documented per player and consolidated per season." },
+  { icon: Trophy, title: "Trophy room", desc: "Save every title won, with club and season recorded in your personal gallery." },
 ];
 
 const steps = [
-  { num: "01", title: "Crie um Save", desc: "Dê um nome à carreira, escolha o clube e defina o orçamento inicial." },
-  { num: "02", title: "Monte o elenco", desc: "Adicione jogadores com posição, overall, salário e valor de mercado." },
-  { num: "03", title: "Registre a temporada", desc: "Atualize estatísticas de jogadores e do clube ao longo dos jogos." },
-  { num: "04", title: "Avance e conquiste", desc: "Finalize temporadas, registre transferências e acumule títulos." },
+  { num: "01", title: "Create a Save", desc: "Name your career, choose your club and set the initial budget." },
+  { num: "02", title: "Build the squad", desc: "Add players with position, overall, salary and market value." },
+  { num: "03", title: "Track the season", desc: "Update player and club statistics throughout the matches." },
+  { num: "04", title: "Advance and conquer", desc: "Finish seasons, record transfers and accumulate titles." },
 ];
 
 const hubFeatures = [
-  { icon: Users, label: "Elenco completo", desc: "Cada jogador, cada posição, cada contrato em um lugar só." },
-  { icon: Repeat2, label: "Transferências", desc: "Entradas, saídas, valores e destinos documentados por janela." },
-  { icon: TrendingUp, label: "Evolução por temporada", desc: "Veja como seu clube e seus jogadores cresceram ao longo do tempo." },
-  { icon: LayoutDashboard, label: "Dashboard centralizado", desc: "Visão geral do save ativo com os dados mais importantes." },
-  { icon: Star, label: "Múltiplos saves", desc: "Gerencie várias carreiras simultâneas sem misturar os dados." },
-  { icon: Shield, label: "Sessão segura", desc: "Seus saves ficam na nuvem, acessíveis em qualquer dispositivo." },
+  { icon: Users, label: "Full squad", desc: "Every player, every position, every contract in one place." },
+  { icon: Repeat2, label: "Transfers", desc: "Ins, outs, fees and destinations documented by window." },
+  { icon: TrendingUp, label: "Season growth", desc: "See how your club and players have grown over time." },
+  { icon: LayoutDashboard, label: "Central dashboard", desc: "Overview of the active save with the most important data." },
+  { icon: Star, label: "Multiple saves", desc: "Manage multiple simultaneous careers without mixing data." },
+  { icon: Shield, label: "Secure session", desc: "Your saves are in the cloud, accessible on any device." },
 ];
 
 const marqueeItems = [
-  "Elenco", "Temporadas", "Troféus", "Transferências", "Estatísticas",
-  "Saves", "Clubes", "OVR", "Orçamento", "Histórico", "Campo", "Dashboard",
+  "Squad", "Seasons", "Trophies", "Transfers", "Stats",
+  "Saves", "Clubs", "OVR", "Budget", "History", "Lineup", "Dashboard",
 ];
 
 // ─── Navbar ──────────────────────────────────────────────────────────────────
@@ -173,15 +173,15 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
         <nav className="flex items-center gap-1">
           {isAuthenticated ? (
             <Link to="/app" className="landing-btn-primary ml-2 flex items-center gap-2 rounded-xl bg-primary px-5 py-2 font-display text-sm font-bold text-primary-foreground">
-              Ir para o Hub <ArrowRight size={14} />
+              Go to Hub <ArrowRight size={14} />
             </Link>
           ) : (
             <>
               <Link to="/login" className="rounded-xl px-4 py-2 font-display text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
-                Entrar
+                Sign in
               </Link>
               <Link to="/register" className="landing-btn-primary flex items-center gap-2 rounded-xl bg-primary px-5 py-2 font-display text-sm font-bold text-primary-foreground">
-                Criar conta
+                Sign up
               </Link>
             </>
           )}
@@ -257,7 +257,7 @@ function HeroDashboardMockup() {
           </div>
           <div className="flex items-center gap-1.5">
             <BarChart2 size={10} className="text-primary" />
-            <span className="font-display text-xs font-semibold text-muted-foreground">Artilheiros · Carreira completa</span>
+            <span className="font-display text-xs font-semibold text-muted-foreground">Top Scorers · Full career</span>
           </div>
           <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
             <Shield size={10} className="text-primary" />
@@ -267,7 +267,7 @@ function HeroDashboardMockup() {
         {/* Column labels */}
         <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem] items-center gap-x-2 border-b border-border/30 bg-background/30 px-4 py-2">
           <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">#</span>
-          <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Jogador</span>
+          <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Player</span>
           <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Gols</span>
           <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">JG</span>
         </div>
@@ -300,7 +300,7 @@ function HeroDashboardMockup() {
                       <span className="font-body text-[10px] leading-none text-muted-foreground/60 truncate">{club}</span>
                     </span>
                   ))}
-                  <span className="ml-1 shrink-0 font-body text-[10px] leading-none text-muted-foreground/40">· {p.seasons}T</span>
+                  <span className="ml-1 shrink-0 font-body text-[10px] leading-none text-muted-foreground/40">· {p.seasons}S</span>
                 </div>
               </div>
 
@@ -321,9 +321,9 @@ function HeroDashboardMockup() {
         <div className="flex items-center justify-between border-t border-border/40 bg-background/30 px-4 py-2.5">
           <div className="flex items-center gap-1.5">
             <Trophy size={11} className="text-gold" />
-            <span className="font-display text-[10px] font-semibold text-muted-foreground/70">7 temporadas · 3 clubes</span>
+            <span className="font-display text-[10px] font-semibold text-muted-foreground/70">7 seasons · 3 clubs</span>
           </div>
-          <span className="font-body text-[10px] text-muted-foreground/40">+18 jogadores</span>
+          <span className="font-body text-[10px] text-muted-foreground/40">+18 players</span>
         </div>
       </div>
     </div>
@@ -337,7 +337,7 @@ function StatItem({ target, suffix, label, active }: { target: number; suffix: s
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="font-display text-4xl font-bold leading-none text-foreground">
-        {val.toLocaleString("pt-BR")}<span className="text-primary">{suffix}</span>
+        {val.toLocaleString("en-US")}<span className="text-primary">{suffix}</span>
       </span>
       <span className="font-body text-sm text-muted-foreground">{label}</span>
     </div>
@@ -357,11 +357,11 @@ function StatsStrip() {
             transition: "opacity 700ms cubic-bezier(0.23,1,0.32,1), transform 700ms cubic-bezier(0.23,1,0.32,1)",
           }}
         >
-          <StatItem target={1200} suffix="+" label="Saves criados" active={visible} />
+          <StatItem target={1200} suffix="+" label="Saves created" active={visible} />
           <div className="hidden h-full w-px bg-border/50 sm:block" />
-          <StatItem target={40} suffix="+" label="Temporadas em média" active={visible} />
+          <StatItem target={40} suffix="+" label="Average seasons" active={visible} />
           <div className="hidden h-full w-px bg-border/50 sm:block" />
-          <StatItem target={100} suffix="%" label="Gratuito para começar" active={visible} />
+          <StatItem target={100} suffix="%" label="Free to start" active={visible} />
         </div>
       </div>
     </div>
@@ -436,34 +436,34 @@ export default function Landing() {
               </div>
 
               <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-                Sua carreira.
+                Your career.
                 <br />
-                <span className="text-glow-primary text-primary" style={{ animation: "text-glow-pulse 3s ease-in-out infinite" }}>Seu legado.</span>
+                <span className="text-glow-primary text-primary" style={{ animation: "text-glow-pulse 3s ease-in-out infinite" }}>Your legacy.</span>
               </h1>
 
               <p className="max-w-lg font-body text-lg leading-relaxed text-muted-foreground">
-                Organize cada save do Modo Carreira: clube, elenco, temporadas, transferências e títulos — tudo em um hub só para você.
+                Organise every Career Mode save: club, squad, seasons, transfers and titles — all in one hub just for you.
               </p>
 
               <div className="flex flex-wrap gap-3">
                 {isAuthenticated ? (
                   <Link to="/app" className="landing-btn-primary group flex items-center gap-2 rounded-2xl bg-primary px-7 py-3.5 font-display text-base font-bold text-primary-foreground">
-                    Ir para o Hub <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
+                    Go to Hub <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
                   </Link>
                 ) : (
                   <>
                     <Link to="/register" className="landing-btn-primary group flex items-center gap-2 rounded-2xl bg-primary px-7 py-3.5 font-display text-base font-bold text-primary-foreground">
-                      Criar conta grátis <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
+                      Create free account <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
                     </Link>
                     <Link to="/login" className="landing-btn-secondary flex items-center gap-2 rounded-2xl border border-border px-7 py-3.5 font-display text-base font-semibold text-foreground/80 transition-colors hover:border-primary/40 hover:text-foreground">
-                      Já tenho conta
+                      Already have an account
                     </Link>
                   </>
                 )}
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2">
-                {["Grátis para começar", "Sem instalação", "Dados na nuvem"].map((item) => (
+                {["Free to start", "No installation", "Cloud data"].map((item) => (
                   <div key={item} className="flex items-center gap-1.5">
                     <div className="h-1 w-1 rounded-full bg-primary" />
                     <span className="font-body text-xs text-muted-foreground">{item}</span>
@@ -498,10 +498,10 @@ export default function Landing() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_hsl(220_18%_10%_/_0.8),_transparent_70%)]" />
         <div className="relative mx-auto max-w-6xl px-6">
           <Reveal className="mb-16 text-center">
-            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">O que você ganha</p>
-            <h2 className="font-display text-4xl font-bold sm:text-5xl">Por que usar o FC Career Hub?</h2>
+            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">What you get</p>
+            <h2 className="font-display text-4xl font-bold sm:text-5xl">Why use FC Career Hub?</h2>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-muted-foreground">
-              Feito para quem leva o Modo Carreira a sério. Nada se perde, tudo fica registrado.
+              Built for those who take Career Mode seriously. Nothing gets lost, everything is recorded.
             </p>
           </Reveal>
 
@@ -528,8 +528,8 @@ export default function Landing() {
       <section className="py-28">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal className="mb-16 text-center">
-            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-accent">Simples assim</p>
-            <h2 className="font-display text-4xl font-bold sm:text-5xl">Como funciona</h2>
+            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-accent">Simple as that</p>
+            <h2 className="font-display text-4xl font-bold sm:text-5xl">How it works</h2>
           </Reveal>
 
           <div ref={stepsRef} className="relative grid gap-12 md:grid-cols-4 md:gap-6">
@@ -578,10 +578,10 @@ export default function Landing() {
       <section className="py-28">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal className="mb-16 text-center">
-            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Tudo incluído</p>
-            <h2 className="font-display text-4xl font-bold sm:text-5xl">Um hub completo</h2>
+            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Everything included</p>
+            <h2 className="font-display text-4xl font-bold sm:text-5xl">A complete hub</h2>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-muted-foreground">
-              Cada área do seu Modo Carreira tem uma seção dedicada dentro do hub.
+              Every area of your Career Mode has a dedicated section within the hub.
             </p>
           </Reveal>
 
@@ -616,10 +616,10 @@ export default function Landing() {
       <section className="py-28">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal className="mb-14 text-center">
-            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Planos</p>
-            <h2 className="font-display text-4xl font-bold sm:text-5xl">Comece grátis, evolua depois.</h2>
+            <p className="mb-3 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Plans</p>
+            <h2 className="font-display text-4xl font-bold sm:text-5xl">Start free, upgrade later.</h2>
             <p className="mx-auto mt-4 max-w-lg font-body text-base text-muted-foreground">
-              Tudo que você precisa para registrar sua carreira está no plano gratuito. Quando quiser mais, é só evoluir.
+              Everything you need to track your career is in the free plan. When you want more, just upgrade.
             </p>
           </Reveal>
 
@@ -638,11 +638,11 @@ export default function Landing() {
                 <span className="font-display text-lg font-bold">Free</span>
               </div>
               <div className="mb-5 border-b border-border/50 pb-5">
-                <span className="font-display text-3xl font-bold">Grátis</span>
-                <span className="ml-1.5 font-body text-xs text-muted-foreground">para sempre</span>
+                <span className="font-display text-3xl font-bold">Free</span>
+                <span className="ml-1.5 font-body text-xs text-muted-foreground">forever</span>
               </div>
               <ul className="mb-6 flex-1 space-y-2.5">
-                {["1 save simultâneo", "Elenco completo", "Estatísticas por temporada", "Histórico de troféus"].map((f) => (
+                {["1 simultaneous save", "Full squad management", "Season statistics", "Trophy history"].map((f) => (
                   <li key={f} className="flex items-center gap-2.5">
                     <Check size={13} className="shrink-0 text-primary" />
                     <span className="font-body text-sm text-muted-foreground">{f}</span>
@@ -650,7 +650,7 @@ export default function Landing() {
                 ))}
               </ul>
               <Link to="/register" className="landing-btn-secondary flex w-full items-center justify-center gap-2 rounded-xl border border-border py-3 font-display text-sm font-semibold text-foreground/80 transition-colors hover:border-primary/40">
-                Começar grátis
+                Get started free
               </Link>
             </div>
 
@@ -670,14 +670,14 @@ export default function Landing() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10"><Star size={15} className="text-primary" /></div>
                   <span className="font-display text-lg font-bold">Pro</span>
                 </div>
-                <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-display text-xs font-bold text-primary" style={{ animation: "pulse-glow 2.5s ease-in-out infinite" }}>Popular</span>
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-display text-xs font-bold text-primary" style={{ animation: "pulse-glow 2.5s ease-in-out infinite" }}>Most popular</span>
               </div>
               <div className="mb-5 border-b border-border/50 pb-5">
                 <span className="font-display text-3xl font-bold">R$ 9</span>
-                <span className="ml-1.5 font-body text-xs text-muted-foreground">por mês</span>
+                <span className="ml-1.5 font-body text-xs text-muted-foreground">per month</span>
               </div>
               <ul className="mb-6 flex-1 space-y-2.5">
-                {["3 saves simultâneos", "Elenco completo", "Estatísticas por temporada", "Histórico de troféus", "Transferências ilimitadas"].map((f) => (
+                {["3 simultaneous saves", "Full squad management", "Season statistics", "Trophy history", "Unlimited transfers"].map((f) => (
                   <li key={f} className="flex items-center gap-2.5">
                     <Check size={13} className="shrink-0 text-primary" />
                     <span className="font-body text-sm text-foreground">{f}</span>
@@ -685,7 +685,7 @@ export default function Landing() {
                 ))}
               </ul>
               <Link to="/register" className="landing-btn-primary flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-display text-sm font-bold text-primary-foreground">
-                Assinar Pro
+                Subscribe Pro
               </Link>
             </div>
 
@@ -705,10 +705,10 @@ export default function Landing() {
               </div>
               <div className="mb-5 border-b border-border/50 pb-5">
                 <span className="font-display text-3xl font-bold">R$ 19</span>
-                <span className="ml-1.5 font-body text-xs text-muted-foreground">por mês</span>
+                <span className="ml-1.5 font-body text-xs text-muted-foreground">per month</span>
               </div>
               <ul className="mb-6 flex-1 space-y-2.5">
-                {["Saves ilimitados", "Todos os recursos Pro", "Exportação de dados", "Suporte prioritário", "Funcionalidades futuras"].map((f) => (
+                {["Unlimited saves", "All Pro features", "Data export", "Priority support", "Future features"].map((f) => (
                   <li key={f} className="flex items-center gap-2.5">
                     <Check size={13} className="shrink-0 text-accent" />
                     <span className="font-body text-sm text-muted-foreground">{f}</span>
@@ -716,14 +716,14 @@ export default function Landing() {
                 ))}
               </ul>
               <Link to="/register" className="landing-btn-primary flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 font-display text-sm font-bold text-accent-foreground">
-                Assinar Premium
+                Subscribe Premium
               </Link>
             </div>
           </div>
 
           <Reveal delay={300} className="mt-8 text-center">
             <Link to="/pricing" className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground transition-colors hover:text-foreground">
-              Ver comparativo completo de planos <ArrowRight size={13} />
+              See full plan comparison <ArrowRight size={13} />
             </Link>
           </Reveal>
         </div>
@@ -758,30 +758,30 @@ export default function Landing() {
                 transition: "opacity 700ms cubic-bezier(0.23,1,0.32,1) 200ms, transform 700ms cubic-bezier(0.23,1,0.32,1) 200ms",
               }}
             >
-              <p className="mb-4 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Comece agora</p>
+              <p className="mb-4 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Start now</p>
               <h2 className="font-display text-4xl font-bold sm:text-5xl lg:text-6xl">
-                Sua carreira merece
+                Your career deserves
                 <br />
                 <span className="text-glow-primary text-primary" style={{ animation: "text-glow-pulse 3s ease-in-out infinite" }}>
-                  ser registrada.
+                  to be recorded.
                 </span>
               </h2>
               <p className="mx-auto mt-6 max-w-lg font-body text-base leading-relaxed text-muted-foreground">
-                Crie sua conta em segundos e comece a montar o histórico completo da sua carreira no FC.
+                Create your account in seconds and start building the complete history of your FC career.
               </p>
 
               <div className="mt-10 flex flex-wrap justify-center gap-4">
                 {isAuthenticated ? (
                   <Link to="/app" className="landing-btn-primary group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-display text-base font-bold text-primary-foreground">
-                    Ir para o Hub <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
+                    Go to Hub <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
                   </Link>
                 ) : (
                   <>
                     <Link to="/register" className="landing-btn-primary group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-display text-base font-bold text-primary-foreground">
-                      Criar conta grátis <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
+                      Create free account <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
                     </Link>
                     <Link to="/login" className="landing-btn-secondary rounded-2xl border border-border px-8 py-4 font-display text-base font-semibold text-foreground/70 transition-colors hover:border-primary/40 hover:text-foreground">
-                      Já tenho conta
+                      Already have an account
                     </Link>
                   </>
                 )}
@@ -798,10 +798,10 @@ export default function Landing() {
             <LogoMark size={22} />
             <span className="font-display text-sm font-semibold text-muted-foreground">FC Career Hub</span>
           </div>
-          <p className="font-body text-xs text-muted-foreground/60">Não afiliado à EA Sports. Feito para fãs de Modo Carreira.</p>
+          <p className="font-body text-xs text-muted-foreground/60">Not affiliated with EA Sports. Made for Career Mode fans.</p>
           <div className="flex gap-4">
-            <Link to="/login" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Entrar</Link>
-            <Link to="/register" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Criar conta</Link>
+            <Link to="/login" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Sign in</Link>
+            <Link to="/register" className="font-body text-xs text-muted-foreground transition-colors hover:text-foreground">Sign up</Link>
           </div>
         </div>
       </footer>

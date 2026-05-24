@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import HubSidebar from "@/widgets/hub-layout/ui/HubSidebar";
@@ -22,6 +23,7 @@ export type HubOutletContext = {
 };
 
 const HubLayout = () => {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const activeSaveId = user ? getStoredActiveSaveId(user.id) : null;
   const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
@@ -75,7 +77,7 @@ const HubLayout = () => {
     if (user && isError && activeSaveId && status === 404) {
       clearStoredActiveSaveId(user.id);
       navigate("/app", { replace: true });
-      toast.error("Não foi possível abrir esse save. Escolha outro para continuar.", { duration: 5000 });
+      toast.error(t("hub.errors.couldNotOpenSave"), { duration: 5000 });
     }
   }, [activeSaveId, error, isError, navigate, user]);
 
@@ -92,15 +94,15 @@ const HubLayout = () => {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground">
           <div className="card-gamer max-w-md p-6 text-center">
-            <h1 className="font-display text-xl font-bold">Não foi possível carregar o save</h1>
+            <h1 className="font-display text-xl font-bold">{t("hub.errors.couldNotLoadSave")}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              A sessão continua aberta, mas a última atualização do save falhou.
+              {t("hub.errors.sessionActive")}
             </p>
             <button
               onClick={() => void refetchActiveSave()}
               className="mt-5 rounded-md bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              Tentar novamente
+              {t("hub.errors.tryAgain")}
             </button>
           </div>
         </div>
@@ -109,7 +111,7 @@ const HubLayout = () => {
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground">
-        <div className="text-muted-foreground animate-pulse font-display text-lg">Carregando save...</div>
+        <div className="text-muted-foreground animate-pulse font-display text-lg">{t("hub.errors.loadingSave")}</div>
       </div>
     );
   }
@@ -123,7 +125,7 @@ const HubLayout = () => {
   const handleNewSeason = async (budget: number, europeanCompetitionId: string | null): Promise<boolean> => {
     const currentYear = parseInt(String(activeSave.currentYear), 10);
     if (isNaN(currentYear)) {
-      toast.error("Temporada atual inválida. Recarregue a página.", { duration: 5000 });
+      toast.error(t("hub.errors.invalidSeason"), { duration: 5000 });
       return false;
     }
     const newYear = currentYear + 1;
@@ -145,7 +147,7 @@ const HubLayout = () => {
         data: { currentYear: newYear, currentSeason: newSeason, budget: String(budget), europeanCompetitionId },
       });
       navigate("/dashboard");
-      toast.success("Nova temporada iniciada!", { duration: 3000 });
+      toast.success(t("hub.toasts.newSeasonStarted"), { duration: 3000 });
       return true;
     } catch (err: unknown) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
@@ -163,9 +165,9 @@ const HubLayout = () => {
 
     try {
       await signOut();
-      toast.success("Sessão encerrada.");
+      toast.success(t("hub.toasts.sessionEnded"));
     } catch {
-      toast.error("Não foi possível encerrar a sessão.");
+      toast.error(t("hub.errors.signOutError"));
     }
   };
 

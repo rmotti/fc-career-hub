@@ -3,23 +3,23 @@
 export type AggregateTeamStats = Pick<ApiTeamStats, "wins" | "draws" | "losses" | "goalsPro" | "goalsAgainst">;
 
 export const CUP_OPTIONS = [
-  { value: "NaoParticipou", label: "Não participou" },
-  { value: "Eliminado", label: "Eliminado" },
-  { value: "OitavasOuFaseDeGrupos", label: "Oitavas / Fase de grupos" },
-  { value: "Quartas", label: "Quartas de final" },
-  { value: "Semifinal", label: "Semifinal" },
+  { value: "NaoParticipou", label: "Did not participate" },
+  { value: "Eliminado", label: "Eliminated" },
+  { value: "OitavasOuFaseDeGrupos", label: "Round of 16 / Group stage" },
+  { value: "Quartas", label: "Quarter-finals" },
+  { value: "Semifinal", label: "Semi-finals" },
   { value: "Final", label: "Final" },
-  { value: "Campeao", label: "Campeão" },
+  { value: "Campeao", label: "Champion" },
 ] as const;
 
 export const CUP_LABELS: Record<string, string> = {
-  NaoParticipou: "Não participou",
-  Eliminado: "Fase de grupos / 1ª fase",
-  OitavasOuFaseDeGrupos: "Oitavas de final",
-  Quartas: "Quartas de final",
-  Semifinal: "Semifinal",
+  NaoParticipou: "Did not participate",
+  Eliminado: "Group stage / 1st round",
+  OitavasOuFaseDeGrupos: "Round of 16",
+  Quartas: "Quarter-finals",
+  Semifinal: "Semi-finals",
   Final: "Final",
-  Campeao: "🏆 Campeão",
+  Campeao: "🏆 Champion",
 };
 
 export function getCompetitionAccent(competition?: Pick<ApiCompetition, "name" | "type"> | null) {
@@ -73,7 +73,7 @@ export function groupTeamStatsBySeason(stats: ApiTeamStats[]) {
       stats: [...seasonStats].sort((a, b) => {
         if (a.competition?.type === "League" && b.competition?.type !== "League") return -1;
         if (a.competition?.type !== "League" && b.competition?.type === "League") return 1;
-        return (a.competition?.name ?? "Competição").localeCompare(b.competition?.name ?? "Competição");
+        return (a.competition?.name ?? "Competition").localeCompare(b.competition?.name ?? "Competition");
       }),
     }));
 }

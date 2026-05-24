@@ -54,8 +54,8 @@ const clickAfterNext = (selector: string): NonNullable<Step["after"]> => ({ acti
 const globalSteps: Step[] = [
   {
     target: "[data-tour='hub-navigation']",
-    title: "Navegação principal",
-    content: "Use o menu para alternar entre visão geral, elenco, escalação, transferências, estatísticas e história.",
+    title: "Main navigation",
+    content: "Use the menu to switch between overview, squad, lineup, transfers, stats and history.",
     placement: "right",
     skipBeacon: true,
   },
@@ -64,14 +64,14 @@ const globalSteps: Step[] = [
 const dashboardSteps: Step[] = [
   {
     target: "[data-tour='dashboard-overview']",
-    title: "Painel da temporada",
-    content: "Aqui fica o resumo vivo da carreira: campanha, protagonistas, finanças, mercado e legado.",
+    title: "Season panel",
+    content: "Here you'll find the live career summary: campaign, key players, finances, market and legacy.",
     placement: "bottom",
   },
   {
     target: "[data-tour='dashboard-finance']",
-    title: "Saúde financeira",
-    content: "Acompanhe orçamento, saldo disponível e alertas para manter o save sob controle.",
+    title: "Financial health",
+    content: "Track budget, available balance and alerts to keep the save under control.",
     placement: "top",
   },
 ];
@@ -79,20 +79,20 @@ const dashboardSteps: Step[] = [
 const squadSteps: Step[] = [
   {
     target: "[data-tour='squad-header']",
-    title: "Central do elenco",
-    content: "Gerencie jogadores, estatísticas individuais, evolução, valor de mercado e dados de contrato.",
+    title: "Squad hub",
+    content: "Manage players, individual stats, development, market value and contract data.",
     placement: "bottom",
   },
   {
     target: "[data-tour='squad-create-player']",
-    title: "Criar jogador",
-    content: "Este botão inicia o cadastro de um atleta. Ao avançar, o sistema abre o modal automaticamente para mostrar o fluxo sem você precisar clicar.",
+    title: "Create player",
+    content: "This button starts the player registration. On advance, the system opens the modal automatically to show the flow without needing to click.",
     placement: "bottom",
   },
   {
     target: "[data-tour='player-modal']",
-    title: "Cadastro aberto",
-    content: "Aqui fica o formulário do jogador. Ele reúne identidade, desenvolvimento, números da temporada e dados de mercado no mesmo modal.",
+    title: "Form open",
+    content: "Here is the player form. It brings together identity, development, season stats and market data in the same modal.",
     placement: "center",
     before: openTargetBeforeStep("[data-tour='squad-create-player']", "[data-tour='player-modal']"),
     data: {
@@ -101,8 +101,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-identity']",
-    title: "Identidade do atleta",
-    content: "Comece por nome, país, posição, status no elenco, idade e camisa. Esses dados definem como o jogador aparece nas telas e filtros.",
+    title: "Player identity",
+    content: "Start with name, country, position, squad status, age and shirt number. These define how the player appears in screens and filters.",
     placement: "bottom",
     before: waitForTarget("[data-tour='player-modal-identity']"),
     data: {
@@ -111,8 +111,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-stats']",
-    title: "Estatísticas iniciais",
-    content: "Aqui você pode registrar partidas, gols, assistências, cartões e clean sheets. Esses números alimentam os rankings e destaques do save.",
+    title: "Initial stats",
+    content: "Here you can record appearances, goals, assists, cards and clean sheets. These numbers feed the save's rankings and highlights.",
     placement: "top",
     before: waitForTarget("[data-tour='player-modal-stats']"),
     data: {
@@ -121,8 +121,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-market']",
-    title: "Mercado e contrato",
-    content: "Use salário e valor de mercado para manter a parte financeira do elenco atualizada.",
+    title: "Market & contract",
+    content: "Use salary and market value to keep the squad's financial side up to date.",
     placement: "top",
     before: waitForTarget("[data-tour='player-modal-market']"),
     data: {
@@ -131,8 +131,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-cancel']",
-    title: "Fechar sem salvar",
-    content: "No tutorial, vamos fechar o modal sem cadastrar ninguém. Em uso real, preencha os campos e finalize em Adicionar jogador.",
+    title: "Close without saving",
+    content: "In the tutorial, we'll close the modal without registering anyone. In real use, fill in the fields and finish with Add player.",
     placement: "top",
     before: waitForTarget("[data-tour='player-modal-cancel']"),
     after: clickAfterNext("[data-tour='player-modal-cancel']"),
@@ -142,32 +142,32 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='squad-metrics']",
-    title: "Resumo do grupo",
-    content: "Estes cartões condensam idade média, OVR, produção ofensiva e valor total do elenco.",
+    title: "Squad summary",
+    content: "These cards summarise average age, OVR, offensive output and total squad value.",
     placement: "bottom",
   },
   {
     target: "[data-tour='squad-controls']",
-    title: "Modos e filtros",
-    content: "Alterne a visão da tabela, filtre setores e busque jogadores rapidamente.",
+    title: "Views & filters",
+    content: "Switch the table view, filter by sector and quickly search for players.",
     placement: "bottom",
   },
   {
     target: "[data-tour='squad-table']",
-    title: "Tabela do elenco",
-    content: "Clique nos cabeçalhos para ordenar e use as ações da linha para ver detalhes, editar ou dispensar.",
+    title: "Squad table",
+    content: "Click the headers to sort and use row actions to view details, edit or release.",
     placement: "top",
   },
   {
     target: "[data-tour='squad-edit-player']",
-    title: "Editar e atualizar jogador",
-    content: "Este botão abre o cadastro do jogador selecionado já preenchido. Ao avançar, o sistema abre o modal de edição automaticamente.",
+    title: "Edit & update player",
+    content: "This button opens the selected player's form pre-filled. On advance, the system opens the edit modal automatically.",
     placement: "left",
   },
   {
     target: "[data-tour='player-modal']",
-    title: "Modal de edição",
-    content: "Na edição, os campos vêm preenchidos com os dados atuais do atleta. Você ajusta o que mudou e salva as alterações.",
+    title: "Edit modal",
+    content: "In edit mode, fields come pre-filled with the player's current data. Adjust what changed and save.",
     placement: "center",
     before: openTargetBeforeStep("[data-tour='squad-edit-player']", "[data-tour='player-modal']"),
     data: {
@@ -176,8 +176,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-development']",
-    title: "Atualizar evolução",
-    content: "OVR e potencial são atualizados aqui. Use isso para registrar evolução, queda de desempenho ou ajuste de expectativa.",
+    title: "Update development",
+    content: "OVR and potential are updated here. Use this to record growth, performance drops or expectation adjustments.",
     placement: "bottom",
     before: waitForTarget("[data-tour='player-modal-development']"),
     data: {
@@ -186,8 +186,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-save']",
-    title: "Salvar alterações",
-    content: "Em uso real, este botão grava as mudanças e recalcula métricas do elenco. No tutorial, vamos fechar sem salvar para não alterar seus dados.",
+    title: "Save changes",
+    content: "In real use, this button saves changes and recalculates squad metrics. In the tutorial, we'll close without saving to preserve your data.",
     placement: "top",
     before: waitForTarget("[data-tour='player-modal-save']"),
     data: {
@@ -196,8 +196,8 @@ const squadSteps: Step[] = [
   },
   {
     target: "[data-tour='player-modal-cancel']",
-    title: "Voltar ao elenco",
-    content: "Fechando o modal, você retorna à tabela do elenco e pode continuar gerenciando outros atletas.",
+    title: "Back to squad",
+    content: "Closing the modal returns you to the squad table to continue managing other players.",
     placement: "top",
     before: waitForTarget("[data-tour='player-modal-cancel']"),
     after: clickAfterNext("[data-tour='player-modal-cancel']"),
@@ -210,26 +210,26 @@ const squadSteps: Step[] = [
 const fieldSteps: Step[] = [
   {
     target: "[data-tour='field-header']",
-    title: "Controle da escalação",
-    content: "Escolha a formação, limpe a escalação e organize titulares, banco e disponíveis.",
+    title: "Lineup control",
+    content: "Choose the formation, clear the lineup and organise starters, bench and available players.",
     placement: "bottom",
   },
   {
     target: "[data-tour='field-pitch']",
-    title: "Campo tático",
-    content: "Arraste jogadores para os slots, ajuste posições e acompanhe alertas de encaixe por posição.",
+    title: "Tactical pitch",
+    content: "Drag players into slots, adjust positions and track position-fit alerts.",
     placement: "right",
   },
   {
     target: "[data-tour='field-bench']",
-    title: "Banco de reservas",
-    content: "Monte os 11 reservas principais para simular a lista da partida.",
+    title: "Bench",
+    content: "Set up the 11 main substitutes to simulate the match-day list.",
     placement: "right",
   },
   {
     target: "[data-tour='field-reserves']",
-    title: "Jogadores disponíveis",
-    content: "Busque e filtre atletas que ainda não estão alocados na escalação.",
+    title: "Available players",
+    content: "Search and filter players not yet assigned to the lineup.",
     placement: "left",
   },
 ];
@@ -237,20 +237,20 @@ const fieldSteps: Step[] = [
 const transferSteps: Step[] = [
   {
     target: "[data-tour='transfers-header']",
-    title: "Central de mercado",
-    content: "Registre compras, vendas e empréstimos, ou consulte o histórico completo.",
+    title: "Transfer hub",
+    content: "Register purchases, sales and loans, or view the full history.",
     placement: "bottom",
   },
   {
     target: "[data-tour='transfers-create-transfer']",
-    title: "Nova transferência",
-    content: "Este botão registra compras, vendas e empréstimos. Ao avançar, o sistema abre o modal automaticamente para mostrar o fluxo.",
+    title: "New transfer",
+    content: "This button registers purchases, sales and loans. On advance, the system opens the modal automatically to show the flow.",
     placement: "bottom",
   },
   {
     target: "[data-tour='transfer-modal']",
-    title: "Registro de transferência",
-    content: "O modal concentra jogador, tipo de movimento, valor, temporada e clubes envolvidos.",
+    title: "Transfer record",
+    content: "The modal brings together player, movement type, fee, season and clubs involved.",
     placement: "center",
     before: openTargetBeforeStep("[data-tour='transfers-create-transfer']", "[data-tour='transfer-modal']"),
     data: {
@@ -259,8 +259,8 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfer-modal-player']",
-    title: "Tipo e jogador",
-    content: "Escolha se é compra, venda ou empréstimo. Em saídas, você seleciona um atleta do elenco; em entradas, informa o nome do novo jogador.",
+    title: "Type & player",
+    content: "Choose purchase, sale or loan. For outgoing, select a squad player; for incoming, enter the new player's name.",
     placement: "bottom",
     before: waitForTarget("[data-tour='transfer-modal-player']"),
     data: {
@@ -269,8 +269,8 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfer-modal-clubs']",
-    title: "Origem e destino",
-    content: "O clube atual fica travado no lado correto da operação. Você completa o outro clube para registrar a rota da negociação.",
+    title: "Origin & destination",
+    content: "The current club is locked on the correct side of the operation. You fill in the other club to record the transfer route.",
     placement: "top",
     before: waitForTarget("[data-tour='transfer-modal-clubs']"),
     data: {
@@ -279,8 +279,8 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfer-modal-cancel']",
-    title: "Fechar sem registrar",
-    content: "No tutorial, vamos fechar sem salvar. Na rotina normal, use Registrar transferência para gravar a movimentação.",
+    title: "Close without registering",
+    content: "In the tutorial, we'll close without saving. In normal use, click Register transfer to save the movement.",
     placement: "top",
     before: waitForTarget("[data-tour='transfer-modal-cancel']"),
     after: clickAfterNext("[data-tour='transfer-modal-cancel']"),
@@ -290,26 +290,26 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfers-metrics']",
-    title: "Leitura financeira",
-    content: "Veja saldo, resultado da janela, entradas e saídas do clube na temporada.",
+    title: "Financial summary",
+    content: "View balance, window result, club's income and expenses for the season.",
     placement: "bottom",
   },
   {
     target: "[data-tour='transfers-current']",
-    title: "Janela atual",
-    content: "As movimentações são separadas por entradas e saídas para facilitar a leitura.",
+    title: "Current window",
+    content: "Movements are split between incoming and outgoing for easier reading.",
     placement: "top",
   },
   {
     target: "[data-tour='transfers-edit-transfer']",
-    title: "Editar transferência",
-    content: "O lápis abre uma movimentação existente para correção. Ao avançar, o sistema abre o modal de edição automaticamente.",
+    title: "Edit transfer",
+    content: "The pencil opens an existing movement for correction. On advance, the system opens the edit modal automatically.",
     placement: "left",
   },
   {
     target: "[data-tour='transfer-modal']",
-    title: "Editar movimento",
-    content: "Na edição, revise tipo, atleta, valor e clubes. Ao salvar, a janela e o histórico refletem a atualização.",
+    title: "Edit movement",
+    content: "In edit mode, review type, player, fee and clubs. On save, the window and history reflect the update.",
     placement: "center",
     before: openTargetBeforeStep("[data-tour='transfers-edit-transfer']", "[data-tour='transfer-modal']"),
     data: {
@@ -318,8 +318,8 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfer-modal-save']",
-    title: "Salvar correção",
-    content: "Este botão grava a correção da transferência. Para preservar seus dados durante o tutorial, vamos fechar sem salvar na próxima etapa.",
+    title: "Save correction",
+    content: "This button saves the transfer correction. To preserve your data during the tutorial, we'll close without saving in the next step.",
     placement: "top",
     before: waitForTarget("[data-tour='transfer-modal-save']"),
     data: {
@@ -328,8 +328,8 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfer-modal-cancel']",
-    title: "Voltar ao mercado",
-    content: "Fechando o modal, você volta para a central de mercado.",
+    title: "Back to market",
+    content: "Closing the modal returns you to the transfer hub.",
     placement: "top",
     before: waitForTarget("[data-tour='transfer-modal-cancel']"),
     after: clickAfterNext("[data-tour='transfer-modal-cancel']"),
@@ -339,8 +339,8 @@ const transferSteps: Step[] = [
   },
   {
     target: "[data-tour='transfers-history']",
-    title: "Histórico",
-    content: "Ao abrir a aba histórico, estes filtros ajudam a cruzar tipo, temporada e valor.",
+    title: "History",
+    content: "When opening the history tab, these filters help cross-reference type, season and fee.",
     placement: "top",
   },
 ];
@@ -348,38 +348,38 @@ const transferSteps: Step[] = [
 const statsSteps: Step[] = [
   {
     target: "[data-tour='stats-header']",
-    title: "Estatísticas da temporada",
-    content: "Use esta tela para acompanhar campanha, competições e rankings individuais.",
+    title: "Season stats",
+    content: "Use this screen to track campaign, competitions and individual rankings.",
     placement: "bottom",
   },
   {
     target: "[data-tour='hub-season-selector']",
-    title: "Filtro de temporada",
-    content: "Aqui você alterna entre temporadas disponíveis para comparar campanhas passadas.",
+    title: "Season filter",
+    content: "Here you switch between available seasons to compare past campaigns.",
     placement: "bottom",
   },
   {
     target: "[data-tour='stats-campaign']",
-    title: "Resumo da campanha",
-    content: "Vitórias, empates, derrotas, aproveitamento e protagonista ficam concentrados neste bloco.",
+    title: "Campaign summary",
+    content: "Wins, draws, losses, win rate and top performer are all in this block.",
     placement: "bottom",
   },
   {
     target: "[data-tour='stats-competition-card']",
-    title: "Estatísticas por competição",
-    content: "Cada card representa uma competição da temporada, com campanha, gols, saldo e resultado. É aqui que você mantém o registro oficial do desempenho do clube.",
+    title: "Competition stats",
+    content: "Each card represents a competition for the season, with campaign, goals, goal difference and result. This is where you maintain the club's official performance record.",
     placement: "bottom",
   },
   {
     target: "[data-tour='stats-edit-competition']",
-    title: "Editar estatísticas",
-    content: "O lápis abre a edição da competição. Ao avançar, o sistema abre o modal automaticamente para mostrar quais campos atualizam a temporada.",
+    title: "Edit stats",
+    content: "The pencil opens the competition for editing. On advance, the system opens the modal automatically to show which fields update the season.",
     placement: "left",
   },
   {
     target: "[data-tour='stats-modal']",
-    title: "Edição da competição",
-    content: "Este modal atualiza o desempenho do clube naquela competição: campanha, gols e resultado final.",
+    title: "Competition edit",
+    content: "This modal updates the club's performance in that competition: campaign, goals and final result.",
     placement: "center",
     before: openTargetBeforeStep("[data-tour='stats-edit-competition']", "[data-tour='stats-modal']"),
     data: {
@@ -388,8 +388,8 @@ const statsSteps: Step[] = [
   },
   {
     target: "[data-tour='stats-modal-campaign']",
-    title: "Campanha",
-    content: "Atualize vitórias, empates e derrotas. O app recalcula jogos, pontos e aproveitamento automaticamente.",
+    title: "Campaign",
+    content: "Update wins, draws and losses. The app automatically recalculates games, points and win rate.",
     placement: "bottom",
     before: waitForTarget("[data-tour='stats-modal-campaign']"),
     data: {
@@ -398,8 +398,8 @@ const statsSteps: Step[] = [
   },
   {
     target: "[data-tour='stats-modal-goals']",
-    title: "Gols e saldo",
-    content: "Registre gols marcados e sofridos. Esses valores alimentam saldo, média de gols e leitura da campanha.",
+    title: "Goals & difference",
+    content: "Record goals scored and conceded. These values feed goal difference, goal average and campaign analysis.",
     placement: "top",
     before: waitForTarget("[data-tour='stats-modal-goals']"),
     data: {
@@ -408,8 +408,8 @@ const statsSteps: Step[] = [
   },
   {
     target: "[data-tour='stats-modal-result']",
-    title: "Resultado final",
-    content: "Em ligas, informe a posição; em copas, selecione a fase atingida ou título conquistado.",
+    title: "Final result",
+    content: "For leagues, enter the position; for cups, select the round reached or title won.",
     placement: "top",
     before: waitForTarget("[data-tour='stats-modal-result']"),
     data: {
@@ -418,8 +418,8 @@ const statsSteps: Step[] = [
   },
   {
     target: "[data-tour='stats-modal-cancel']",
-    title: "Fechar sem alterar",
-    content: "No tutorial, vamos fechar sem salvar. Quando estiver atualizando de verdade, use Salvar estatísticas.",
+    title: "Close without changes",
+    content: "In the tutorial, we'll close without saving. When actually updating, use Save stats.",
     placement: "top",
     before: waitForTarget("[data-tour='stats-modal-cancel']"),
     after: clickAfterNext("[data-tour='stats-modal-cancel']"),
@@ -429,8 +429,8 @@ const statsSteps: Step[] = [
   },
   {
     target: "[data-tour='stats-rankings']",
-    title: "Rankings individuais",
-    content: "Alterne entre artilharia, assistências, uso e contribuições para ver os destaques.",
+    title: "Individual rankings",
+    content: "Switch between goals, assists, appearances and contributions to see the highlights.",
     placement: "top",
   },
 ];
@@ -438,20 +438,20 @@ const statsSteps: Step[] = [
 const historySteps: Step[] = [
   {
     target: "[data-tour='history-hero']",
-    title: "História da carreira",
-    content: "A visão histórica resume legado, títulos, clubes e melhores campanhas do save.",
+    title: "Career history",
+    content: "The history view summarises legacy, titles, clubs and best campaigns in the save.",
     placement: "bottom",
   },
   {
     target: "[data-tour='history-clubs']",
-    title: "Clubes gerenciados",
-    content: "Acompanhe sua trajetória por clube, temporadas e períodos de comando.",
+    title: "Managed clubs",
+    content: "Track your journey by club, seasons and tenure periods.",
     placement: "right",
   },
   {
     target: "[data-tour='history-trophies']",
-    title: "Vitrine de títulos",
-    content: "Todos os troféus registrados ficam organizados aqui para consulta rápida.",
+    title: "Trophy cabinet",
+    content: "All registered trophies are organised here for quick reference.",
     placement: "left",
   },
 ];
@@ -459,20 +459,20 @@ const historySteps: Step[] = [
 const changeClubSteps: Step[] = [
   {
     target: "[data-tour='change-club-hero']",
-    title: "Mudança de clube",
-    content: "Compare o clube atual com o próximo destino antes de assinar contrato.",
+    title: "Club change",
+    content: "Compare the current club with the next destination before signing.",
     placement: "bottom",
   },
   {
     target: "[data-tour='change-club-filters']",
-    title: "Busca e filtros",
-    content: "Filtre por liga ou pesquise para encontrar rapidamente o próximo projeto.",
+    title: "Search & filters",
+    content: "Filter by league or search to quickly find the next project.",
     placement: "bottom",
   },
   {
     target: "[data-tour='change-club-list']",
-    title: "Lista de clubes",
-    content: "Escolha um clube para abrir a proposta e definir orçamento e competição inicial.",
+    title: "Club list",
+    content: "Choose a club to open the proposal and set the budget and initial competition.",
     placement: "top",
   },
 ];
@@ -492,14 +492,14 @@ const getHubTutorialSteps = (pathname: string): Step[] => [
   ...(routeSteps[pathname] ?? dashboardSteps),
   {
     target: "[data-tour='hub-new-season']",
-    title: "Avançar temporada",
-    content: "Quando fechar o ano, use este atalho para iniciar a próxima temporada com novo orçamento.",
+    title: "Advance season",
+    content: "When the year ends, use this shortcut to start the next season with a new budget.",
     placement: "right",
   },
   {
     target: "[data-tour='hub-help']",
-    title: "Tutorial sempre disponível",
-    content: "Mesmo pulando o convite inicial, este botão continua nas telas para reabrir o tutorial.",
+    title: "Tutorial always available",
+    content: "Even if you skip the initial invite, this button stays on screen to reopen the tutorial.",
     placement: "bottom",
   },
 ];

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2, Trophy, ArrowLeft, BarChart2, Calendar, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/shared/ui/Logo";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { extractErrorMessage } from "@/shared/api/client";
+import type React from "react";
 
 // ─── Decorative left panel ───────────────────────────────────────────────────
 
@@ -15,6 +17,8 @@ const mockSaves = [
 ];
 
 function LeftPanel() {
+  const { t } = useTranslation();
+
   return (
     <div className="hidden lg:flex lg:w-[52%] flex-col justify-between relative overflow-hidden border-r border-border/30 p-12">
       {/* Ambient glows */}
@@ -41,13 +45,13 @@ function LeftPanel() {
       {/* Headline + cards */}
       <div className="relative space-y-8">
         <div className="space-y-3">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">Bem-vindo de volta</p>
+          <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">{t("auth.login.welcomeBack")}</p>
           <h1 className="font-display text-5xl font-bold leading-[1.08] tracking-tight">
-            Seus saves<br />
-            <span className="text-glow-primary text-primary">estão esperando.</span>
+            Your saves<br />
+            <span className="text-glow-primary text-primary">are waiting.</span>
           </h1>
           <p className="max-w-sm font-body text-base leading-relaxed text-muted-foreground">
-            Continue de onde parou. Temporadas, elencos e conquistas — tudo exatamente onde você deixou.
+            {t("auth.login.subheadline")}
           </p>
         </div>
 
@@ -66,7 +70,7 @@ function LeftPanel() {
                 <div className="font-display text-sm font-bold leading-none">{save.club}</div>
                 <div className="mt-0.5 flex items-center gap-1.5 font-body text-xs text-muted-foreground">
                   <Calendar size={10} />
-                  <span>Temporada {save.season}</span>
+                  <span>{t("auth.login.season", { season: save.season })}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-right">
@@ -86,7 +90,7 @@ function LeftPanel() {
 
       {/* Trust badges */}
       <div className="relative flex flex-wrap gap-2">
-        {["Dados na nuvem", "Sessão segura", "Grátis para começar"].map((label) => (
+        {[t("auth.login.trustBadges.cloud"), t("auth.login.trustBadges.secure"), t("auth.login.trustBadges.free")].map((label) => (
           <span
             key={label}
             className="rounded-full border border-border/50 bg-background/40 px-3 py-1.5 font-body text-xs text-muted-foreground backdrop-blur"
@@ -102,6 +106,7 @@ function LeftPanel() {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
@@ -114,12 +119,12 @@ export default function Login() {
     try {
       await signIn({ email, password });
       navigate("/app", { replace: true });
-      toast.success("Login realizado com sucesso!");
+      toast.success(t("auth.login.success"));
     } catch (error: any) {
       const status = error?.status || error?.response?.status;
       const message =
         status === 401
-          ? "E-mail ou senha incorretos. Verifique seus dados e tente novamente."
+          ? t("auth.login.wrongCredentials")
           : extractErrorMessage(error);
       toast.error(message, { duration: 5000 });
     } finally {
@@ -141,7 +146,7 @@ export default function Login() {
           </div>
           <Link to="/" className="flex items-center gap-1 font-body text-xs text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft size={12} />
-            Início
+            {t("auth.login.back")}
           </Link>
         </div>
 
@@ -152,14 +157,14 @@ export default function Login() {
             className="hidden items-center gap-1.5 font-body text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground lg:flex"
           >
             <ArrowLeft size={12} />
-            Voltar ao início
+            {t("auth.login.backToHome")}
           </Link>
 
           {/* Header */}
           <div>
-            <h2 className="font-display text-3xl font-bold">Entrar</h2>
+            <h2 className="font-display text-3xl font-bold">{t("auth.login.title")}</h2>
             <p className="mt-1.5 font-body text-sm leading-relaxed text-muted-foreground">
-              Acesse sua conta para continuar sua carreira.
+              {t("auth.login.subtitle")}
             </p>
           </div>
 
@@ -167,7 +172,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1.5 block font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                E-mail
+                {t("auth.login.email")}
               </label>
               <input
                 type="email"
@@ -181,13 +186,13 @@ export default function Login() {
 
             <div>
               <label className="mb-1.5 block font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Senha
+                {t("auth.login.password")}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Sua senha"
+                placeholder={t("auth.login.passwordPlaceholder")}
                 className="auth-input w-full rounded-xl border border-border bg-card/40 px-4 py-3 font-body text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 required
               />
@@ -199,22 +204,22 @@ export default function Login() {
               className="landing-btn-primary mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-display text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? <Loader2 size={15} className="animate-spin" /> : null}
-              Entrar na conta
+              {t("auth.login.submit")}
             </button>
           </form>
 
           {/* Divider */}
           <div className="relative flex items-center gap-3">
             <div className="h-px flex-1 bg-border/60" />
-            <span className="font-body text-xs text-muted-foreground/50">ou</span>
+            <span className="font-body text-xs text-muted-foreground/50">{t("auth.login.or")}</span>
             <div className="h-px flex-1 bg-border/60" />
           </div>
 
           {/* Footer */}
           <p className="text-center font-body text-sm text-muted-foreground">
-            Ainda não tem conta?{" "}
+            {t("auth.login.noAccount")}{" "}
             <Link to="/register" className="font-semibold text-primary transition-opacity hover:opacity-80">
-              Criar conta grátis
+              {t("auth.login.createFree")}
             </Link>
           </p>
         </div>
