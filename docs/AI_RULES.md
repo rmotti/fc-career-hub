@@ -183,4 +183,4 @@ Match the API contract exactly (see API's `CLAUDE.md`):
 - API surface, auth, and units confirmed against [`docs/career-hub-api/CLAUDE.md`](career-hub-api/CLAUDE.md) and `src/shared/api/client.ts`.
 - Plan tiers confirmed in `src/shared/config/plans.ts` and Prisma `UserPlan` enum.
 
-_Last verified against commit `d6c46c1`._
+_Last verified against commit `e29dd53`._

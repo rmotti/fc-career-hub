@@ -5,7 +5,7 @@
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white)
 
-FC Career Hub is a web app for managing and tracking FC Career Mode saves. It lets users create multiple careers, manage squads, build lineups, register transfers, track season statistics, and preserve the long-term history of a manager save.
+FC Career Hub is a web app for managing and tracking FC Career Mode saves. It lets users create multiple careers, manage squads, build lineups, register transfers, track season statistics, scout new players, and preserve the long-term history of a manager save.
 
 ---
 
@@ -23,6 +23,8 @@ FC Career Hub is a web app for managing and tracking FC Career Mode saves. It le
 | Charts | Recharts |
 | Icons | Lucide React |
 | Notifications | Sonner |
+| Internationalisation | i18next + react-i18next |
+| Drag-and-drop | @dnd-kit/core |
 | Product tour | React Joyride |
 | Tests | Vitest + Testing Library + Playwright |
 | HTTP client | Native Fetch API |
@@ -78,7 +80,7 @@ VITE_API_URL=https://your-api.com
 - Protect app routes with `ProtectedRoute`.
 - Keep login/register unavailable to already-authenticated users with `PublicOnlyRoute`.
 
-### Save Selection And Creation
+### Save Selection and Creation
 
 - View existing career saves with club and season context.
 - Create a new career by choosing save name, league, starting club, initial budget, and optional European competition.
@@ -91,7 +93,7 @@ VITE_API_URL=https://your-api.com
 - After the first save is created, users see a modal asking whether they want to start the tour or skip it.
 - Skipping the first prompt does not remove the help button.
 - The hub tour is route-aware: Dashboard, Squad, Field, Transfers, Stats, History, and Change Club each have their own steps.
-- Tour logic, styling, route step configuration, and visible-target resolution live in `src/components/tutorial`.
+- Tour logic, styling, route step configuration, and visible-target resolution live in `src/features/tutorial/`.
 - Screens only expose stable `data-tour` anchors for Joyride to target.
 
 ### Dashboard
@@ -126,6 +128,14 @@ VITE_API_URL=https://your-api.com
 - Add purchased players to the squad and complete their profile.
 - Filter historical transfers by type, season, and value order.
 
+### Scout (PRO / PREMIUM)
+
+- AI-powered player search via a chat interface backed by an MCP server.
+- Advanced filter search across the full player database.
+- Shortlist to bookmark and compare candidates.
+- Query archive for previous searches.
+- Playbooks: configurable weight profiles that shape how `fitScore` is computed per candidate.
+
 ### Season Statistics
 
 - Team campaign summary by season.
@@ -134,7 +144,7 @@ VITE_API_URL=https://your-api.com
 - Individual rankings for goals, assists, goal contributions, clean sheets, and appearances.
 - Season selector in the hub header when viewing stats.
 
-### End Of Season
+### End of Season
 
 - Start a new season from the hub sidebar.
 - Set the next-season budget and optional European competition.
@@ -175,112 +185,122 @@ VITE_API_URL=https://your-api.com
 | `/stats` | `Stats` | Season statistics |
 | `/history` | `History` | Career legacy and trophies |
 | `/change-club` | `ChangeClub` | Club switching flow |
+| `/scout/ia` | `Scout` (AI) | AI-powered player search |
+| `/scout/filtros` | `Scout` (Filters) | Advanced filter search |
+| `/scout/shortlist` | `Scout` (Shortlist) | Saved candidates |
+| `/scout/consultas` | `Scout` (Archive) | Previous queries |
+| `/scout/playbooks` | `Playbooks` | Scoring weight profiles |
 | `*` | `NotFound` | 404 fallback |
 
-All routes from `/app` onward are protected and require an authenticated user.
+Routes from `/app` onward require an authenticated user. Scout routes (`/scout/*`) additionally require a PRO or PREMIUM plan.
 
 ---
 
 ## Project Structure
 
+The frontend follows **Feature-Sliced Design (FSD)**. Import direction is strict: `app → pages → widgets → features → entities → shared`. Lower layers must not import from higher ones.
+
 ```text
 src/
-├── App.tsx
-├── main.tsx
-├── index.css
-├── components/
-│   ├── AuthGuards.tsx
-│   ├── AuthHubShowcase.tsx
-│   ├── AuthPageLayout.tsx
-│   ├── AuthStatusScreen.tsx
-│   ├── Logo.tsx
-│   ├── NavLink.tsx
-│   ├── SaveSelect.tsx
-│   ├── hub/
-│   │   ├── ChangeClubScreen.tsx
-│   │   ├── DashboardScreen.tsx
-│   │   ├── FieldScreen.tsx
-│   │   ├── HistoryScreen.tsx
-│   │   ├── HubHeader.tsx
-│   │   ├── HubSidebar.tsx
-│   │   ├── SquadScreen.tsx
-│   │   ├── StatCard.tsx
-│   │   ├── StatsScreen.tsx
-│   │   └── TransfersScreen.tsx
-│   ├── modals/
-│   │   ├── NewSeasonModal.tsx
-│   │   ├── PlayerModal.tsx
-│   │   ├── PlayerViewModal.tsx
-│   │   ├── StatsModal.tsx
-│   │   └── TransferModal.tsx
-│   ├── tutorial/
-│   │   ├── HubTutorial.tsx
-│   │   ├── SaveSelectTutorial.tsx
-│   │   ├── TutorialHelpButton.tsx
-│   │   ├── TutorialTooltip.tsx
-│   │   ├── hubTutorialSteps.ts
-│   │   ├── saveSelectTutorialSteps.ts
-│   │   ├── tutorialStyles.ts
-│   │   └── tutorialUtils.ts
-│   └── ui/
-├── contexts/
-│   ├── AuthContext.tsx
-│   ├── auth-context-core.ts
-│   └── useAuth.ts
-├── hooks/
-│   ├── useClubStints.ts
-│   ├── useClubs.ts
-│   ├── useCompetitions.ts
-│   ├── useFinancialSnapshot.ts
-│   ├── usePlayers.ts
-│   ├── useSaves.ts
-│   ├── useTeamStats.ts
-│   ├── useTransfers.ts
-│   └── useTrophies.ts
-├── lib/
-│   ├── auth-storage.ts
-│   ├── playerBadge.ts
-│   └── utils.ts
+├── app/
+│   ├── providers/        # QueryClient, AuthProvider, TooltipProvider, toasters
+│   ├── router/           # All routes and guards
+│   └── styles/           # (global CSS lives in src/index.css)
 ├── pages/
-│   ├── HubLayout.tsx
-│   ├── Index.tsx
 │   ├── Landing.tsx
 │   ├── Login.tsx
 │   ├── Register.tsx
-│   └── hub/
-├── services/
-│   └── api.ts
-└── utils/
-    ├── competitions.ts
-    ├── countries.ts
-    ├── currency.ts
-    ├── finance.ts
-    ├── leagues.ts
-    ├── playerPositions.ts
-    ├── playerTransferStatus.ts
-    └── rounding.ts
+│   ├── Pricing.tsx
+│   ├── Index.tsx          # Save selection
+│   ├── Unauthorized.tsx
+│   ├── NotFound.tsx
+│   └── hub/               # One file per protected hub route
+│       ├── Dashboard.tsx
+│       ├── Squad.tsx
+│       ├── Field.tsx
+│       ├── Transfers.tsx
+│       ├── Stats.tsx
+│       ├── History.tsx
+│       ├── ChangeClub.tsx
+│       ├── Scout.tsx
+│       └── Playbooks.tsx
+├── widgets/
+│   ├── hub-layout/        # Sidebar + header + outlet
+│   └── auth-layout/
+├── features/
+│   ├── auth/
+│   ├── change-club/
+│   ├── dashboard/
+│   ├── field/
+│   ├── history/
+│   ├── new-season/
+│   ├── playbooks/
+│   ├── saves/
+│   ├── scout/
+│   ├── squad/
+│   ├── stats/
+│   ├── transfers/
+│   └── tutorial/
+├── entities/
+│   └── player/            # Typed projections, pure derivations, badges
+├── shared/
+│   ├── api/client.ts      # Single HTTP client + typed API surface
+│   ├── ui/                # shadcn/ui primitives (49 components)
+│   ├── lib/               # Pure helpers (currency, finance, positions, …)
+│   ├── config/            # Runtime constants (plans.ts)
+│   ├── hooks/             # use-mobile, use-toast
+│   └── types/
+└── i18n/
+    ├── config.ts           # i18next initialisation
+    └── locales/
+        ├── en.json          # Active locale (English)
+        └── pt-BR.json       # Stub (incomplete)
 ```
+
+Each feature follows the internal convention:
+
+```text
+features/<name>/
+├── api/        # (optional) endpoint wrappers beyond shared/api/client.ts
+├── model/      # hooks (useX), context, pure logic
+├── lib/        # feature-local helpers
+├── ui/         # components
+└── index.ts    # single public barrel — only this is imported externally
+```
+
+---
+
+## Internationalisation
+
+All user-facing strings go through **i18next**. The active locale is English (`en`). A PT-BR stub exists but is not yet surfaced in the UI.
+
+```tsx
+import { useTranslation } from "react-i18next";
+
+const { t } = useTranslation();
+// t("squad.releasePlayer")
+```
+
+Key naming convention: `<module>.<camelCaseKey>`. Add new keys to `src/i18n/locales/en.json`.
 
 ---
 
 ## Product Tour Architecture
 
-The tour is implemented with `react-joyride`.
-
-### Files
+The tour is implemented with `react-joyride`. All logic lives in `src/features/tutorial/`.
 
 | File | Responsibility |
 | --- | --- |
-| `HubTutorial.tsx` | Controls the route-aware hub tour and first-save prompt |
-| `SaveSelectTutorial.tsx` | Controls the save selection screen tour |
-| `TutorialHelpButton.tsx` | Shared `?` button |
-| `TutorialTooltip.tsx` | Custom Joyride tooltip UI |
-| `hubTutorialSteps.ts` | Route-specific hub tour steps |
-| `saveSelectTutorialSteps.ts` | Save selection tour steps |
-| `tutorialStyles.ts` | Shared Joyride styles, locale, and options |
-| `tutorialUtils.ts` | Visible-element resolution before starting a tour |
+| `ui/HubTutorial.tsx` | Route-aware hub tour and first-save prompt |
+| `ui/SaveSelectTutorial.tsx` | Save selection screen tour |
+| `ui/TutorialHelpButton.tsx` | Shared `?` button |
+| `ui/TutorialTooltip.tsx` | Custom Joyride tooltip UI |
+| `model/hubTutorialSteps.ts` | Route-specific hub tour steps |
+| `model/saveSelectTutorialSteps.ts` | Save selection tour steps |
+| `model/tutorialStyles.ts` | Shared Joyride styles, locale, and options |
+| `model/tutorialUtils.ts` | Visible-element resolution before starting a tour |
 
-### Adding A New Hub Step
+### Adding a New Hub Step
 
 1. Add a stable `data-tour` attribute to the screen element:
 
@@ -288,7 +308,7 @@ The tour is implemented with `react-joyride`.
 <section data-tour="my-feature-panel">...</section>
 ```
 
-2. Add the step to the route in `src/components/tutorial/hubTutorialSteps.ts`:
+2. Add the step to the relevant route in `src/features/tutorial/model/hubTutorialSteps.ts`:
 
 ```ts
 {
@@ -299,45 +319,7 @@ The tour is implemented with `react-joyride`.
 }
 ```
 
-3. Keep tour behavior inside `src/components/tutorial`. Screen components should only expose anchors.
-
-The tour filters targets at runtime and only starts with elements that are visible in the viewport, avoiding hidden mobile/desktop duplicates.
-
----
-
-## Data Model Overview
-
-### `ApiSave`
-
-Career save with name, current season/year, budget, available seasons, and the current club stint.
-
-### `ApiClubStint`
-
-A manager stint at a club, including start/end season and whether it is the active club.
-
-### `ApiPlayer`
-
-Squad player with identity, nationality, shirt number, position, alternative positions, OVR, potential, status, salary, market value, and stats.
-
-### `ApiPlayerSeasonStats`
-
-Player season statistics such as matches, goals, assists, clean sheets, cards, and goal contributions.
-
-### `ApiTeamStats`
-
-Team statistics by competition and season, including wins, draws, losses, goals for/against, league position, and cup result.
-
-### `ApiTransfer`
-
-Transfer record with player, type, origin/destination clubs, fee, season, and optional linked player ID.
-
-### `ApiTrophy`
-
-Trophy record with competition, year, season, and club context.
-
-### `ApiCompetition`
-
-Competition metadata such as name and type.
+The tour filters targets at runtime and only starts with elements visible in the viewport, avoiding hidden mobile/desktop duplicates.
 
 ---
 
@@ -351,15 +333,15 @@ Competition metadata such as name and type.
   - `destructive`: losses, removals, dangerous states
   - `warning`: caution and draws
   - `gold`: trophies and legacy moments
-- Reusable shadcn/ui components live in `src/components/ui`.
+- Reusable shadcn/ui components live in `src/shared/ui/`.
 - Prefer Lucide icons for icon buttons and compact controls.
 
 ---
 
-## Notes For Contributors
+## Notes for Contributors
 
-- Prefer existing app patterns before introducing new abstractions.
-- Keep feature logic close to its domain folder.
-- Keep tour behavior centralized in `src/components/tutorial`.
-- Avoid changing unrelated files while implementing a feature.
+- This project uses Feature-Sliced Design. Keep new code inside the appropriate layer and feature folder.
+- Import features only via their `index.ts` barrel — never reach into `features/X/ui/Foo` directly from outside.
+- All user-facing strings must go through `t()` from `react-i18next`. Add keys to `src/i18n/locales/en.json`.
 - Run `npm run type-check` and `npm run build` before shipping UI changes.
+- For detailed architecture, API contracts, and module-level docs see [`docs/`](docs/).
