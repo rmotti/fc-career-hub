@@ -269,7 +269,7 @@ const ATTRIBUTE_FILTER_GROUPS: AttributeFilterGroupConfig[] = [
     icon: Footprints,
     filters: [
       { field: "movementAcceleration", label: "Acceleration", min: 1, max: 99 },
-      { field: "movementSprint speedSpeed", label: "Sprint speed speed", min: 1, max: 99 },
+      { field: "movementSprintSpeed", label: "Sprint speed", min: 1, max: 99 },
       { field: "movementAgility", label: "Agility", min: 1, max: 99 },
       { field: "movementReactions", label: "Reactions", min: 1, max: 99 },
       { field: "movementBalance", label: "Balance", min: 1, max: 99 },
@@ -455,7 +455,7 @@ const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
     icon: Footprints,
     metrics: [
       { label: "Acceleration", render: (player) => formatRating(player.movementAcceleration), score: (player) => player.movementAcceleration, better: "higher" },
-      { label: "Sprint speed speed", render: (player) => formatRating(player.movementSprint speedSpeed), score: (player) => player.movementSprint speedSpeed, better: "higher" },
+      { label: "Sprint speed", render: (player) => formatRating(player.movementSprintSpeed), score: (player) => player.movementSprintSpeed, better: "higher" },
       { label: "Agility", render: (player) => formatRating(player.movementAgility), score: (player) => player.movementAgility, better: "higher" },
       { label: "Reactions", render: (player) => formatRating(player.movementReactions), score: (player) => player.movementReactions, better: "higher" },
       { label: "Balance", render: (player) => formatRating(player.movementBalance), score: (player) => player.movementBalance, better: "higher" },
@@ -3946,7 +3946,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
           icon: Footprints,
           attributes: [
             { label: "Acceleration", value: player.movementAcceleration },
-            { label: "Sprint speed", value: player.movementSprint speedSpeed },
+            { label: "Sprint speed", value: player.movementSprintSpeed },
             { label: "Agility", value: player.movementAgility },
             { label: "Reactions", value: player.movementReactions },
             { label: "Balance", value: player.movementBalance },
