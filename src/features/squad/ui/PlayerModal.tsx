@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { getBadge } from "@/entities/player/model/playerBadge";
 import Flag from "react-world-flags";
 import { COUNTRIES } from "@/shared/lib/countries";
-import { PLAYER_POSITIONS, getAlternativePositions, normalizeAlternativePositions } from "@/shared/lib/playerPositions";
+import { PLAYER_POSITIONS, getAlternativePositions, normalizeAlternativePositions, formatPosition } from "@/shared/lib/playerPositions";
 
 interface Props {
   open: boolean;
@@ -243,7 +243,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                     <SelectContent className="border-border bg-card text-foreground shadow-xl shadow-black/30">
                       {PLAYER_POSITIONS.map((pos) => (
                         <SelectItem key={pos} value={pos} className="font-semibold focus:bg-primary/10 focus:text-primary">
-                          {pos}
+                          {formatPosition(pos)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -297,7 +297,7 @@ const PlayerModal = ({ open, onOpenChange, player, onSave, saveId }: Props) => {
                           }`}
                           aria-pressed={isSelected}
                         >
-                          {pos}
+                          {formatPosition(pos)}
                         </button>
                       );
                     })}

@@ -26,7 +26,7 @@ import {
 } from "@/shared/lib/currency";
 import { roundToSingleDecimal } from "@/shared/lib/rounding";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { getAlternativePositions } from "@/shared/lib/playerPositions";
+import { getAlternativePositions, formatPosition } from "@/shared/lib/playerPositions";
 
 interface Props {
   open: boolean;
@@ -93,7 +93,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
   const badge = getBadge(player);
   const positionColor = POSITION_COLORS[player.position] ?? "bg-muted text-muted-foreground";
   const alternativePositions = getAlternativePositions(player);
-  const alternativePositionsLabel = alternativePositions.length > 0 ? alternativePositions.join(", ") : "—";
+  const alternativePositionsLabel = alternativePositions.length > 0 ? alternativePositions.map(formatPosition).join(", ") : "—";
   const statusLabel = STATUS_LABELS[player.status] ?? player.status;
   const statusColor = STATUS_COLORS[player.status] ?? STATUS_COLORS.Role;
 
@@ -120,7 +120,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
               <div className="pointer-events-none absolute inset-y-0 right-0 w-40 bg-primary/5" />
               <div className="relative flex items-start gap-4">
                 <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border text-lg font-display font-bold ${positionColor}`}>
-                  {player.position}
+                  {formatPosition(player.position)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -185,7 +185,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Management data</p>
             </div>
             <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
-              <PlayerDetail icon={Shirt} label="Position" value={player.position} badgeClass={positionColor} />
+              <PlayerDetail icon={Shirt} label="Position" value={formatPosition(player.position)} badgeClass={positionColor} />
               <PlayerDetail icon={Shirt} label="Alternatives" value={alternativePositionsLabel} />
               <PlayerDetail icon={FlagIcon} label="Nation" value={player.nation ?? "—"} flag={player.nation} />
               <PlayerDetail icon={BadgeEuro} label="Salary" value={player.salary != null ? `${formatCurrencyInThousands(player.salary)}/wk` : "—"} />

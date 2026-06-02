@@ -7,6 +7,7 @@ import { useTrophies } from "@/features/history/model/useTrophies";
 import { useFinancialSnapshot } from "@/features/dashboard/model/useFinancialSnapshot";
 import { useEuropeanCompetitions } from "@/features/change-club/model/useCompetitions";
 import { CUP_LABELS, formatTrophyLabel, getLeagueStats } from "@/shared/lib/competitions";
+import { formatPosition } from "@/shared/lib/playerPositions";
 import { formatCurrency, parseBudgetInMillionsInput } from "@/shared/lib/currency";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 
@@ -390,7 +391,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                             i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                           }`}>{i + 1}</span>
                           <span className="text-sm font-medium">{p.name}</span>
-                          <span className="text-xs text-muted-foreground">{p.position}</span>
+                          <span className="text-xs text-muted-foreground">{formatPosition(p.position)}</span>
                         </div>
                         <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals} goals</span>
                       </div>
@@ -414,7 +415,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                             i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                           }`}>{i + 1}</span>
                           <span className="text-sm font-medium">{p.name}</span>
-                          <span className="text-xs text-muted-foreground">{p.position}</span>
+                          <span className="text-xs text-muted-foreground">{formatPosition(p.position)}</span>
                         </div>
                         <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.assists} ast.</span>
                       </div>

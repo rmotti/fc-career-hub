@@ -39,7 +39,7 @@ import { getBadge, type SquadRole } from "@/entities/player/model/playerBadge";
 import Flag from "react-world-flags";
 import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/shared/lib/currency";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { getAlternativePositions, playerCanPlayPosition } from "@/shared/lib/playerPositions";
+import { getAlternativePositions, playerCanPlayPosition, formatPosition } from "@/shared/lib/playerPositions";
 
 interface Props {
   saveId: string;
@@ -758,10 +758,10 @@ function PlayerTableCells({ columns, player, squadRole }: PlayerTableCellsProps)
           return (
             <td key={col.key} className="px-4 py-3">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className={`rounded px-2 py-0.5 text-xs font-bold ${positionColor[player.position] ?? "bg-muted text-muted-foreground"}`}>{player.position}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-bold ${positionColor[player.position] ?? "bg-muted text-muted-foreground"}`}>{formatPosition(player.position)}</span>
                 {alternativePositions.map((position) => (
                   <span key={position} className="rounded border border-border bg-muted/35 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                    {position}
+                    {formatPosition(position)}
                   </span>
                 ))}
               </div>
@@ -872,7 +872,7 @@ function SquadHighlight({ label, player, value, icon: Icon, tone, emptyText, emp
       </div>
       <p className="truncate text-sm font-semibold text-foreground">{player?.name ?? emptyText}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {player ? `${[player.position, ...alternativePositions].join("/")} · ${player.ovr} OVR` : emptyDetail}
+        {player ? `${[player.position, ...alternativePositions].map(formatPosition).join("/")} · ${player.ovr} OVR` : emptyDetail}
       </p>
     </div>
   );

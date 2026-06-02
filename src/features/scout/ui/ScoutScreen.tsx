@@ -62,7 +62,7 @@ import {
   type Fc26PlayerListParams,
   type PlayerPosition,
 } from "@/shared/api/client";
-import { PLAYER_POSITIONS } from "@/shared/lib/playerPositions";
+import { PLAYER_POSITIONS, POSITION_LABELS, formatPosition } from "@/shared/lib/playerPositions";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { useJuniorChat, type ConversationEntry } from "@/features/scout/model/useJuniorChat";
@@ -157,21 +157,6 @@ interface ShortlistPositionGroup {
 type ScoutSortBy = NonNullable<Fc26PlayerFilters["sortBy"]>;
 type ScoutSortOrder = NonNullable<Fc26PlayerFilters["sortOrder"]>;
 
-const POSITION_LABELS: Record<PlayerPosition, string> = {
-  GOL: "Goalkeeper",
-  ZAG: "Centre Back",
-  LE: "Left Back",
-  LD: "Right Back",
-  VOL: "Defensive Mid",
-  MC: "Central Mid",
-  ME: "Left Mid",
-  MD: "Right Mid",
-  MEI: "Attacking Mid",
-  PE: "Left Wing",
-  PD: "Right Wing",
-  SA: "Second Striker",
-  ATA: "Striker",
-};
 
 const LIMIT_OPTIONS = ["20", "40", "60", "100"];
 
@@ -2775,7 +2760,7 @@ function PositionFilterGrid({
                   : "border-border bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
               }`}
             >
-              {position}
+              {formatPosition(position)}
             </button>
           );
         })}
@@ -3886,7 +3871,7 @@ function PositionBadge({ position }: { position: PlayerPosition }) {
       title={POSITION_LABELS[position]}
       className="inline-flex h-6 items-center rounded border border-accent/20 bg-accent/10 px-2 font-display text-xs font-bold text-accent"
     >
-      {position}
+      {formatPosition(position)}
     </span>
   );
 }

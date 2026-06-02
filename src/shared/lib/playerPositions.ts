@@ -2,6 +2,27 @@
 
 export const PLAYER_POSITIONS = ["GOL", "LD", "LE", "ZAG", "VOL", "MC", "ME", "MD", "MEI", "PE", "PD", "SA", "ATA"] as const satisfies readonly PlayerPosition[];
 
+// Display aliases: internal values remain in Portuguese (API contract), labels are English
+export const POSITION_LABELS: Record<PlayerPosition, string> = {
+  GOL: "GK",
+  LD: "RB",
+  LE: "LB",
+  ZAG: "ZAG",
+  VOL: "CDM",
+  MC: "CM",
+  MEI: "CAM",
+  ME: "LM",
+  MD: "RM",
+  PE: "LW",
+  PD: "RW",
+  SA: "CF",
+  ATA: "ST",
+};
+
+export function formatPosition(position: PlayerPosition): string {
+  return POSITION_LABELS[position] ?? position;
+}
+
 export function normalizeAlternativePositions(
   positions: readonly string[] | undefined,
   mainPosition?: string,

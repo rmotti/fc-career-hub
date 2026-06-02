@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { usePlayers } from "@/features/squad/model/usePlayers";
 import { type ApiPlayer } from "@/shared/api/client";
-import { getAlternativePositions, playerCanPlayPosition } from "@/shared/lib/playerPositions";
+import { getAlternativePositions, playerCanPlayPosition, formatPosition } from "@/shared/lib/playerPositions";
 import Flag from "react-world-flags";
 import {
   Select,
@@ -512,7 +512,7 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
             <Plus size={compact ? 11 : 13} className="text-white/25" />
             {showPosition && (
               <span className="text-[7px] font-display tracking-widest text-white/25 leading-none">
-                {position}
+                {formatPosition(position)}
               </span>
             )}
           </button>
@@ -534,7 +534,7 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
             }
             {showPosition && isThisValid && (
               <span className={`text-[8px] font-display tracking-widest leading-none ${isOver ? "text-primary/80" : "text-primary/40"}`}>
-                {position}
+                {formatPosition(position)}
               </span>
             )}
           </div>
@@ -542,7 +542,7 @@ const Slot = ({ slotId, position, player, isValid, isDraggingAny, isSelected, is
       </div>
       {showPosition && (
         <span className="mt-1 text-[8px] font-display font-bold tracking-widest text-white/35 leading-none">
-          {position}
+          {formatPosition(position)}
         </span>
       )}
     </div>
@@ -1177,7 +1177,7 @@ const FieldScreen = ({ saveId }: Props) => {
                           }`}
                         >
                           <span className={`max-w-20 truncate text-[9px] font-display font-bold px-1.5 py-0.5 rounded tracking-widest shrink-0 ${c.badge}`}>
-                            {p.position}
+                            {formatPosition(p.position)}
                           </span>
                           <span className="flex-1 text-sm text-foreground/90 font-medium truncate">{p.name}</span>
                           <span className={`text-sm font-display font-bold shrink-0 ${c.text}`}>{p.ovr}</span>

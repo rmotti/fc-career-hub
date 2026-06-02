@@ -27,6 +27,7 @@ import { usePlayers } from "@/features/squad/model/usePlayers";
 import { useTeamStats, useUpdateTeamStats } from "@/features/stats/model/useTeamStats";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import type { ApiPlayer, ApiTeamStats } from "@/shared/api/client";
+import { formatPosition } from "@/shared/lib/playerPositions";
 import {
   CUP_LABELS,
   getAggregateTeamStats,
@@ -162,7 +163,7 @@ function PlayerSpotlight({ player, totalGoals }: PlayerSpotlightProps) {
       </div>
       <p className="truncate font-display text-2xl font-bold leading-none text-foreground">{player.name}</p>
       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>{player.position}</span>
+        <span>{formatPosition(player.position)}</span>
         {player.nation && (
           <Flag
             code={player.nation}
@@ -430,7 +431,7 @@ function RankingPanel({ rankings, activeRanking, onActiveRankingChange, onOpenAl
           {active.players[0] ? (
             <>
               <p className="truncate font-display text-3xl font-bold leading-none text-foreground">{active.players[0].name}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{active.players[0].position}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{formatPosition(active.players[0].position)}</p>
               <p className={`mt-5 font-display text-5xl font-bold leading-none ${toneClass[active.tone]}`}>
                 {active.formatValue(active.getValue(active.players[0]))}
               </p>
@@ -451,7 +452,7 @@ function RankingPanel({ rankings, activeRanking, onActiveRankingChange, onOpenAl
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
                     <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <span>{player.position}</span>
+                      <span>{formatPosition(player.position)}</span>
                       {player.nation && (
                         <Flag
                           code={player.nation}
@@ -536,7 +537,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
                   </div>
                   <p className="truncate font-display text-lg font-bold text-foreground">{topPlayer.name}</p>
                   <div className="mt-2 flex items-end justify-between gap-3">
-                    <span className="text-xs text-muted-foreground">{topPlayer.position}</span>
+                    <span className="text-xs text-muted-foreground">{formatPosition(topPlayer.position)}</span>
                     <span className={`font-display text-3xl font-bold leading-none ${toneClass[active.tone]}`}>
                       {active.formatValue(active.getValue(topPlayer))}
                     </span>
@@ -568,7 +569,7 @@ function RankingFullDialog({ openKey, onOpenChange, meta }: RankingFullDialogPro
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-                        <span>{player.position}</span>
+                        <span>{formatPosition(player.position)}</span>
                         {player.nation && (
                           <Flag
                             code={player.nation}
