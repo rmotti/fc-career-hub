@@ -269,7 +269,7 @@ const ATTRIBUTE_FILTER_GROUPS: AttributeFilterGroupConfig[] = [
     icon: Footprints,
     filters: [
       { field: "movementAcceleration", label: "Acceleration", min: 1, max: 99 },
-      { field: "movementSprintSpeed", label: "Sprint speed", min: 1, max: 99 },
+      { field: "movementSprint speedSpeed", label: "Sprint speed speed", min: 1, max: 99 },
       { field: "movementAgility", label: "Agility", min: 1, max: 99 },
       { field: "movementReactions", label: "Reactions", min: 1, max: 99 },
       { field: "movementBalance", label: "Balance", min: 1, max: 99 },
@@ -455,7 +455,7 @@ const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
     icon: Footprints,
     metrics: [
       { label: "Acceleration", render: (player) => formatRating(player.movementAcceleration), score: (player) => player.movementAcceleration, better: "higher" },
-      { label: "Sprint speed", render: (player) => formatRating(player.movementSprintSpeed), score: (player) => player.movementSprintSpeed, better: "higher" },
+      { label: "Sprint speed speed", render: (player) => formatRating(player.movementSprint speedSpeed), score: (player) => player.movementSprint speedSpeed, better: "higher" },
       { label: "Agility", render: (player) => formatRating(player.movementAgility), score: (player) => player.movementAgility, better: "higher" },
       { label: "Reactions", render: (player) => formatRating(player.movementReactions), score: (player) => player.movementReactions, better: "higher" },
       { label: "Balance", render: (player) => formatRating(player.movementBalance), score: (player) => player.movementBalance, better: "higher" },
@@ -626,9 +626,9 @@ function buildFiltersFromDraft(draft: DraftFilters): AppliedScoutFilters | null 
   const positions = getUniquePositions(draft.primaryPositions, draft.secondaryPositions);
 
   if (!validateRange("OVR", minOvr, maxOvr)) return null;
-  if (!validateRange("Idade", minAge, maxAge)) return null;
-  if (!validateRange("Potencial", minPotential, maxPotential)) return null;
-  if (!validateRange("Valor de mercado", minMarketValue, maxMarketValue)) return null;
+  if (!validateRange("Age", minAge, maxAge)) return null;
+  if (!validateRange("Potential", minPotential, maxPotential)) return null;
+  if (!validateRange("Value de mercado", minMarketValue, maxMarketValue)) return null;
   if (!attributeFilters) return null;
 
   return {
@@ -785,7 +785,7 @@ function getFitScoreTitle(player: Pick<Fc26Player, "fitScore" | "fitConfidence" 
   const score = getVisibleFitScore(player);
   if (score === null) return undefined;
 
-  const confidence = player.fitConfidence ? FIT_CONFIDENCE_LABELS[player.fitConfidence] : "confiança não informada";
+  const confidence = player.fitConfidence ? FIT_CONFIDENCE_LABELS[player.fitConfidence] : "confidence not provided";
   const profileSize =
     typeof player.fitProfileSize === "number" && Number.isFinite(player.fitProfileSize)
       ? `, perfil com ${player.fitProfileSize} registro${player.fitProfileSize === 1 ? "" : "s"}`
@@ -957,37 +957,37 @@ function getFilterPositions(filters: AppliedScoutFilters) {
 function formatFilterRange(label: string, min?: number, max?: number) {
   if (typeof min === "number" && typeof max === "number") return `${label}: ${min}-${max}`;
   if (typeof min === "number") return `${label}: ${min}+`;
-  if (typeof max === "number") return `${label}: até ${max}`;
+  if (typeof max === "number") return `${label}: up to ${max}`;
   return null;
 }
 
 function formatMarketValueFilterRange(min?: number, max?: number) {
-  if (typeof min === "number" && typeof max === "number") return `Valor: ${formatMarketValue(min)}-${formatMarketValue(max)}`;
-  if (typeof min === "number") return `Valor: ${formatMarketValue(min)}+`;
-  if (typeof max === "number") return `Valor: até ${formatMarketValue(max)}`;
+  if (typeof min === "number" && typeof max === "number") return `Value: ${formatMarketValue(min)}-${formatMarketValue(max)}`;
+  if (typeof min === "number") return `Value: ${formatMarketValue(min)}+`;
+  if (typeof max === "number") return `Value: up to ${formatMarketValue(max)}`;
   return null;
 }
 
 function getSavedQueryChips(filters: AppliedScoutFilters) {
   const chips: string[] = [];
   const positions = getFilterPositions(filters);
-  const ageRange = formatFilterRange("Idade", filters.minAge, filters.maxAge);
+  const ageRange = formatFilterRange("Age", filters.minAge, filters.maxAge);
   const ovrRange = formatFilterRange("OVR", filters.minOvr, filters.maxOvr);
-  const potentialRange = formatFilterRange("Potencial", filters.minPotential, filters.maxPotential);
+  const potentialRange = formatFilterRange("Potential", filters.minPotential, filters.maxPotential);
   const marketValueRange = formatMarketValueFilterRange(filters.minMarketValue, filters.maxMarketValue);
 
   if (filters.primaryPositions?.length) chips.push(`Principal: ${filters.primaryPositions.join(", ")}`);
-  if (filters.secondaryPositions?.length) chips.push(`Secundária: ${filters.secondaryPositions.join(", ")}`);
-  if (!hasSplitPositionFilters(filters) && positions.length) chips.push(`Posições: ${positions.join(", ")}`);
-  if (filters.preferredFoot) chips.push(`Pé: ${formatPreferredFoot(filters.preferredFoot)}`);
+  if (filters.secondaryPositions?.length) chips.push(`Secondary: ${filters.secondaryPositions.join(", ")}`);
+  if (!hasSplitPositionFilters(filters) && positions.length) chips.push(`Positions: ${positions.join(", ")}`);
+  if (filters.preferredFoot) chips.push(`Foot: ${formatPreferredFoot(filters.preferredFoot)}`);
   if (ageRange) chips.push(ageRange);
   if (ovrRange) chips.push(ovrRange);
   if (potentialRange) chips.push(potentialRange);
   if (marketValueRange) chips.push(marketValueRange);
-  if (filters.objective && filters.objective !== "balanced") chips.push(`Objetivo: ${FIT_OBJECTIVE_LABELS[filters.objective]}`);
-  if (filters.nations?.length) chips.push(`Nações: ${filters.nations.slice(0, 3).join(", ")}${filters.nations.length > 3 ? "..." : ""}`);
-  if (filters.leagues?.length) chips.push(`Ligas: ${filters.leagues.slice(0, 2).join(", ")}${filters.leagues.length > 2 ? "..." : ""}`);
-  if (filters.clubs?.length) chips.push(`Clubes: ${filters.clubs.slice(0, 2).join(", ")}${filters.clubs.length > 2 ? "..." : ""}`);
+  if (filters.objective && filters.objective !== "balanced") chips.push(`Objective: ${FIT_OBJECTIVE_LABELS[filters.objective]}`);
+  if (filters.nations?.length) chips.push(`Nations: ${filters.nations.slice(0, 3).join(", ")}${filters.nations.length > 3 ? "..." : ""}`);
+  if (filters.leagues?.length) chips.push(`Leagues: ${filters.leagues.slice(0, 2).join(", ")}${filters.leagues.length > 2 ? "..." : ""}`);
+  if (filters.clubs?.length) chips.push(`Clubs: ${filters.clubs.slice(0, 2).join(", ")}${filters.clubs.length > 2 ? "..." : ""}`);
   if (filters.traits?.length) chips.push(`PlayStyles: ${filters.traits.slice(0, 2).join(", ")}${filters.traits.length > 2 ? "..." : ""}`);
 
   return chips;
@@ -998,18 +998,18 @@ function createSavedQueryTitle(filters: AppliedScoutFilters) {
   const positions = getFilterPositions(filters);
 
   if (positions.length) titleParts.push(positions.join("/"));
-  if (filters.preferredFoot) titleParts.push(filters.preferredFoot === "Left" ? "canhotos" : "destros");
-  if (typeof filters.maxAge === "number") titleParts.push(`sub-${filters.maxAge + 1}`);
+  if (filters.preferredFoot) titleParts.push(filters.preferredFoot === "Left" ? "left-footed" : "right-footed");
+  if (typeof filters.maxAge === "number") titleParts.push(`u${filters.maxAge + 1}`);
   if (typeof filters.minPotential === "number") titleParts.push(`pot. ${filters.minPotential}+`);
-  if (typeof filters.maxMarketValue === "number") titleParts.push(`até ${formatMarketValue(filters.maxMarketValue)}`);
-  if (filters.objective && filters.objective !== "balanced") titleParts.push(FIT_OBJECTIVE_LABELS[filters.objective].toLocaleLowerCase("pt-BR"));
+  if (typeof filters.maxMarketValue === "number") titleParts.push(`up to ${formatMarketValue(filters.maxMarketValue)}`);
+  if (filters.objective && filters.objective !== "balanced") titleParts.push(FIT_OBJECTIVE_LABELS[filters.objective].toLocaleLowerCase());
 
-  return titleParts.length ? `Scout ${titleParts.join(" · ")}` : "Consulta de scout";
+  return titleParts.length ? `Scout ${titleParts.join(" · ")}` : "Scout query";
 }
 
 function formatSavedQueryDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data indefinida";
+  if (Number.isNaN(date.getTime())) return "Undefined date";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -1301,7 +1301,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
     if (!hasMeaningfulFilters(nextFilters)) {
       setAppliedFilters(null);
-      toast.error("Escolha pelo menos um filtro para iniciar o scout.", { duration: 4000 });
+      toast.error("Choose at least one filter to start the scout.", { duration: 4000 });
       return;
     }
 
@@ -1317,7 +1317,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
   const saveCurrentQuery = () => {
     if (!appliedFilters || isLoading || isFetching || isError) {
-      toast.error("Inicie uma busca válida antes de salvar a consulta.", { duration: 4000 });
+      toast.error("Start a valid search before saving the query.", { duration: 4000 });
       return;
     }
 
@@ -1336,7 +1336,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
     setSavedQueries((current) => [savedQuery, ...current].slice(0, MAX_SAVED_SCOUT_QUERIES));
     setSelectedSavedQueryId(savedQuery.id);
-    toast.success("Consulta salva nas pastas do Scout.", { duration: 3000 });
+    toast.success("Query saved in Scout folders.", { duration: 3000 });
   };
 
   const editSavedQuery = (query: SavedScoutQuery) => {
@@ -1351,7 +1351,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
   const removeSavedQuery = (queryId: string) => {
     setSavedQueries((current) => current.filter((query) => query.id !== queryId));
-    toast.success("Consulta removida das pastas.", { duration: 3000 });
+    toast.success("Query removed from folders.", { duration: 3000 });
   };
 
   const toggleShortlistPlayer = (player: Fc26Player) => {
@@ -1360,12 +1360,12 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     if (isAlreadyShortlisted) {
       setShortlistPlayers((current) => current.filter((shortlistedPlayer) => shortlistedPlayer.sofifaId !== player.sofifaId));
       setComparisonPlayers((current) => current.filter((comparedPlayer) => comparedPlayer.sofifaId !== player.sofifaId));
-      toast.success("Jogador removido da Lista Final.", { duration: 2500 });
+      toast.success("Player removed from Shortlist.", { duration: 2500 });
       return;
     }
 
     setShortlistPlayers((current) => [player, ...current].slice(0, MAX_SHORTLIST_PLAYERS));
-    toast.success("Jogador enviado para a Lista Final.", { duration: 2500 });
+    toast.success("Player sent to Shortlist.", { duration: 2500 });
   };
 
   const removeShortlistPlayer = (sofifaId: number) => {
@@ -1375,7 +1375,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
       if (nextPlayers.length < 2) setIsComparisonOpen(false);
       return nextPlayers;
     });
-    toast.success("Jogador removido da Lista Final.", { duration: 2500 });
+    toast.success("Player removed from Shortlist.", { duration: 2500 });
   };
 
   const goToOffset = (nextOffset: number) => {
@@ -1433,10 +1433,10 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const pageTitle = isAiSection
     ? "AIssistent Coach"
     : isArchiveSection
-      ? "Consultas salvas"
+      ? "Saved queries"
       : isShortlistSection
         ? "Shortlist"
-        : "Buscar jogadores";
+        : "Search players";
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
@@ -1449,7 +1449,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
             <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{pageTitle}</h2>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
               {isAiSection ? <Bot size={13} /> : isArchiveSection ? <Archive size={13} /> : isShortlistSection ? <ListChecks size={13} /> : <Search size={13} />}
-              {isAiSection ? "PRO" : isArchiveSection ? "Arquivo de pastas" : isShortlistSection ? "Lista Final" : "Dataset FC 26"}
+              {isAiSection ? "PRO" : isArchiveSection ? "Folder archive" : isShortlistSection ? "Shortlist" : "Dataset FC 26"}
             </span>
           </div>
         </div>
@@ -1458,26 +1458,26 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
           {isAiSection ? (
             <>
               <SummaryPill label="Modo" value="Coach" icon={Bot} />
-              <SummaryPill label="Status" value="Prévia" icon={LockKeyhole} />
+              <SummaryPill label="Status" value="Preview" icon={LockKeyhole} />
             </>
           ) : isArchiveSection ? (
             <>
-              <SummaryPill label="Pastas" value={savedQueries.length} icon={Folder} />
-              <SummaryPill label="Selecionada" value={selectedSavedQuery ? selectedSavedQuery.results.length : 0} icon={UsersRound} />
+              <SummaryPill label="Folders" value={savedQueries.length} icon={Folder} />
+              <SummaryPill label="Selected" value={selectedSavedQuery ? selectedSavedQuery.results.length : 0} icon={UsersRound} />
             </>
           ) : isShortlistSection ? (
             <>
-              <SummaryPill label="Na lista" value={visibleShortlistPlayers.length} icon={ListChecks} />
-              <SummaryPill label="Posições" value={shortlistGroups.length} icon={Target} />
-              <SummaryPill label="Média OVR" value={shortlistAverageOvr ?? "—"} icon={Activity} />
-              <SummaryPill label="Comparando" value={comparedPlayers.length} icon={GitCompareArrows} />
+              <SummaryPill label="In list" value={visibleShortlistPlayers.length} icon={ListChecks} />
+              <SummaryPill label="Positions" value={shortlistGroups.length} icon={Target} />
+              <SummaryPill label="Avg. OVR" value={shortlistAverageOvr ?? "—"} icon={Activity} />
+              <SummaryPill label="Comparing" value={comparedPlayers.length} icon={GitCompareArrows} />
             </>
           ) : (
             <>
-              <SummaryPill label="Encontrados" value={formatInteger(total)} icon={UsersRound} />
-              <SummaryPill label="Filtros ativos" value={activeFilterCount} icon={SlidersHorizontal} />
-              <SummaryPill label="Comparando" value={comparedPlayers.length} icon={Activity} />
-              <SummaryPill label="Página" value={`${currentPage}/${totalPages}`} icon={Target} />
+              <SummaryPill label="Found" value={formatInteger(total)} icon={UsersRound} />
+              <SummaryPill label="Active filters" value={activeFilterCount} icon={SlidersHorizontal} />
+              <SummaryPill label="Comparing" value={comparedPlayers.length} icon={Activity} />
+              <SummaryPill label="Page" value={`${currentPage}/${totalPages}`} icon={Target} />
             </>
           )}
         </div>
@@ -1505,7 +1505,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                 </div>
                 <div>
                   <h3 className="font-display text-base font-bold leading-none">Junior</h3>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">Assistente técnico do Career Mode</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Career Mode assistant</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1519,7 +1519,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   }`}
                 >
                   <MessageSquareText size={13} />
-                  Histórico
+                  History
                   {chatHistory.length > 0 && (
                     <span className="ml-0.5 rounded-full bg-primary/20 px-1.5 py-0 text-[10px] font-bold text-primary">
                       {chatHistory.length}
@@ -1544,8 +1544,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   {chatHistory.length === 0 ? (
                     <div className="py-10 text-center">
                       <MessageSquareText size={28} className="mx-auto mb-3 text-muted-foreground/40" />
-                      <p className="text-sm font-medium text-muted-foreground">Nenhuma conversa arquivada</p>
-                      <p className="mt-1 text-xs text-muted-foreground/60">Inicie uma nova conversa e ela aparecerá aqui.</p>
+                      <p className="text-sm font-medium text-muted-foreground">No archived conversations</p>
+                      <p className="mt-1 text-xs text-muted-foreground/60">Start a new conversation and it will appear here.</p>
                     </div>
                   ) : (
                     chatHistory.map((entry: ConversationEntry) => (
@@ -1562,7 +1562,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
                           >
                             <RotateCcw size={11} />
-                            Continuar
+                            Continue
                           </button>
                           <button
                             type="button"
@@ -1570,7 +1570,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/25 hover:bg-destructive/5 hover:text-destructive"
                           >
                             <Trash2 size={11} />
-                            Excluir
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -1588,12 +1588,12 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   <div
                     role="log"
                     aria-live="polite"
-                    aria-label="Conversa com Junior"
+                    aria-label="Conversation with Junior"
                     className="flex flex-col gap-3 p-5"
                   >
                     {chatMessages.length === 0 && (
                       <ChatBubble speaker="Junior" tone="assistant" markdown={false}>
-                        Olá! Sou o Junior, seu assistente do Career Mode. Posso ajudar com análise de elenco, recomendações de mercado, táticas e muito mais. O que você precisa?
+                        Hi! I'm Junior, your Career Mode assistant. I can help with squad analysis, market recommendations, tactics and much more. What do you need?
                       </ChatBubble>
                     )}
                     {chatMessages.map((msg) => (
@@ -1612,7 +1612,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                           <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Junior</p>
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Loader2 size={13} className="animate-spin" />
-                            <span className="text-sm">Pensando...</span>
+                            <span className="text-sm">Thinking...</span>
                           </div>
                         </div>
                       </div>
@@ -1625,7 +1625,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   {isRateLimited && retryAfterSeconds !== null && retryAfterSeconds > 0 && (
                     <div className="mb-3 flex items-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
                       <LockKeyhole size={13} />
-                      <span>Muitas mensagens. Aguarde {retryAfterSeconds}s para continuar.</span>
+                      <span>Too many messages. Wait {retryAfterSeconds}s to continue.</span>
                     </div>
                   )}
                   <form
@@ -1638,7 +1638,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                     className="flex items-end gap-2"
                   >
                     <label htmlFor="junior-chat-input" className="sr-only">
-                      Mensagem para o Junior
+                      Message to Junior
                     </label>
                     <textarea
                       id="junior-chat-input"
@@ -1652,7 +1652,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                           setChatInput("");
                         }
                       }}
-                      placeholder="Pergunte ao Junior… (Enter envia, Shift+Enter quebra linha)"
+                      placeholder="Ask Junior… (Enter to send, Shift+Enter for new line)"
                       disabled={isChatLoading || isRateLimited}
                       rows={2}
                       className="min-w-0 flex-1 resize-none rounded-md border border-border bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
@@ -1661,7 +1661,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                       type="submit"
                       disabled={isChatLoading || isRateLimited || !chatInput.trim()}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-                      aria-label="Enviar mensagem"
+                      aria-label="Send message"
                     >
                       {isChatLoading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                     </button>
@@ -1681,8 +1681,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                     <Folder size={19} />
                   </div>
                   <div>
-                    <h3 className="font-display text-lg font-bold leading-none">Arquivo de pastas</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">Consultas salvas do Scout</p>
+                    <h3 className="font-display text-lg font-bold leading-none">Folder archive</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Saved queries do Scout</p>
                   </div>
                 </div>
               </div>
@@ -1692,9 +1692,9 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
                     <Folder size={20} />
                   </div>
-                  <p className="font-display text-base font-semibold text-foreground">Nenhuma pasta salva</p>
+                  <p className="font-display text-base font-semibold text-foreground">No saved folders</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Aplique uma busca em Buscar jogadores e salve a consulta para ela aparecer aqui.
+                    Aplique uma busca em Search players e salve a consulta para ela aparecer aqui.
                   </p>
                 </div>
               ) : (
@@ -1718,7 +1718,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                           <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{query.description}</span>
                           <span className="mt-2 flex flex-wrap items-center gap-1.5">
                             <span className="rounded border border-border bg-background/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                              {query.source === "assistant" ? "AI" : "Busca"}
+                              {query.source === "assistant" ? "AI" : "Search"}
                             </span>
                             <span className="rounded border border-border bg-background/45 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                               {formatSavedQueryDate(query.createdAt)}
@@ -1751,7 +1751,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                         className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                       >
                         <Pencil size={15} />
-                        Editar
+                        Edit
                       </button>
                       <button
                         type="button"
@@ -1759,7 +1759,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                         className="inline-flex h-9 items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/15"
                       >
                         <Trash2 size={15} />
-                        Remover
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -1784,9 +1784,9 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
                     <Archive size={20} />
                   </div>
-                  <p className="font-display text-lg font-semibold text-foreground">Escolha uma pasta</p>
+                  <p className="font-display text-lg font-semibold text-foreground">Choose a folder</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    As consultas salvas aparecem como pastas com filtros e snapshot de resultados.
+                    Saved queries appear as folders with filters and a results snapshot.
                   </p>
                 </div>
               )}
@@ -1823,11 +1823,11 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   <Search size={19} />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-bold leading-none">Buscar jogadores</h3>
+                  <h3 className="font-display text-lg font-bold leading-none">Search players</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {hasSearched
                       ? `${visibleStart}-${visibleEnd} de ${formatInteger(total)} jogadores`
-                      : "Defina filtros para iniciar a busca"}
+                      : "Set filters to start the search"}
                   </p>
                 </div>
               </div>
@@ -1856,15 +1856,15 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   <Search size={15} />
-                  Buscar
+                  Searchr
                 </button>
               </div>
             </div>
 
             <div className="space-y-4">
               <PositionFilterGrid
-                title="Posição principal"
-                description="Usa a primeira posição exibida no jogador."
+                title="Main position"
+                description="Uses the first position shown on the player card."
                 positions={positionOptions}
                 selected={draft.primaryPositions}
                 onToggle={togglePrimaryPosition}
@@ -1872,8 +1872,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
               />
 
               <PositionFilterGrid
-                title="Posições secundárias"
-                description="Usa as posições extras exibidas depois da principal."
+                title="Secondary positions"
+                description="Uses extra positions shown after the main one."
                 positions={positionOptions}
                 selected={draft.secondaryPositions}
                 onToggle={toggleSecondaryPosition}
@@ -1881,17 +1881,17 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
               />
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <FilterNumberInput label="OVR mínimo" value={draft.minOvr} min={1} max={99} onChange={(minOvr) => setDraft((current) => ({ ...current, minOvr }))} />
-                <FilterNumberInput label="OVR máximo" value={draft.maxOvr} min={1} max={99} onChange={(maxOvr) => setDraft((current) => ({ ...current, maxOvr }))} />
-                <FilterNumberInput label="Idade mínima" value={draft.minAge} min={15} max={45} onChange={(minAge) => setDraft((current) => ({ ...current, minAge }))} />
-                <FilterNumberInput label="Idade máxima" value={draft.maxAge} min={15} max={45} onChange={(maxAge) => setDraft((current) => ({ ...current, maxAge }))} />
+                <FilterNumberInput label="Min OVR" value={draft.minOvr} min={1} max={99} onChange={(minOvr) => setDraft((current) => ({ ...current, minOvr }))} />
+                <FilterNumberInput label="Max OVR" value={draft.maxOvr} min={1} max={99} onChange={(maxOvr) => setDraft((current) => ({ ...current, maxOvr }))} />
+                <FilterNumberInput label="Min age" value={draft.minAge} min={15} max={45} onChange={(minAge) => setDraft((current) => ({ ...current, minAge }))} />
+                <FilterNumberInput label="Max age" value={draft.maxAge} min={15} max={45} onChange={(maxAge) => setDraft((current) => ({ ...current, maxAge }))} />
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_160px]">
-                <FilterNumberInput label="Potencial mínimo" value={draft.minPotential} min={1} max={99} onChange={(minPotential) => setDraft((current) => ({ ...current, minPotential }))} />
-                <FilterNumberInput label="Potencial máximo" value={draft.maxPotential} min={1} max={99} onChange={(maxPotential) => setDraft((current) => ({ ...current, maxPotential }))} />
+                <FilterNumberInput label="Min potential" value={draft.minPotential} min={1} max={99} onChange={(minPotential) => setDraft((current) => ({ ...current, minPotential }))} />
+                <FilterNumberInput label="Max potential" value={draft.maxPotential} min={1} max={99} onChange={(maxPotential) => setDraft((current) => ({ ...current, maxPotential }))} />
                 <FilterNumberInput
-                  label="Valor mínimo (€M)"
+                  label="Min value (€M)"
                   value={draft.minMarketValue}
                   min={0}
                   placeholder="Min €M"
@@ -1899,7 +1899,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   onChange={(minMarketValue) => setDraft((current) => ({ ...current, minMarketValue }))}
                 />
                 <FilterNumberInput
-                  label="Valor máximo (€M)"
+                  label="Max value (€M)"
                   value={draft.maxMarketValue}
                   min={0}
                   placeholder="Max €M"
@@ -1907,14 +1907,14 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   onChange={(maxMarketValue) => setDraft((current) => ({ ...current, maxMarketValue }))}
                 />
                 <div>
-                  <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Resultados</label>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Results</label>
                   <select
                     value={draft.limit}
                     onChange={(event) => setDraft((current) => ({ ...current, limit: event.target.value }))}
                     className="h-10 w-full rounded-md border border-border bg-muted px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
                   >
                     {LIMIT_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option} por página</option>
+                      <option key={option} value={option}>{option} per page</option>
                     ))}
                   </select>
                 </div>
@@ -1922,20 +1922,20 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
               <div className={`grid gap-3 ${hasSaveContext ? "lg:grid-cols-[180px_190px_minmax(0,1fr)_minmax(0,1fr)]" : "lg:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]"}`}>
                 <div>
-                  <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Pé dominante</label>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Preferred foot</label>
                   <select
                     value={draft.preferredFoot}
                     onChange={(event) => setDraft((current) => ({ ...current, preferredFoot: event.target.value as DraftFilters["preferredFoot"] }))}
                     className="h-10 w-full rounded-md border border-border bg-muted px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
                   >
-                    <option value="">Qualquer pé</option>
-                    <option value="Left">Canhoto</option>
-                    <option value="Right">Destro</option>
+                    <option value="">Any foot</option>
+                    <option value="Left">Left foot</option>
+                    <option value="Right">Right foot</option>
                   </select>
                 </div>
                 {hasSaveContext && (
                   <div>
-                    <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Objetivo</label>
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Objective</label>
                     <select
                       value={draft.objective}
                       onChange={(event) => setDraft((current) => ({ ...current, objective: event.target.value as Fc26FitObjective }))}
@@ -1949,16 +1949,16 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                 )}
                 <MultiSelectCombobox
                   label="PlayStyles"
-                  placeholder="Selecionar PlayStyles..."
-                  emptyLabel="Nenhum PlayStyle encontrado"
+                  placeholder="Select PlayStyles..."
+                  emptyLabel="No PlayStyle found"
                   options={PLAYSTYLE_OPTIONS}
                   selected={draft.playStyles}
                   onChange={(playStyles) => setDraft((current) => ({ ...current, playStyles }))}
                 />
                 <MultiSelectCombobox
                   label="PlayStyles+"
-                  placeholder="Selecionar PlayStyles+..."
-                  emptyLabel="Nenhum PlayStyle+ encontrado"
+                  placeholder="Select PlayStyles+..."
+                  emptyLabel="No PlayStyle+ found"
                   options={PLAYSTYLE_PLUS_OPTIONS}
                   selected={draft.playStylesPlus}
                   onChange={(playStylesPlus) => setDraft((current) => ({ ...current, playStylesPlus }))}
@@ -1987,17 +1987,17 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
               <div className="grid gap-3 lg:grid-cols-3">
                 <MultiSelectCombobox
-                  label="Nacionalidades"
-                  placeholder="Buscar nacionalidade..."
-                  emptyLabel={isLoadingFilters ? "Carregando nacionalidades..." : "Nenhuma nacionalidade encontrada"}
+                  label="Nationalities"
+                  placeholder="Search nationality..."
+                  emptyLabel={isLoadingFilters ? "Loading nationalities..." : "No nationality found"}
                   options={nationOptions}
                   selected={draft.nations}
                   onChange={(nations) => setDraft((current) => ({ ...current, nations }))}
                 />
                 <MultiSelectCombobox
                   label="Ligas"
-                  placeholder="Buscar liga..."
-                  emptyLabel={isLoadingFilters ? "Carregando ligas..." : "Nenhuma liga encontrada"}
+                  placeholder="Search league..."
+                  emptyLabel={isLoadingFilters ? "Loading leagues..." : "No league found"}
                   options={leagueOptions}
                   selected={draft.leagues}
                   onChange={(leagues) => {
@@ -2017,8 +2017,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                 />
                 <MultiSelectCombobox
                   label="Clubes"
-                  placeholder={draft.leagues.length ? "Buscar clube da liga..." : "Selecione uma liga primeiro"}
-                  emptyLabel={isLoadingFilters ? "Carregando clubes..." : "Nenhum clube encontrado"}
+                  placeholder={draft.leagues.length ? "Search club in league..." : "Select a league first"}
+                  emptyLabel={isLoadingFilters ? "Loading clubs..." : "No club found"}
                   options={clubOptions}
                   selected={draft.clubs}
                   onChange={(clubs) => setDraft((current) => ({ ...current, clubs }))}
@@ -2053,9 +2053,9 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
           <section className="card-gamer overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="font-display text-lg font-bold leading-none">Jogadores encontrados</h3>
+                <h3 className="font-display text-lg font-bold leading-none">Players found</h3>
                 {hasSearched && (
-                  <p className="mt-1 text-sm text-muted-foreground">Compare os perfis encontrados e abra o detalhe para ver o relatório completo.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Compare found profiles and open the detail panel to see the full report.</p>
                 )}
               </div>
 
@@ -2065,7 +2065,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   disabled={offset <= 0 || isFetching}
                   onClick={() => goToOffset(offset - limit)}
                   className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Página anterior"
+                  aria-label="Previous page"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -2077,7 +2077,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   disabled={offset + limit >= total || isFetching}
                   onClick={() => goToOffset(offset + limit)}
                   className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Próxima página"
+                  aria-label="Next page"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -2086,19 +2086,19 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
 
             {!hasSearched ? (
               <div className="p-6 text-center">
-                <p className="font-display text-lg font-semibold text-foreground">Nenhum scout iniciado</p>
+                <p className="font-display text-lg font-semibold text-foreground">No scout started</p>
                 <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-                  A lista fica vazia até você aplicar filtros de posição, OVR, idade, potencial, ritmo, altura, PlayStyles, PlayStyles+, nacionalidade, liga ou clube.
+                  The list stays empty until you apply filters for position, OVR, age, potential, pace, height, PlayStyles, PlayStyles+, nationality, league or club.
                 </p>
               </div>
             ) : isLoading ? (
               <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
                 <Loader2 size={20} className="animate-spin" />
-                Carregando jogadores...
+                Loading players...
               </div>
             ) : isError ? (
               <div className="p-6 text-center">
-                <p className="font-display text-lg font-semibold text-foreground">Não foi possível carregar o scout</p>
+                <p className="font-display text-lg font-semibold text-foreground">Could not load scout</p>
                 <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{extractErrorMessage(error)}</p>
                 <button
                   type="button"
@@ -2106,14 +2106,14 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   className="mt-5 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   <RotateCcw size={15} />
-                  Tentar novamente
+                  Try again
                 </button>
               </div>
             ) : players.length === 0 ? (
               <div className="p-6 text-center">
-                <p className="font-display text-lg font-semibold text-foreground">Nenhum jogador bate com esses filtros</p>
+                <p className="font-display text-lg font-semibold text-foreground">No player matches these filters</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Abra a faixa de OVR, idade ou potencial para ampliar a busca.
+                  Broaden the OVR, age or potential range to expand the search.
                 </p>
               </div>
             ) : (
@@ -2123,7 +2123,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                     <thead className="bg-muted/35">
                       <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                         <th className="px-4 py-3 font-semibold">Jogador</th>
-                        <th className="px-4 py-3 font-semibold">Posições</th>
+                        <th className="px-4 py-3 font-semibold">Positions</th>
                         {hasFitScores && (
                           <th
                             className="px-4 py-3 text-center font-semibold"
@@ -2163,9 +2163,9 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                           />
                         </th>
                         <th className="px-4 py-3 font-semibold">Perfil</th>
-                        <th className="px-4 py-3 font-semibold">Atributos</th>
+                        <th className="px-4 py-3 font-semibold">Attributes</th>
                         <th className="px-4 py-3 font-semibold">Clube</th>
-                        <th className="px-4 py-3 text-right font-semibold">Valor</th>
+                        <th className="px-4 py-3 text-right font-semibold">Value</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2287,9 +2287,9 @@ function ShortlistContent({
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-primary/30 bg-primary/10 text-primary">
           <ListChecks size={23} />
         </div>
-        <p className="font-display text-xl font-bold text-foreground">Lista Final vazia</p>
+        <p className="font-display text-xl font-bold text-foreground">Empty Shortlist</p>
         <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-          Envie jogadores dos relatórios do Scout para montar uma lista curta antes da decisão de mercado.
+          Send players from Scout reports to build a shortlist before the transfer window.
         </p>
         <button
           type="button"
@@ -2297,7 +2297,7 @@ function ShortlistContent({
           className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
         >
           <Search size={15} />
-          Buscar jogadores
+          Search players
         </button>
       </section>
     );
@@ -2312,9 +2312,9 @@ function ShortlistContent({
               <ListChecks size={21} />
             </div>
             <div className="min-w-0">
-              <h3 className="font-display text-xl font-bold leading-none text-foreground">Lista Final</h3>
+              <h3 className="font-display text-xl font-bold leading-none text-foreground">Shortlist</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {players.length} jogador{players.length === 1 ? "" : "es"} separados por posição para decisão de compra.
+                {players.length} player{players.length === 1 ? "" : "s"} grouped by position for transfer decisions.
               </p>
             </div>
           </div>
@@ -2326,7 +2326,7 @@ function ShortlistContent({
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
               <Search size={15} />
-              Buscar mais
+              Search more
             </button>
             <button
               type="button"
@@ -2335,15 +2335,15 @@ function ShortlistContent({
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <GitCompareArrows size={15} />
-              Comparar seleção
+              Compare selection
             </button>
           </div>
         </div>
 
         <div className="grid gap-3 p-5 md:grid-cols-3">
-          <ShortlistInsight label="Posições cobertas" value={groups.length} detail="Grupos por posição principal" icon={Target} />
-          <ShortlistInsight label="Maior margem" value={bestGrowthPlayer ? formatPotentialGrowth(bestGrowthPlayer) : "—"} detail={bestGrowthPlayer?.name ?? "Sem dados"} icon={Star} />
-          <ShortlistInsight label="Comparação" value={comparedPlayers.length} detail={hasComparisonReady ? "Pronta para abrir" : "Selecione 2 jogadores"} icon={GitCompareArrows} />
+          <ShortlistInsight label="Covered positions" value={groups.length} detail="Groups by main position" icon={Target} />
+          <ShortlistInsight label="Largest margin" value={bestGrowthPlayer ? formatPotentialGrowth(bestGrowthPlayer) : "—"} detail={bestGrowthPlayer?.name ?? "Sem dados"} icon={Star} />
+          <ShortlistInsight label="Comparison" value={comparedPlayers.length} detail={hasComparisonReady ? "Ready to open" : "Select 2 players"} icon={GitCompareArrows} />
         </div>
       </section>
 
@@ -2427,7 +2427,7 @@ function ShortlistPositionGroupCard({
           aria-expanded={!isCollapsed}
           aria-controls={playersListId}
           className="group flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          title={isCollapsed ? "Abrir posição" : "Minimizar posição"}
+          title={isCollapsed ? "Expand position" : "Collapse position"}
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent/20 bg-accent/10 text-accent">
             <span className="font-display text-sm font-bold">{group.position}</span>
@@ -2435,7 +2435,7 @@ function ShortlistPositionGroupCard({
           <div className="min-w-0">
             <h4 className="truncate font-display text-lg font-bold text-foreground">{POSITION_LABELS[group.position]}</h4>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {group.players.length} jogador{group.players.length === 1 ? "" : "es"} · média OVR {averageOvr ?? "—"}
+              {group.players.length} jogador{group.players.length === 1 ? "" : "es"} · avg. OVR {averageOvr ?? "—"}
             </p>
           </div>
           <ChevronDown
@@ -2452,7 +2452,7 @@ function ShortlistPositionGroupCard({
           className="inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <GitCompareArrows size={15} />
-          Comparar posição
+          Compare position
         </button>
       </div>
 
@@ -2499,7 +2499,7 @@ function ShortlistPlayerRow({
             <p className="truncate text-base font-semibold text-foreground">{player.name}</p>
             <span className={`font-display text-lg font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</span>
           </div>
-          <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "Sem clube"}</p>
+          <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "No club"}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <FitScoreBadge player={player} />
             {player.positions.map((position) => (
@@ -2516,8 +2516,8 @@ function ShortlistPlayerRow({
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <MetricLine label="Idade" value={`${player.age} anos`} />
-        <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+        <MetricLine label="Age" value={`${player.age} yr`} />
+        <MetricLine label="Value" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -2530,7 +2530,7 @@ function ShortlistPlayerRow({
               ? "border-primary/35 bg-primary/10 text-primary"
               : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
           }`}
-          title={isCompareSelected ? "Remover da comparação" : "Adicionar à comparação"}
+          title={isCompareSelected ? "Remove from comparison" : "Add to comparison"}
         >
           {isCompareSelected ? <Check size={14} /> : <UsersRound size={14} />}
         </button>
@@ -2538,7 +2538,7 @@ function ShortlistPlayerRow({
           type="button"
           onClick={onOpenDetails}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
-          title="Ver detalhes"
+          title="View details"
         >
           <Eye size={14} />
         </button>
@@ -2546,7 +2546,7 @@ function ShortlistPlayerRow({
           type="button"
           onClick={onRemove}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-destructive/25 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/15"
-          title="Remover da Lista Final"
+          title="Remove da Shortlist"
         >
           <X size={14} />
         </button>
@@ -2569,8 +2569,8 @@ function SavedQueryResults({
   if (query.results.length === 0) {
     return (
       <div className="p-8 text-center">
-        <p className="font-display text-lg font-semibold text-foreground">Consulta salva sem resultados</p>
-        <p className="mt-2 text-sm text-muted-foreground">Edite a consulta para abrir mais a faixa de filtros.</p>
+        <p className="font-display text-lg font-semibold text-foreground">Saved query with no results</p>
+        <p className="mt-2 text-sm text-muted-foreground">Edit the query to broaden the filter range.</p>
       </div>
     );
   }
@@ -2579,14 +2579,14 @@ function SavedQueryResults({
     <div className="p-5">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h4 className="font-display text-base font-bold text-foreground">Resultados da consulta</h4>
+          <h4 className="font-display text-base font-bold text-foreground">Query results</h4>
           <p className="text-sm text-muted-foreground">
-            Snapshot com {query.results.length} de {formatInteger(query.total)} jogador{query.total === 1 ? "" : "es"} encontrados.
+            Snapshot with {query.results.length} de {formatInteger(query.total)} jogador{query.total === 1 ? "" : "es"} encontrados.
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-1.5 rounded border border-border bg-background/45 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
           <Archive size={13} />
-          Pasta salva
+          Saved folder
         </span>
       </div>
 
@@ -2601,7 +2601,7 @@ function SavedQueryResults({
                   <PlayerAvatar player={player} size="sm" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">{player.club ?? "Sem clube"}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{player.club ?? "No club"}</p>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -2619,8 +2619,8 @@ function SavedQueryResults({
 
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <MetricLine label="Pot." value={player.potential} />
-                <MetricLine label="Idade" value={`${player.age}`} />
-                <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} />
+                <MetricLine label="Age" value={`${player.age}`} />
+                <MetricLine label="Value" value={formatMarketValue(player.marketValue)} />
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -2635,7 +2635,7 @@ function SavedQueryResults({
                   }`}
                 >
                   {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
-                  {isShortlisted ? "Na lista" : "Lista Final"}
+                  {isShortlisted ? "In list" : "Shortlist"}
                 </button>
                 <button
                   type="button"
@@ -2643,7 +2643,7 @@ function SavedQueryResults({
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
                 >
                   <Eye size={15} />
-                  Detalhes
+                  Details
                 </button>
               </div>
             </article>
@@ -2665,7 +2665,7 @@ interface SortHeaderButtonProps {
 function SortHeaderButton({ label, sortBy, activeSortBy, sortOrder, onSort }: SortHeaderButtonProps) {
   const isActive = activeSortBy === sortBy;
   const Icon = sortOrder === "asc" ? ArrowUp : ArrowDown;
-  const directionLabel = isActive && sortOrder === "asc" ? "menor primeiro" : "maior primeiro";
+  const directionLabel = isActive && sortOrder === "asc" ? "lowest first" : "highest first";
 
   return (
     <button
@@ -2676,7 +2676,7 @@ function SortHeaderButton({ label, sortBy, activeSortBy, sortOrder, onSort }: So
           ? "border-primary/35 bg-primary/10 text-primary"
           : "border-transparent text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
       }`}
-      title={`Ordenar por ${label} (${directionLabel})`}
+      title={`Sort by ${label} (${directionLabel})`}
     >
       <span>{label}</span>
       <Icon size={12} className={isActive ? "opacity-100" : "opacity-45"} />
@@ -2740,7 +2740,7 @@ function PositionFilterGrid({
             className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
             <X size={12} />
-            Remover
+            Remove
           </button>
         )}
       </div>
@@ -2861,9 +2861,9 @@ function AdvancedAttributeFilters({ open, activeCount, ranges, onToggle, onClear
             <SlidersHorizontal size={16} />
           </span>
           <span className="min-w-0">
-            <span className="block font-display text-sm font-bold text-foreground">Filtros avançados</span>
+            <span className="block font-display text-sm font-bold text-foreground">Advanced filters</span>
             <span className="block truncate text-xs text-muted-foreground">
-              {activeCount > 0 ? `${activeCount} atributo${activeCount === 1 ? "" : "s"} filtrado${activeCount === 1 ? "" : "s"}` : "Ritmo, finalização, passe, defesa, físico, mentalidade e goleiro"}
+              {activeCount > 0 ? `${activeCount} atributo${activeCount === 1 ? "" : "s"} filtrado${activeCount === 1 ? "" : "s"}` : "Pace, finishing, passing, defense, physical, mentality and goalkeeper"}
             </span>
           </span>
         </span>
@@ -3092,11 +3092,11 @@ function PlayerComparisonLauncher({ players, activePlaybook, onClear, onOpenComp
             <UsersRound size={19} />
           </div>
           <div className="min-w-0">
-            <h3 className="font-display text-lg font-bold leading-none">Comparar jogadores</h3>
+            <h3 className="font-display text-lg font-bold leading-none">Compare players</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {hasEnoughPlayers
-                ? `${players.length} jogadores prontos para abrir no relatório comparativo.`
-                : "Selecione 2 ou mais jogadores nos resultados para comparar atributos."}
+                ? `${players.length} players ready for the comparison report.`
+                : "Select 2 or more players in the results to compare attributes."}
             </p>
           </div>
         </div>
@@ -3119,7 +3119,7 @@ function PlayerComparisonLauncher({ players, activePlaybook, onClear, onOpenComp
             className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Eye size={15} />
-            Abrir comparação
+            Open comparison
           </button>
         </div>
       </div>
@@ -3142,16 +3142,16 @@ function PlayerComparisonLauncher({ players, activePlaybook, onClear, onOpenComp
             <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
               <UsersRound size={19} />
             </div>
-            <p className="font-display text-base font-bold text-foreground">Nenhum jogador selecionado</p>
+            <p className="font-display text-base font-bold text-foreground">No player selected</p>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Use o botão Comparar nos resultados para montar uma análise lado a lado.
+              Use the Compare button in the results to build a side-by-side analysis.
             </p>
           </div>
         )}
 
         {players.length === 1 && (
           <div className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
-            Selecione mais um jogador para liberar a tabela completa de atributos.
+            Select one more player to unlock the full attributes table.
           </div>
         )}
       </div>
@@ -3176,12 +3176,12 @@ function PlayerComparisonModal({
   const radarData = useMemo(
     () =>
       [
-        { label: "Ritmo", field: "pace" },
+        { label: "Pace", field: "pace" },
         { label: "Final.", field: "shooting" },
-        { label: "Passe", field: "passing" },
-        { label: "Drible", field: "dribbling" },
-        { label: "Defesa", field: "defending" },
-        { label: "Físico", field: "physic" },
+        { label: "Passing", field: "passing" },
+        { label: "Dribbling", field: "dribbling" },
+        { label: "Defense", field: "defending" },
+        { label: "Physical", field: "physic" },
       ].map((item) => ({
         label: item.label,
         ...Object.fromEntries(players.map((player, index) => [`player_${index}`, player[item.field as keyof Fc26Player] ?? 0])),
@@ -3195,20 +3195,20 @@ function PlayerComparisonModal({
       <section
         role="dialog"
         aria-modal="true"
-        aria-label="Comparação de jogadores"
+        aria-label="Comparison de jogadores"
         onMouseDown={(event) => event.stopPropagation()}
         className="mx-auto flex h-full max-h-[940px] w-full max-w-6xl flex-col overflow-hidden rounded-md border border-border bg-card shadow-2xl"
       >
         <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 p-4">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Relatório comparativo de scout</p>
-            <h3 className="mt-1 truncate font-display text-xl font-bold text-foreground">{players.length} jogadores selecionados</h3>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Scout comparison report</p>
+            <h3 className="mt-1 truncate font-display text-xl font-bold text-foreground">{players.length} players selected</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="Fechar comparação"
+            aria-label="Close comparison"
           >
             <X size={16} />
           </button>
@@ -3217,7 +3217,7 @@ function PlayerComparisonModal({
         <ScrollArea className="min-h-0 flex-1" viewportClassName="p-4 sm:p-5" scrollbars="vertical">
           {players.length < 2 ? (
             <div className="rounded-md border border-warning/25 bg-warning/10 p-5 text-sm text-warning">
-              Selecione 2 ou mais jogadores para comparar atributos.
+              Select 2 or more players to compare attributes.
             </div>
           ) : (
             <div className="space-y-4">
@@ -3236,7 +3236,7 @@ function PlayerComparisonModal({
                 <div className="card-gamer p-4">
                   <div className="mb-3 flex items-center gap-2">
                     <Activity size={16} className="text-primary" />
-                    <p className="font-display text-sm font-bold text-foreground">Ratings gerais</p>
+                    <p className="font-display text-sm font-bold text-foreground">General ratings</p>
                   </div>
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
@@ -3271,15 +3271,15 @@ function PlayerComparisonModal({
                 </div>
 
                 <div className="card-gamer p-4">
-                  <p className="mb-3 font-display text-sm font-bold text-foreground">Leitura rápida</p>
+                  <p className="mb-3 font-display text-sm font-bold text-foreground">Quick read</p>
                   <div className="grid gap-3 md:grid-cols-3">
                     <ComparisonHighlight
-                      label="Melhor média"
+                      label="Best average"
                       player={leaderByAverage}
                       value={formatAverageRating(leaderByAverage ? getGeneralRatingAverage(leaderByAverage) : null)}
                     />
-                    <ComparisonHighlight label="Maior OVR" player={leaderByOvr} value={leaderByOvr?.ovr ?? "—"} />
-                    <ComparisonHighlight label="Mais margem" player={leaderByGrowth} value={leaderByGrowth ? formatPotentialGrowth(leaderByGrowth) : "—"} />
+                    <ComparisonHighlight label="Highest OVR" player={leaderByOvr} value={leaderByOvr?.ovr ?? "—"} />
+                    <ComparisonHighlight label="Most margin" player={leaderByGrowth} value={leaderByGrowth ? formatPotentialGrowth(leaderByGrowth) : "—"} />
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     {players.map((player) => (
@@ -3326,7 +3326,7 @@ function ComparisonProfileCard({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <h4 className="truncate font-display text-xl font-bold text-foreground">{player.name}</h4>
-              <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? player.nation ?? "No club"}</p>
             </div>
             <div className="text-right">
               <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
@@ -3341,10 +3341,10 @@ function ComparisonProfileCard({
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <MetricLine label="Potencial" value={`${player.potential} (${formatPotentialGrowth(player)})`} icon={Star} />
-            <MetricLine label="Idade" value={`${player.age} anos`} icon={Calendar} />
-            <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
-            <MetricLine label="Pé" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
+            <MetricLine label="Potential" value={`${player.potential} (${formatPotentialGrowth(player)})`} icon={Star} />
+            <MetricLine label="Age" value={`${player.age} yr`} icon={Calendar} />
+            <MetricLine label="Height" value={formatHeight(player.height)} icon={Ruler} />
+            <MetricLine label="Foot" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -3362,7 +3362,7 @@ function ComparisonProfileCard({
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
               <X size={15} />
-              Remover
+              Remove
             </button>
           </div>
         </div>
@@ -3391,15 +3391,15 @@ function ComparedPlayerCard({
           <PlayerAvatar player={player} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "No club"}</p>
           </div>
         </div>
         <button
           type="button"
           onClick={onRemove}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
-          aria-label={`Remover ${player.name} da comparação`}
-          title="Remover da comparação"
+          aria-label={`Remove ${player.name} from comparison`}
+          title="Remove from comparison"
         >
           <X size={14} />
         </button>
@@ -3423,7 +3423,7 @@ function ComparedPlayerCard({
         className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
       >
         <Eye size={14} />
-        Relatório
+        Report
       </button>
     </article>
   );
@@ -3451,7 +3451,7 @@ function ComparisonGroupTable({ group, players }: { group: PlayerComparisonGroup
       <table className="w-full text-left">
         <thead>
           <tr className="border-b border-border text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-            <th className="w-[220px] px-3 py-2 font-semibold">Atributo</th>
+            <th className="w-[220px] px-3 py-2 font-semibold">Attribute</th>
             {players.map((player) => (
               <th key={player.sofifaId} className="min-w-[180px] px-3 py-2 font-semibold">
                 <span className="block truncate">{player.name}</span>
@@ -3540,7 +3540,7 @@ function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: 
           <PlayerAvatar player={player} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "Sem clube"}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.club ?? player.nation ?? "No club"}</p>
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -3554,10 +3554,10 @@ function FeaturedPlayer({ player, rank, onSelect }: { player: Fc26Player; rank: 
         ))}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <MetricLine label="Potencial" value={`${player.potential}${growth > 0 ? ` (+${growth})` : ""}`} />
-        <MetricLine label="Ritmo" value={formatRating(player.pace)} icon={Zap} />
-        <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
-        <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+        <MetricLine label="Potential" value={`${player.potential}${growth > 0 ? ` (+${growth})` : ""}`} />
+        <MetricLine label="Pace" value={formatRating(player.pace)} icon={Zap} />
+        <MetricLine label="Height" value={formatHeight(player.height)} icon={Ruler} />
+        <MetricLine label="Value" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
       </div>
     </button>
   );
@@ -3610,11 +3610,11 @@ function PlayerTableRow({
                   ? "border-primary/35 bg-primary/10 text-primary"
                   : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
               }`}
-              aria-label={`${isShortlisted ? "Remover" : "Adicionar"} ${player.name} ${isShortlisted ? "da" : "à"} Lista Final`}
-              title={isShortlisted ? "Remover da Lista Final" : "Adicionar à Lista Final"}
+              aria-label={`${isShortlisted ? "Remove" : "Adicionar"} ${player.name} ${isShortlisted ? "da" : "à"} Shortlist`}
+              title={isShortlisted ? "Remove da Shortlist" : "Adicionar à Shortlist"}
             >
               {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
-              <span>{isShortlisted ? "Na lista" : "Lista"}</span>
+              <span>{isShortlisted ? "In list" : "Lista"}</span>
             </button>
             <button
               type="button"
@@ -3625,18 +3625,18 @@ function PlayerTableRow({
                   ? "border-primary/35 bg-primary/10 text-primary"
                   : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
               }`}
-              aria-label={`${isCompareSelected ? "Remover" : "Adicionar"} ${player.name} ${isCompareSelected ? "da" : "à"} comparação`}
-              title={isCompareSelected ? "Remover da comparação" : "Adicionar à comparação"}
+              aria-label={`${isCompareSelected ? "Remove" : "Add"} ${player.name} ${isCompareSelected ? "from" : "to"} comparison`}
+              title={isCompareSelected ? "Remove from comparison" : "Add to comparison"}
             >
               {isCompareSelected ? <Check size={15} /> : <UsersRound size={15} />}
-              <span>{isCompareSelected ? "Selecionado" : "Comparar"}</span>
+              <span>{isCompareSelected ? "Selected" : "Compare"}</span>
             </button>
             <button
               type="button"
               onClick={onSelect}
               className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
-              aria-label={`Ver detalhes de ${player.name}`}
-              title="Ver detalhes"
+              aria-label={`View details de ${player.name}`}
+              title="View details"
             >
               <Eye size={15} />
             </button>
@@ -3660,7 +3660,7 @@ function PlayerTableRow({
       <td className={`px-4 py-3 text-center font-display text-xl font-bold ${getOvrClass(player.ovr)}`}>{player.ovr}</td>
       <td className="px-4 py-3 text-center font-display text-xl font-bold text-foreground">{player.potential}</td>
       <td className="min-w-[180px] px-4 py-3">
-        <p className="text-sm text-foreground">{player.age} anos</p>
+        <p className="text-sm text-foreground">{player.age} yr</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {formatHeight(player.height)} · {formatWeight(player.weight)}
         </p>
@@ -3674,8 +3674,8 @@ function PlayerTableRow({
         </div>
       </td>
       <td className="min-w-[190px] px-4 py-3">
-        <p className="truncate text-sm text-foreground">{player.club ?? "Sem clube"}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.league ?? player.nation ?? "Liga não informada"}</p>
+        <p className="truncate text-sm text-foreground">{player.club ?? "No club"}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.league ?? player.nation ?? "League unknown"}</p>
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-right">
         <p className="font-display text-sm font-bold text-primary">{formatMarketValue(player.marketValue)}</p>
@@ -3711,8 +3711,8 @@ function PlayerMobileRow({
           <PlayerAvatar player={player} size="md" />
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-foreground">{player.name}</p>
-            <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "Sem clube"}</p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.league ?? player.nation ?? "Liga não informada"}</p>
+            <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "No club"}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.league ?? player.nation ?? "League unknown"}</p>
           </div>
         </div>
         <div className="shrink-0 text-right">
@@ -3731,12 +3731,12 @@ function PlayerMobileRow({
         ))}
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <MetricLine label="Potencial" value={player.potential} />
-        <MetricLine label="Idade" value={`${player.age} anos`} />
-        <MetricLine label="Ritmo" value={formatRating(player.pace)} icon={Zap} />
-        <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
-        <MetricLine label="Pé" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
-        <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+        <MetricLine label="Potential" value={player.potential} />
+        <MetricLine label="Age" value={`${player.age} yr`} />
+        <MetricLine label="Pace" value={formatRating(player.pace)} icon={Zap} />
+        <MetricLine label="Height" value={formatHeight(player.height)} icon={Ruler} />
+        <MetricLine label="Foot" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
+        <MetricLine label="Value" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
       </div>
       {traits.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -3778,7 +3778,7 @@ function PlayerMobileRow({
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/35 hover:text-primary"
         >
           <Eye size={15} />
-          Detalhes
+          Details
         </button>
       </div>
     </article>
@@ -3857,7 +3857,7 @@ function ScorePill({ value }: { value: number | null }) {
   return (
     <div
       className="rounded border border-primary/20 bg-primary/8 px-2 py-1 text-center"
-      title={value !== null ? `Scout Score: ${value}/100` : "Score indisponível"}
+      title={value !== null ? `Scout Score: ${value}/100` : "Score unavailable"}
     >
       <p className="text-[9px] font-semibold text-primary/70">SCORE</p>
       <p className={`font-display text-sm font-bold ${color}`}>{value ?? "—"}</p>
@@ -3907,12 +3907,12 @@ interface PlayerDetailDrawerProps {
 function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: PlayerDetailDrawerProps) {
   const generalRatings = player
     ? [
-        { label: "Ritmo", value: player.pace },
+        { label: "Pace", value: player.pace },
         { label: "Final.", value: player.shooting },
-        { label: "Passe", value: player.passing },
-        { label: "Drible", value: player.dribbling },
-        { label: "Defesa", value: player.defending },
-        { label: "Físico", value: player.physic },
+        { label: "Passing", value: player.passing },
+        { label: "Dribbling", value: player.dribbling },
+        { label: "Defense", value: player.defending },
+        { label: "Physical", value: player.physic },
       ]
     : [];
   const hasGeneralRatings = generalRatings.some((item) => item.value !== null && item.value !== undefined);
@@ -3920,80 +3920,80 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
   const attributeGroups = player
     ? [
         {
-          title: "Ataque",
+          title: "Attack",
           icon: Target,
           attributes: [
-            { label: "Cruzamento", value: player.attackingCrossing },
-            { label: "Finalização", value: player.attackingFinishing },
-            { label: "Cabeceio", value: player.attackingHeadingAccuracy },
-            { label: "Passe curto", value: player.attackingShortPassing },
-            { label: "Voleios", value: player.attackingVolleys },
+            { label: "Crossing", value: player.attackingCrossing },
+            { label: "Finishing", value: player.attackingFinishing },
+            { label: "Heading", value: player.attackingHeadingAccuracy },
+            { label: "Short passing", value: player.attackingShortPassing },
+            { label: "Volleys", value: player.attackingVolleys },
           ],
         },
         {
-          title: "Habilidade",
+          title: "Skill",
           icon: Sparkles,
           attributes: [
-            { label: "Drible", value: player.skillDribbling },
-            { label: "Curva", value: player.skillCurve },
-            { label: "Falta", value: player.skillFkAccuracy },
-            { label: "Passe longo", value: player.skillLongPassing },
-            { label: "Controle", value: player.skillBallControl },
+            { label: "Dribbling", value: player.skillDribbling },
+            { label: "Curve", value: player.skillCurve },
+            { label: "FK accuracy", value: player.skillFkAccuracy },
+            { label: "Long passing", value: player.skillLongPassing },
+            { label: "Ball control", value: player.skillBallControl },
           ],
         },
         {
-          title: "Movimentação",
+          title: "Movement",
           icon: Footprints,
           attributes: [
-            { label: "Aceleração", value: player.movementAcceleration },
-            { label: "Sprint", value: player.movementSprintSpeed },
-            { label: "Agilidade", value: player.movementAgility },
-            { label: "Reações", value: player.movementReactions },
-            { label: "Equilíbrio", value: player.movementBalance },
+            { label: "Acceleration", value: player.movementAcceleration },
+            { label: "Sprint speed", value: player.movementSprint speedSpeed },
+            { label: "Agility", value: player.movementAgility },
+            { label: "Reactions", value: player.movementReactions },
+            { label: "Balance", value: player.movementBalance },
           ],
         },
         {
-          title: "Força",
+          title: "Power",
           icon: Dumbbell,
           attributes: [
-            { label: "Força do chute", value: player.powerShotPower },
-            { label: "Impulsão", value: player.powerJumping },
-            { label: "Fôlego", value: player.powerStamina },
-            { label: "Força", value: player.powerStrength },
-            { label: "Chute longo", value: player.powerLongShots },
+            { label: "Power do chute", value: player.powerShotPower },
+            { label: "Jumping", value: player.powerJumping },
+            { label: "Stamina", value: player.powerStamina },
+            { label: "Power", value: player.powerStrength },
+            { label: "Long shots", value: player.powerLongShots },
           ],
         },
         {
-          title: "Mentalidade",
+          title: "Mentality",
           icon: Brain,
           attributes: [
-            { label: "Agressividade", value: player.mentalityAggression },
-            { label: "Interceptações", value: player.mentalityInterceptions },
-            { label: "Posicionamento", value: player.mentalityPositioning },
-            { label: "Visão", value: player.mentalityVision },
-            { label: "Pênaltis", value: player.mentalityPenalties },
-            { label: "Compostura", value: player.mentalityComposure },
+            { label: "Aggression", value: player.mentalityAggression },
+            { label: "Interceptions", value: player.mentalityInterceptions },
+            { label: "Positioning", value: player.mentalityPositioning },
+            { label: "Vision", value: player.mentalityVision },
+            { label: "Penalties", value: player.mentalityPenalties },
+            { label: "Composure", value: player.mentalityComposure },
           ],
         },
         {
-          title: "Defesa",
+          title: "Defense",
           icon: ShieldCheck,
           attributes: [
-            { label: "Consciência", value: player.defendingMarkingAwareness },
-            { label: "Carrinho em pé", value: player.defendingStandingTackle },
-            { label: "Carrinho", value: player.defendingSlidingTackle },
+            { label: "Awareness", value: player.defendingMarkingAwareness },
+            { label: "Stand. tackle", value: player.defendingStandingTackle },
+            { label: "Slide tackle", value: player.defendingSlidingTackle },
           ],
         },
         {
-          title: "Goleiro",
+          title: "Goalkeeper",
           icon: UserRound,
           attributes: [
-            { label: "Mergulho", value: player.goalkeepingDiving },
-            { label: "Manuseio", value: player.goalkeepingHandling },
-            { label: "Chute", value: player.goalkeepingKicking },
-            { label: "Posição", value: player.goalkeepingPositioning },
-            { label: "Reflexos", value: player.goalkeepingReflexes },
-            { label: "Velocidade", value: player.goalkeepingSpeed },
+            { label: "Diving", value: player.goalkeepingDiving },
+            { label: "Handling", value: player.goalkeepingHandling },
+            { label: "Kicking", value: player.goalkeepingKicking },
+            { label: "Positioning", value: player.goalkeepingPositioning },
+            { label: "Reflexes", value: player.goalkeepingReflexes },
+            { label: "Speed", value: player.goalkeepingSpeed },
           ],
         },
       ]
@@ -4007,20 +4007,20 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label={player ? `Detalhes de ${player.name}` : "Detalhes do jogador"}
+        aria-label={player ? `Details de ${player.name}` : "Details do jogador"}
         onMouseDown={(event) => event.stopPropagation()}
         className="ml-auto flex h-full w-full max-w-4xl flex-col overflow-hidden border-l border-border bg-card shadow-2xl"
       >
         <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 p-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Relatório de scout</p>
-            <h3 className="mt-1 font-display text-xl font-bold text-foreground">{player?.name ?? "Carregando jogador"}</h3>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Scout report</p>
+            <h3 className="mt-1 font-display text-xl font-bold text-foreground">{player?.name ?? "Loading player"}</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="Fechar detalhes"
+            aria-label="Close details"
           >
             <X size={16} />
           </button>
@@ -4030,7 +4030,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
           {isLoading && !player ? (
             <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
               <Loader2 size={20} className="animate-spin" />
-              Carregando detalhes...
+              Loading details...
             </div>
           ) : isError && !player ? (
             <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive">
@@ -4046,7 +4046,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h4 className="truncate font-display text-2xl font-bold text-foreground">{player.name}</h4>
-                          <p className="mt-1 truncate text-sm text-muted-foreground">{player.longName ?? "Nome completo não informado"}</p>
+                          <p className="mt-1 truncate text-sm text-muted-foreground">{player.longName ?? "Full name not provided"}</p>
                         </div>
                         <div className="text-right">
                           <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
@@ -4064,22 +4064,22 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
                       </div>
 
                       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        <MetricLine label="Potencial" value={player.potential} icon={Star} />
-                        <MetricLine label="Idade" value={`${player.age} anos`} icon={Calendar} />
-                        <MetricLine label="Altura" value={formatHeight(player.height)} icon={Ruler} />
-                        <MetricLine label="Pé" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
+                        <MetricLine label="Potential" value={player.potential} icon={Star} />
+                        <MetricLine label="Age" value={`${player.age} yr`} icon={Calendar} />
+                        <MetricLine label="Height" value={formatHeight(player.height)} icon={Ruler} />
+                        <MetricLine label="Foot" value={formatPreferredFoot(player.preferredFoot)} icon={Footprints} />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="card-gamer p-4">
-                  <p className="mb-3 font-display text-sm font-bold text-foreground">Mercado</p>
+                  <p className="mb-3 font-display text-sm font-bold text-foreground">Market</p>
                   <div className="grid gap-2">
-                    <MetricLine label="Valor" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
-                    <MetricLine label="Salário" value={formatWage(player.wage)} />
-                    <MetricLine label="Contrato" value={player.contractUntil ?? "—"} />
-                    <MetricLine label="Cláusula" value={formatMarketValue(player.releaseClause)} icon={BadgeEuro} />
+                    <MetricLine label="Value" value={formatMarketValue(player.marketValue)} icon={BadgeEuro} />
+                    <MetricLine label="Salary" value={formatWage(player.wage)} />
+                    <MetricLine label="Contract" value={player.contractUntil ?? "—"} />
+                    <MetricLine label="Clause" value={formatMarketValue(player.releaseClause)} icon={BadgeEuro} />
                   </div>
                 </div>
               </section>
@@ -4088,7 +4088,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
                 <div className="card-gamer p-4">
                   <div className="mb-3 flex items-center gap-2">
                     <Activity size={16} className="text-primary" />
-                    <p className="font-display text-sm font-bold text-foreground">Ratings gerais</p>
+                    <p className="font-display text-sm font-bold text-foreground">General ratings</p>
                   </div>
                   {hasGeneralRatings ? (
                     <div className="h-64">
@@ -4103,31 +4103,31 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
                     </div>
                   ) : (
                     <p className="rounded-md border border-border bg-background/35 p-4 text-sm text-muted-foreground">
-                      Ratings gerais não informados para este perfil.
+                      General ratings not available for this profile.
                     </p>
                   )}
                 </div>
 
                 <div className="card-gamer p-4">
-                  <p className="mb-3 font-display text-sm font-bold text-foreground">Resumo técnico</p>
+                  <p className="mb-3 font-display text-sm font-bold text-foreground">Technical summary</p>
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {generalRatings.map((rating) => (
                       <AttributeMeter key={rating.label} label={rating.label} value={rating.value} />
                     ))}
-                    <MetricLine label="Perna ruim" value={formatStars(player.weakFoot)} icon={Footprints} />
+                    <MetricLine label="Weak foot" value={formatStars(player.weakFoot)} icon={Footprints} />
                     <MetricLine label="Skill moves" value={formatStars(player.skillMoves)} icon={Sparkles} />
-                    <MetricLine label="Reputação" value={formatStars(player.internationalReputation)} icon={Star} />
+                    <MetricLine label="Reputation" value={formatStars(player.internationalReputation)} icon={Star} />
                     <MetricLine label="Work rate" value={player.workRate ?? "—"} />
-                    <MetricLine label="Tipo físico" value={player.bodyType ?? "—"} icon={Weight} />
-                    <MetricLine label="Nascimento" value={formatDate(player.dob)} icon={Calendar} />
+                    <MetricLine label="Body type" value={player.bodyType ?? "—"} icon={Weight} />
+                    <MetricLine label="Date of birth" value={formatDate(player.dob)} icon={Calendar} />
                   </div>
                 </div>
               </section>
 
               <section className="grid gap-4 lg:grid-cols-3">
-                <ChipPanel title="Tags de estilo" items={player.playerTags ?? []} emptyLabel="Sem tags registradas" />
-                <ChipPanel title="PlayStyles" items={basePlayStyles} emptyLabel="Sem PlayStyles registrados" />
-                <ChipPanel title="PlayStyles+" items={plusPlayStyles} emptyLabel="Sem PlayStyles+ registrados" />
+                <ChipPanel title="Style tags" items={player.playerTags ?? []} emptyLabel="No tags registered" />
+                <ChipPanel title="PlayStyles" items={basePlayStyles} emptyLabel="No PlayStyles registered" />
+                <ChipPanel title="PlayStyles+" items={plusPlayStyles} emptyLabel="No PlayStyles+ registered" />
               </section>
 
               <section className="grid gap-4 lg:grid-cols-2">
