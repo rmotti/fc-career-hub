@@ -140,7 +140,9 @@
       "existing": "Existing players will be kept (no duplicates).",
       "warning": "The dataset may not reflect the game's latest update. Even after importing, you may need to manually adjust some players to match your save.",
       "cancel": "Cancel",
-      "import": "Import"
+      "import": "Import",
+      "importing": "Importing...",
+      "skip": "Skip"
     },
     "toasts": {
       "playerUpdated": "Player updated!",

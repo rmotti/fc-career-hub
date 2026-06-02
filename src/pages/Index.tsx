@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertTriangle, Download, Loader2 } from "lucide-react";
@@ -21,6 +22,7 @@ import {
 } from "@/shared/ui/alert-dialog";
 
 const Index = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, signOut } = useAuth();
@@ -133,17 +135,17 @@ const Index = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Download size={18} className="text-primary" />
-              Importar elenco do {importPromptSave?.currentClubStint?.club ?? "clube"}?
+              {t("squad.import.dialogTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  Podemos preencher o seu elenco automaticamente com os jogadores do clube a partir do dataset oficial do FC26.
+                  {t("squad.import.body")}
                 </p>
                 <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
                   <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
                   <span>
-                    O dataset pode não estar 100% atualizado com a última atualização do jogo. Mesmo após importar, talvez seja necessário ajustar manualmente alguns jogadores para refletir o seu save.
+                    {t("squad.import.warning")}
                   </span>
                 </div>
               </div>
@@ -151,7 +153,7 @@ const Index = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={importFc26.isPending} onClick={closeImportPromptAndGo}>
-              Pular
+              {t("squad.import.skip")}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={importFc26.isPending}
@@ -162,10 +164,10 @@ const Index = () => {
             >
               {importFc26.isPending ? (
                 <>
-                  <Loader2 size={15} className="mr-2 animate-spin" /> Importando...
+                  <Loader2 size={15} className="mr-2 animate-spin" /> {t("squad.import.importing")}
                 </>
               ) : (
-                "Importar elenco"
+                t("squad.import.import")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
