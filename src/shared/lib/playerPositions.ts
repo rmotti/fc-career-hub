@@ -19,8 +19,8 @@ export const POSITION_LABELS: Record<PlayerPosition, string> = {
   ATA: "ST",
 };
 
-export function formatPosition(position: PlayerPosition): string {
-  return POSITION_LABELS[position] ?? position;
+export function formatPosition(position: string): string {
+  return POSITION_LABELS[position as PlayerPosition] ?? position;
 }
 
 export function normalizeAlternativePositions(
