@@ -13,6 +13,12 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
+# Private docs — internal risk register / technical-debt roadmap (never publish)
+docs/_private/
+
+# Env files — keep secrets out of git; commit only .env.example
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

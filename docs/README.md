@@ -10,14 +10,12 @@ Living documentation of the FC Career Hub product, generated from the current st
 
 ### [02_Domain](02_Domain/)
 - [2.1 Business Rules](02_Domain/2.1_Business_Rules.md) — domain rules extracted from code (Prisma schema, services, guards).
-- [2.2 Limitations and Risks](02_Domain/2.2_Limitations_and_Risks.md) — explicit non-goals, operational risks, fragile dependencies.
 
 ### [03_Technical](03_Technical/)
 - [3.1 Architecture](03_Technical/3.1_Architecture.md) — frontend FSD layers, API request flow, integration topology.
 - [3.2 Design System](03_Technical/3.2_Design_System.md) — tokens, palette, typography, customized shadcn components.
 - [3.3 API and Integrations](03_Technical/3.3_API_and_Integrations.md) — endpoints, response envelopes, error contract, MCP server.
 - [3.4 Code Standards](03_Technical/3.4_Code_Standards.md) — conventions, file organization, validation, testing.
-- [3.5 Technical Debt](03_Technical/3.5_Technical_Debt.md) — known gaps, hot spots, follow-ups.
 
 ### [03_Technical/Modules](03_Technical/Modules/)
 One file per functional module, grouped by responsibility (not by file):
@@ -43,7 +41,6 @@ One file per functional module, grouped by responsibility (not by file):
 ### For product / strategy
 1. [1.1 Overview](01_Product/1.1_Overview.md)
 2. [1.2 Roadmap](01_Product/1.2_Roadmap.md)
-3. [2.2 Limitations and Risks](02_Domain/2.2_Limitations_and_Risks.md)
 
 ### For engineering
 1. [AI_RULES.md](AI_RULES.md)
