@@ -118,8 +118,8 @@ Match the API contract exactly (see API's `CLAUDE.md`):
 - Co-locate schema with form when single-use; lift to `features/<name>/model/` when reused.
 
 ### 10. Tests
-- Unit/component: Vitest + Testing Library. Files: `*.test.ts(x)` next to source or in `src/test/`.
-- E2E: Playwright. Config in [`playwright.config.ts`](../playwright.config.ts). Fixture in [`playwright-fixture.ts`](../playwright-fixture.ts).
+- Unit/component: Vitest + Testing Library. Files: `*.test.ts(x)` next to source or under `src/test/` / `src/tests/`. Shared wrapper in `src/test/test-utils.tsx`.
+- E2E: Playwright, **deferred** — the config and [`src/tests/playwright-fixture.ts`](../src/tests/playwright-fixture.ts) exist, but the package isn't installed and there are no specs yet, so it doesn't run.
 
 ### 11. Language
 - **Code**: identifiers, types, file names — English.
