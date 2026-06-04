@@ -1,12 +1,18 @@
-const DEFAULT_API_URL = "https://career-hub-api.vercel.app";
+// Fallback API host for builds where VITE_API_URL is not provided.
+// Prefer setting VITE_API_URL explicitly (see .env.example).
+const DEFAULT_API_URL = "https://ample-love-production.up.railway.app";
 
 function resolveBaseUrl() {
-  const env = import.meta.env as ImportMetaEnv & {
-    NEXT_PUBLIC_API_URL?: string;
-    VITE_API_URL?: string;
-  };
-  const configuredBaseUrl = env.NEXT_PUBLIC_API_URL || env.VITE_API_URL || DEFAULT_API_URL;
-  const normalizedBaseUrl = configuredBaseUrl.replace(/\/$/, "");
+  const configuredBaseUrl = import.meta.env.VITE_API_URL;
+
+  if (!configuredBaseUrl && import.meta.env.MODE !== "test") {
+    console.warn(
+      "[api] VITE_API_URL is not set; falling back to the default Railway host. " +
+        "Define VITE_API_URL in your .env file to make this explicit.",
+    );
+  }
+
+  const normalizedBaseUrl = (configuredBaseUrl || DEFAULT_API_URL).replace(/\/$/, "");
 
   return normalizedBaseUrl.endsWith("/api")
     ? normalizedBaseUrl

@@ -19,6 +19,10 @@ docs/_private/
 # Env files — keep secrets out of git; commit only .env.example
 .env
 
+# Local agent state — machine-specific, not a project asset
+.claude/settings.local.json
+.agents/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

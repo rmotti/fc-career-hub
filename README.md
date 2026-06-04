@@ -61,13 +61,15 @@ The development server uses `http://localhost:8080` by default. Vite may pick th
 
 | Variable | Description |
 | --- | --- |
-| `VITE_API_URL` | Backend API base URL |
+| `VITE_API_URL` | Backend API base URL (the `/api` suffix is appended automatically). Only `VITE_*` names are read. |
 
-Create a `.env.local` file at the repository root:
+Copy [`.env.example`](.env.example) to `.env.local` at the repository root and adjust the value:
 
 ```env
 VITE_API_URL=https://your-api.com
 ```
+
+If `VITE_API_URL` is unset, the client falls back to the default Railway host and logs a warning.
 
 ---
 
