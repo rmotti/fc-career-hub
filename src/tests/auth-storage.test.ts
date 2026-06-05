@@ -1,22 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  clearStoredToken,
   clearStoredUser,
-  getStoredToken,
   getStoredUser,
-  setStoredToken,
+  purgeLegacySessionToken,
   setStoredUser,
 } from "@/features/auth/lib/auth-storage";
 
 describe("auth-storage", () => {
   beforeEach(() => {
     window.localStorage.clear();
-  });
-
-  it("persists and retrieves the session token", () => {
-    setStoredToken("token-123");
-
-    expect(getStoredToken()).toBe("token-123");
   });
 
   it("persists and retrieves the authenticated user", () => {
@@ -38,14 +30,19 @@ describe("auth-storage", () => {
     expect(window.localStorage.getItem("session_user")).toBeNull();
   });
 
-  it("clears stored token and user", () => {
-    setStoredToken("token-123");
+  it("clears the stored user", () => {
     setStoredUser({ id: "user-1" });
 
-    clearStoredToken();
     clearStoredUser();
 
-    expect(getStoredToken()).toBeNull();
     expect(getStoredUser()).toBeNull();
+  });
+
+  it("purges a legacy session token left over from before the cookie cutover", () => {
+    window.localStorage.setItem("session_token", "legacy-token");
+
+    purgeLegacySessionToken();
+
+    expect(window.localStorage.getItem("session_token")).toBeNull();
   });
 });

@@ -27,6 +27,20 @@ export function registerUnauthorizedHandler(handler: (() => void) | null) {
   unauthorizedHandler = handler;
 }
 
+// The session token lives in a cross-site httpOnly cookie, so the SPA can't read
+// the matching csrf cookie via document.cookie. Instead it keeps the CSRF token
+// in memory (from the sign-in body or GET /auth/csrf) and echoes it back in the
+// X-CSRF-Token header on writes (double-submit).
+let inMemoryCsrfToken: string | null = null;
+
+export function setCsrfToken(token: string | null) {
+  inMemoryCsrfToken = token;
+}
+
+export function clearCsrfToken() {
+  inMemoryCsrfToken = null;
+}
+
 export class ApiError extends Error {
   status?: number;
   data?: any;
@@ -66,6 +80,7 @@ export interface ApiSession {
 
 export interface AuthSuccessResponse {
   token: string;
+  csrfToken: string;
   user: ApiUser;
 }
 
@@ -96,18 +111,40 @@ export function extractErrorMessage(err: any): string {
   return apiError || err?.message || "Unexpected error. Try again.";
 }
 
+const CSRF_EXEMPT_PREFIXES = ["/auth/sign-in", "/auth/sign-up"];
+const NON_MUTATING_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+// Lazily fetch a CSRF token (e.g. after a reload, when the in-memory token was
+// lost but the session cookie persists). GET /auth/csrf is itself exempt, so
+// this never recurses.
+async function ensureCsrfToken() {
+  if (inMemoryCsrfToken) return;
+  try {
+    const res = await request<{ csrfToken: string }>("/auth/csrf");
+    inMemoryCsrfToken = res.csrfToken;
+  } catch {
+    // Leave it unset; the write will be rejected and the error surfaces normally.
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = typeof window !== "undefined"
-    ? window.localStorage.getItem("session_token")
-    : null;
+  const method = (options?.method ?? "GET").toUpperCase();
+  const needsCsrf =
+    !NON_MUTATING_METHODS.has(method) &&
+    !CSRF_EXEMPT_PREFIXES.some((prefix) => path.startsWith(prefix));
+
+  if (needsCsrf) {
+    await ensureCsrfToken();
+  }
 
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       ...options,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(needsCsrf && inMemoryCsrfToken ? { "X-CSRF-Token": inMemoryCsrfToken } : {}),
         ...options?.headers,
       },
     });

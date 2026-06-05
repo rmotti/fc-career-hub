@@ -4,7 +4,6 @@ import type { ApiSession, ApiUser } from "@/shared/api/client";
 export type AuthContextValue = {
   user: ApiUser | null;
   session: ApiSession | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (data: { email: string; password: string }) => Promise<void>;

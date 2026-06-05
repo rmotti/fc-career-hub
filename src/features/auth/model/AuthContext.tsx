@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { authApi, registerUnauthorizedHandler, type ApiSession, type ApiUser } from "@/shared/api/client";
+import {
+  authApi,
+  clearCsrfToken,
+  registerUnauthorizedHandler,
+  setCsrfToken,
+  type ApiSession,
+  type ApiUser,
+} from "@/shared/api/client";
 import {
   clearStoredActiveSaveId,
-  clearStoredToken,
   clearStoredUser,
-  getStoredToken,
   getStoredUser,
-  setStoredToken,
+  purgeLegacySessionToken,
   setStoredUser,
 } from "@/features/auth/lib/auth-storage";
 import { AuthContext, type AuthContextValue } from "@/features/auth/model/auth-context-core";
@@ -16,7 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<ApiUser | null>(null);
   const [session, setSession] = useState<ApiSession | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<ApiUser | null>(null);
 
@@ -33,33 +37,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(() => {
     const userId = userRef.current?.id;
 
-    clearStoredToken();
     clearStoredUser();
+    clearCsrfToken();
     if (userId) {
       clearStoredActiveSaveId(userId);
     }
 
     setUser(null);
     setSession(null);
-    setToken(null);
     queryClient.clear();
   }, [queryClient]);
 
   const hydrateSession = useCallback(async () => {
-    const storedToken = getStoredToken();
+    purgeLegacySessionToken();
     const storedUser = getStoredUser<ApiUser>();
 
-    if (!storedToken) {
+    // No cached user → treat as signed out. A bare session cookie without a
+    // cached user is re-established on the next explicit sign-in.
+    if (!storedUser) {
       setIsLoading(false);
       return;
     }
 
-    setToken(storedToken);
-    if (storedUser) {
-      setUser(storedUser);
-      setIsLoading(false);
-      return;
-    }
+    // Optimistically show the cached user, then validate the cookie session.
+    setUser(storedUser);
 
     try {
       const currentSession = await authApi.getSession();
@@ -90,9 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (data: { email: string; password: string }) => {
     const authResponse = await authApi.signIn(data);
-    setStoredToken(authResponse.token);
+    setCsrfToken(authResponse.csrfToken);
     setStoredUser(authResponse.user);
-    setToken(authResponse.token);
     setUser(authResponse.user);
 
     const currentSession = await authApi.getSession().catch(() => null);
@@ -105,9 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (data: { name: string; email: string; password: string }) => {
     const authResponse = await authApi.signUp({ ...data, plan: "FREE" });
-    setStoredToken(authResponse.token);
+    setCsrfToken(authResponse.csrfToken);
     setStoredUser(authResponse.user);
-    setToken(authResponse.token);
     setUser(authResponse.user);
 
     const currentSession = await authApi.getSession().catch(() => null);
@@ -131,14 +130,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     user,
     session,
-    token,
     isLoading,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: !!user,
     signIn,
     signUp,
     signOut,
     clearSession,
-  }), [clearSession, isLoading, session, signIn, signOut, signUp, token, user]);
+  }), [clearSession, isLoading, session, signIn, signOut, signUp, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

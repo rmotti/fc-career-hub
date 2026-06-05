@@ -26,9 +26,10 @@ const { authApiMock, registerMock, handlerRef } = vi.hoisted(() => {
 vi.mock("@/shared/api/client", () => ({
   authApi: authApiMock,
   registerUnauthorizedHandler: registerMock,
+  setCsrfToken: vi.fn(),
+  clearCsrfToken: vi.fn(),
 }));
 
-const TOKEN_KEY = "session_token";
 const USER_KEY = "session_user";
 
 const fakeUser = {
@@ -44,6 +45,10 @@ const fakeUser = {
 };
 
 const fakeSession = { id: "session-1", expiresAt: "2026-12-31T00:00:00.000Z", userId: "user-1" };
+
+function cacheUser() {
+  localStorage.setItem(USER_KEY, JSON.stringify(fakeUser));
+}
 
 function renderAuth() {
   const client = createTestQueryClient();
@@ -64,8 +69,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("AuthProvider — session hydration", () => {
-  it("stays unauthenticated and skips getSession when no token is stored", async () => {
+describe("AuthProvider — session hydration (cookie-based)", () => {
+  it("stays unauthenticated and skips getSession when no user is cached", async () => {
     const { result } = renderAuth();
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -73,45 +78,33 @@ describe("AuthProvider — session hydration", () => {
     expect(authApiMock.getSession).not.toHaveBeenCalled();
   });
 
-  it("hydrates straight from storage (no getSession) when token + user exist", async () => {
-    localStorage.setItem(TOKEN_KEY, "tok");
-    localStorage.setItem(USER_KEY, JSON.stringify(fakeUser));
-
-    const { result } = renderAuth();
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user?.email).toBe("ana@example.com");
-    expect(authApiMock.getSession).not.toHaveBeenCalled();
-  });
-
-  it("fetches the session when a token exists but no user is cached", async () => {
-    localStorage.setItem(TOKEN_KEY, "tok");
+  it("shows the cached user and validates the cookie session via getSession", async () => {
+    cacheUser();
     authApiMock.getSession.mockResolvedValue({ user: fakeUser, session: fakeSession });
 
     const { result } = renderAuth();
 
     await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+    expect(result.current.user?.email).toBe("ana@example.com");
     expect(authApiMock.getSession).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem(USER_KEY)).toContain("ana@example.com");
   });
 
-  it("clears the session when getSession rejects", async () => {
-    localStorage.setItem(TOKEN_KEY, "tok");
+  it("clears the session when the cookie session is no longer valid", async () => {
+    cacheUser();
     authApiMock.getSession.mockRejectedValue(new Error("unauthorized"));
 
     const { result } = renderAuth();
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.isAuthenticated).toBe(false);
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+    expect(localStorage.getItem(USER_KEY)).toBeNull();
   });
 });
 
 describe("AuthProvider — 401 sign-out", () => {
   it("clears auth state and storage when the unauthorized handler fires", async () => {
-    localStorage.setItem(TOKEN_KEY, "tok");
-    localStorage.setItem(USER_KEY, JSON.stringify(fakeUser));
+    cacheUser();
+    authApiMock.getSession.mockResolvedValue({ user: fakeUser, session: fakeSession });
 
     const { result } = renderAuth();
     await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
@@ -124,7 +117,6 @@ describe("AuthProvider — 401 sign-out", () => {
     });
 
     await waitFor(() => expect(result.current.isAuthenticated).toBe(false));
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
     expect(localStorage.getItem(USER_KEY)).toBeNull();
   });
 });
