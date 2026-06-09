@@ -25,3 +25,31 @@ export function useUpdateTeamStats() {
     },
   });
 }
+
+export function useCreateTeamStats() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId, data }: { saveId: string; data: Parameters<typeof teamStatsApi.create>[1] }) =>
+      teamStatsApi.create(saveId, data),
+    onSuccess: (_res, vars) => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["saves", vars.saveId] })
+      ]);
+    },
+  });
+}
+
+export function useDeleteTeamStats() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId, statsId }: { saveId: string; statsId: string }) =>
+      teamStatsApi.delete(saveId, statsId),
+    onSuccess: (_res, vars) => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["teamStats", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["saves", vars.saveId] })
+      ]);
+    },
+  });
+}

@@ -8,8 +8,10 @@ import {
   ListFilter,
   Loader2,
   Pencil,
+  Plus,
   ShieldCheck,
   Target,
+  Trash2,
   Trophy,
   Users,
   Zap,
@@ -17,16 +19,32 @@ import {
 import Flag from "react-world-flags";
 import { toast } from "sonner";
 import StatsModal from "@/features/squad/ui/StatsModal";
+import AddCompetitionModal from "@/features/stats/ui/AddCompetitionModal";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { usePlayers } from "@/features/squad/model/usePlayers";
-import { useTeamStats, useUpdateTeamStats } from "@/features/stats/model/useTeamStats";
+import {
+  useTeamStats,
+  useUpdateTeamStats,
+  useCreateTeamStats,
+  useDeleteTeamStats,
+} from "@/features/stats/model/useTeamStats";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import type { ApiPlayer, ApiTeamStats } from "@/shared/api/client";
+import { extractErrorMessage, type ApiPlayer, type ApiTeamStats } from "@/shared/api/client";
 import { formatPosition } from "@/shared/lib/playerPositions";
 import {
   CUP_LABELS,
@@ -294,9 +312,10 @@ interface CompetitionCardProps {
   stat: ApiTeamStats;
   canEdit: boolean;
   onEdit: () => void;
+  onRemove: () => void;
 }
 
-function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
+function CompetitionCard({ stat, canEdit, onEdit, onRemove }: CompetitionCardProps) {
   const isLeague = stat.competition?.type === "League";
   const isEuropean = stat.competition?.type === "EuropeanCup";
   const matches = stat.wins + stat.draws + stat.losses;
@@ -345,16 +364,27 @@ function CompetitionCard({ stat, canEdit, onEdit }: CompetitionCardProps) {
         </div>
 
         {canEdit && (
-          <button
-            data-tour="stats-edit-competition"
-            type="button"
-            onClick={onEdit}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-            title="Edit statistics"
-            aria-label="Edit statistics"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              data-tour="stats-edit-competition"
+              type="button"
+              onClick={onEdit}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              title="Edit statistics"
+              aria-label="Edit statistics"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+              title="Remove competition"
+              aria-label="Remove competition"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
     </article>
@@ -608,6 +638,9 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
   const [selectedStat, setSelectedStat] = useState<ApiTeamStats | null>(null);
   const [playerStatModal, setPlayerStatModal] = useState<PlayerStatModalKey>(null);
   const [activeRanking, setActiveRanking] = useState<RankingTabKey>("goals");
+  const [addCompetitionOpen, setAddCompetitionOpen] = useState(false);
+  const [statToRemove, setStatToRemove] = useState<ApiTeamStats | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const isPastSeason = !!(selectedSeason && currentSeason && selectedSeason !== currentSeason);
   const statsSeason = selectedSeason || currentSeason;
@@ -615,6 +648,10 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
   const { data: squad = [], isLoading: isLoadingPlayers } = usePlayers(saveId, true, statsSeason);
   const { data: teamStatsData = [], isLoading: isLoadingTeamStats } = useTeamStats(saveId, statsSeason, currentClubStintId);
   const updateTeamStats = useUpdateTeamStats();
+  const createTeamStats = useCreateTeamStats();
+  const deleteTeamStats = useDeleteTeamStats();
+
+  const registeredCompetitionIds = teamStatsData.map((stat) => stat.competitionId);
 
   const teamStats = getAggregateTeamStats(teamStatsData);
   const groupedStats = groupTeamStatsBySeason(teamStatsData);
@@ -768,6 +805,28 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
     setSelectedStat(null);
   };
 
+  const handleAddCompetition = async (competitionId: string) => {
+    await createTeamStats.mutateAsync({
+      saveId,
+      data: { competitionId, season: statsSeason, clubStintId: currentClubStintId ?? undefined },
+    });
+    toast.success("Competition added!", { duration: 3000 });
+  };
+
+  const handleRemoveCompetition = async () => {
+    if (!statToRemove) return;
+    setIsRemoving(true);
+    try {
+      await deleteTeamStats.mutateAsync({ saveId, statsId: statToRemove.id });
+      toast.success("Competition removed.", { duration: 3000 });
+      setStatToRemove(null);
+    } catch (err: any) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   if (isLoadingPlayers || isLoadingTeamStats) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
@@ -818,41 +877,64 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
         </section>
       )}
 
-      {groupedStats.length > 0 && (
+      {(groupedStats.length > 0 || !isPastSeason) && (
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[hsl(var(--gold)/0.1)] text-[hsl(var(--gold))]">
-              <Trophy size={15} />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[hsl(var(--gold)/0.1)] text-[hsl(var(--gold))]">
+                <Trophy size={15} />
+              </div>
+              <div>
+                <h2 className="font-display text-xl font-bold leading-none">Competitions</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Where the season was decided, competition by competition.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-display text-xl font-bold leading-none">Competitions</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Where the season was decided, competition by competition.</p>
-            </div>
+
+            {!isPastSeason && (
+              <button
+                type="button"
+                onClick={() => setAddCompetitionOpen(true)}
+                className="flex items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2 font-display text-sm font-bold text-primary transition-colors hover:bg-primary/15"
+              >
+                <Plus size={15} />
+                Add competition
+              </button>
+            )}
           </div>
 
-          {groupedStats.map((group) => (
-            <div key={group.season} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  {group.season}
-                </p>
-                <div className="h-px flex-1 bg-border" />
+          {groupedStats.length > 0 ? (
+            groupedStats.map((group) => (
+              <div key={group.season} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                    {group.season}
+                  </p>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {group.stats.map((stat) => (
+                    <CompetitionCard
+                      key={stat.id}
+                      stat={stat}
+                      canEdit={!isPastSeason}
+                      onEdit={() => {
+                        setSelectedStat(stat);
+                        setStatsModalOpen(true);
+                      }}
+                      onRemove={() => setStatToRemove(stat)}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 gap-3">
-                {group.stats.map((stat) => (
-                  <CompetitionCard
-                    key={stat.id}
-                    stat={stat}
-                    canEdit={!isPastSeason}
-                    onEdit={() => {
-                      setSelectedStat(stat);
-                      setStatsModalOpen(true);
-                    }}
-                  />
-                ))}
-              </div>
+            ))
+          ) : (
+            <div className="rounded-md border border-dashed border-border bg-background/20 p-6 text-center">
+              <p className="font-display text-base font-bold text-foreground">No competitions registered</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Add the competitions your club is playing this season to start tracking results.
+              </p>
             </div>
-          ))}
+          )}
         </section>
       )}
 
@@ -875,6 +957,36 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
         onOpenChange={(open) => { if (!open) setPlayerStatModal(null); }}
         meta={playerStatModalMeta}
       />
+
+      <AddCompetitionModal
+        open={addCompetitionOpen}
+        onOpenChange={setAddCompetitionOpen}
+        season={statsSeason}
+        registeredCompetitionIds={registeredCompetitionIds}
+        onAdd={handleAddCompetition}
+      />
+
+      <AlertDialog open={!!statToRemove} onOpenChange={(open) => { if (!open && !isRemoving) setStatToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove competition?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes <span className="font-semibold text-foreground">{statToRemove?.competition?.name ?? "this competition"}</span> from {statToRemove?.season} and deletes its recorded results. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleRemoveCompetition(); }}
+              disabled={isRemoving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isRemoving ? <Loader2 size={14} className="mr-2 animate-spin" /> : null}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
