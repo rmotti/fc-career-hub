@@ -652,6 +652,8 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
   const deleteTeamStats = useDeleteTeamStats();
 
   const registeredCompetitionIds = teamStatsData.map((stat) => stat.competitionId);
+  const saveCountry =
+    teamStatsData.find((stat) => stat.competition?.type === "League")?.competition?.country ?? null;
 
   const teamStats = getAggregateTeamStats(teamStatsData);
   const groupedStats = groupTeamStatsBySeason(teamStatsData);
@@ -962,6 +964,7 @@ const StatsScreen = ({ saveId, selectedSeason, currentSeason, currentClubStintId
         open={addCompetitionOpen}
         onOpenChange={setAddCompetitionOpen}
         season={statsSeason}
+        saveCountry={saveCountry}
         registeredCompetitionIds={registeredCompetitionIds}
         onAdd={handleAddCompetition}
       />

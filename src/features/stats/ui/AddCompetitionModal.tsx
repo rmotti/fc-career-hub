@@ -9,6 +9,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   season?: string;
+  saveCountry: string | null;
   registeredCompetitionIds: string[];
   onAdd: (competitionId: string) => Promise<void>;
 }
@@ -31,7 +32,7 @@ const groupByType = (competitions: ApiCompetition[]) =>
       .sort((a, b) => a.name.localeCompare(b.name)),
   })).filter((group) => group.competitions.length > 0);
 
-const AddCompetitionModal = ({ open, onOpenChange, season, registeredCompetitionIds, onAdd }: Props) => {
+const AddCompetitionModal = ({ open, onOpenChange, season, saveCountry, registeredCompetitionIds, onAdd }: Props) => {
   const { data: competitions = [], isLoading } = useCompetitions();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,8 +46,16 @@ const AddCompetitionModal = ({ open, onOpenChange, season, registeredCompetition
 
   const registered = useMemo(() => new Set(registeredCompetitionIds), [registeredCompetitionIds]);
   const available = useMemo(
-    () => competitions.filter((competition) => !registered.has(competition.id)),
-    [competitions, registered],
+    () =>
+      competitions.filter((competition) => {
+        if (registered.has(competition.id)) return false;
+        // Only the save's own country competitions plus the European cups.
+        // When the country can't be determined, fall back to showing everything
+        // so the user is never left with an empty list.
+        if (competition.type === "EuropeanCup") return true;
+        return saveCountry ? competition.country === saveCountry : true;
+      }),
+    [competitions, registered, saveCountry],
   );
   const groups = useMemo(() => groupByType(available), [available]);
 
@@ -69,8 +78,8 @@ const AddCompetitionModal = ({ open, onOpenChange, season, registeredCompetition
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] max-w-2xl overflow-hidden border-border bg-card p-0">
-        <div className="border-b border-border bg-background/35 px-5 py-4">
+      <DialogContent className="flex max-h-[88vh] max-w-2xl flex-col overflow-hidden border-border bg-card p-0">
+        <div className="shrink-0 border-b border-border bg-background/35 px-5 py-4">
           <DialogHeader>
             <div className="mb-2 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -89,7 +98,7 @@ const AddCompetitionModal = ({ open, onOpenChange, season, registeredCompetition
           </DialogHeader>
         </div>
 
-        <div className="flex max-h-[calc(88vh-180px)] flex-col overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
               <Loader2 size={18} className="animate-spin" /> Loading competitions...
@@ -144,7 +153,7 @@ const AddCompetitionModal = ({ open, onOpenChange, season, registeredCompetition
           )}
         </div>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-border bg-background/35 p-4 sm:flex-row sm:justify-end">
+        <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-background/35 p-4 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
