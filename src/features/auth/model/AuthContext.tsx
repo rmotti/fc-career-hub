@@ -65,7 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const currentSession = await authApi.getSession();
 
-      if (!currentSession) {
+      // The API answers an unauthenticated request with `{}` (HTTP 200), not
+      // `null`/401 — so guard on the user, not on the object, otherwise an empty
+      // body would slip through and clobber the cached user with `undefined`.
+      if (!currentSession?.user) {
         clearSession();
         return;
       }

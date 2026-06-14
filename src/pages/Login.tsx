@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Loader2, Trophy, ArrowLeft, BarChart2, Calendar, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -108,6 +108,8 @@ function LeftPanel() {
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { from?: string } | null)?.from ?? "/app";
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -118,7 +120,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await signIn({ email, password });
-      navigate("/app", { replace: true });
+      navigate(returnTo, { replace: true });
       toast.success(t("auth.login.success"));
     } catch (error: any) {
       const status = error?.status || error?.response?.status;

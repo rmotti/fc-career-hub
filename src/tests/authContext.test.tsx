@@ -99,6 +99,19 @@ describe("AuthProvider — session hydration (cookie-based)", () => {
     expect(result.current.isAuthenticated).toBe(false);
     expect(localStorage.getItem(USER_KEY)).toBeNull();
   });
+
+  it("clears the session when getSession resolves an empty body (unauthenticated 200)", async () => {
+    // The API answers an unauthenticated request with `{}` (HTTP 200). Treat it
+    // as signed out instead of letting `undefined` clobber the cached user.
+    cacheUser();
+    authApiMock.getSession.mockResolvedValue({});
+
+    const { result } = renderAuth();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(localStorage.getItem(USER_KEY)).toBeNull();
+  });
 });
 
 describe("AuthProvider — 401 sign-out", () => {
