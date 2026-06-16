@@ -33,7 +33,7 @@ Isso significa que uma landing page realmente voltada para conversao provavelmen
 ### API
 
 - Cliente HTTP manual em `src/services/api.ts`
-- URL padrao: `https://career-hub-api.vercel.app/api`
+- URL padrao: `https://ample-love-production.up.railway.app/api`
 - Sessao baseada em token salvo no `localStorage`
 
 ### Testes
