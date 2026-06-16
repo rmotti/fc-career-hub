@@ -7,7 +7,7 @@ export const POSITION_LABELS: Record<PlayerPosition, string> = {
   GOL: "GK",
   LD: "RB",
   LE: "LB",
-  ZAG: "ZAG",
+  ZAG: "CB",
   VOL: "CDM",
   MC: "CM",
   MEI: "CAM",
