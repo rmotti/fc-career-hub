@@ -268,8 +268,8 @@ function HeroDashboardMockup() {
         <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem] items-center gap-x-2 border-b border-border/30 bg-background/30 px-4 py-2">
           <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">#</span>
           <span className="font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Player</span>
-          <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Gols</span>
-          <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">JG</span>
+          <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">Goals</span>
+          <span className="text-center font-body text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">MP</span>
         </div>
 
         {/* Scorer rows */}

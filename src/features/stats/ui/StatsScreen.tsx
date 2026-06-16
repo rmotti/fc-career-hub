@@ -336,7 +336,7 @@ function CompetitionCard({ stat, canEdit, onEdit, onRemove }: CompetitionCardPro
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate font-display text-lg font-bold text-foreground">{stat.competition?.name ?? "Competição"}</p>
+            <p className="truncate font-display text-lg font-bold text-foreground">{stat.competition?.name ?? "Competition"}</p>
             <span className="rounded-full border border-border bg-background/30 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
               {typeLabel}
             </span>
@@ -357,7 +357,7 @@ function CompetitionCard({ stat, canEdit, onEdit, onRemove }: CompetitionCardPro
           <CompactStat label="Win %" value={`${winRate}%`} highlight={winRate >= 60 ? "primary" : winRate >= 40 ? "warning" : "destructive"} />
           <CompactStat label="Goals" value={`${stat.goalsPro}:${stat.goalsAgainst}`} />
           <CompactStat
-            label="Saldo"
+            label="GD"
             value={goalDiff > 0 ? `+${goalDiff}` : String(goalDiff)}
             highlight={goalDiff > 0 ? "primary" : goalDiff < 0 ? "destructive" : "muted"}
           />

@@ -1324,7 +1324,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     const savedQuery: SavedScoutQuery = {
       id: createQueryId(),
       title: createSavedQueryTitle(appliedFilters),
-      description: `${formatInteger(total)} jogador${total === 1 ? "" : "es"} encontrados no dataset FC 26.`,
+      description: `${formatInteger(total)} player${total === 1 ? "" : "s"} found in the FC 26 dataset.`,
       source: "manual",
       club: currentClub,
       season: currentSeason,
@@ -1599,7 +1599,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                     {chatMessages.map((msg) => (
                       <ChatBubble
                         key={msg.id}
-                        speaker={msg.role === "user" ? "Você" : "Junior"}
+                        speaker={msg.role === "user" ? "You" : "Junior"}
                         tone={msg.role === "user" ? "user" : "assistant"}
                         markdown={msg.role === "assistant"}
                       >
@@ -1694,7 +1694,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   </div>
                   <p className="font-display text-base font-semibold text-foreground">No saved folders</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Aplique uma busca em Search players e salve a consulta para ela aparecer aqui.
+                    Run a search in Search players and save the query for it to show up here.
                   </p>
                 </div>
               ) : (
@@ -1826,7 +1826,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   <h3 className="font-display text-lg font-bold leading-none">Search players</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {hasSearched
-                      ? `${visibleStart}-${visibleEnd} de ${formatInteger(total)} jogadores`
+                      ? `${visibleStart}-${visibleEnd} of ${formatInteger(total)} players`
                       : "Set filters to start the search"}
                   </p>
                 </div>
@@ -1848,7 +1848,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   className="flex h-9 items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   <Save size={15} />
-                  Salvar
+                  Save
                 </button>
                 <button
                   type="button"
@@ -2016,7 +2016,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   }}
                 />
                 <MultiSelectCombobox
-                  label="Clubes"
+                  label="Clubs"
                   placeholder={draft.leagues.length ? "Search club in league..." : "Select a league first"}
                   emptyLabel={isLoadingFilters ? "Loading clubs..." : "No club found"}
                   options={clubOptions}
@@ -2122,7 +2122,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   <table className={`w-full text-left ${hasFitScores ? "min-w-[1420px]" : "min-w-[1320px]"}`}>
                     <thead className="bg-muted/35">
                       <tr className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                        <th className="px-4 py-3 font-semibold">Jogador</th>
+                        <th className="px-4 py-3 font-semibold">Player</th>
                         <th className="px-4 py-3 font-semibold">Positions</th>
                         {hasFitScores && (
                           <th
@@ -2164,7 +2164,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                         </th>
                         <th className="px-4 py-3 font-semibold">Perfil</th>
                         <th className="px-4 py-3 font-semibold">Attributes</th>
-                        <th className="px-4 py-3 font-semibold">Clube</th>
+                        <th className="px-4 py-3 font-semibold">Club</th>
                         <th className="px-4 py-3 text-right font-semibold">Value</th>
                       </tr>
                     </thead>
@@ -2435,7 +2435,7 @@ function ShortlistPositionGroupCard({
           <div className="min-w-0">
             <h4 className="truncate font-display text-lg font-bold text-foreground">{POSITION_LABELS[group.position]}</h4>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {group.players.length} jogador{group.players.length === 1 ? "" : "es"} · avg. OVR {averageOvr ?? "—"}
+              {group.players.length} player{group.players.length === 1 ? "" : "s"} · avg. OVR {averageOvr ?? "—"}
             </p>
           </div>
           <ChevronDown
@@ -2581,7 +2581,7 @@ function SavedQueryResults({
         <div>
           <h4 className="font-display text-base font-bold text-foreground">Query results</h4>
           <p className="text-sm text-muted-foreground">
-            Snapshot with {query.results.length} de {formatInteger(query.total)} jogador{query.total === 1 ? "" : "es"} encontrados.
+            Snapshot with {query.results.length} of {formatInteger(query.total)} player{query.total === 1 ? "" : "s"} found.
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-1.5 rounded border border-border bg-background/45 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
@@ -2780,7 +2780,7 @@ interface FilterNumberInputProps {
 }
 
 function FilterNumberInput({ label, value, min, max, placeholder, allowDecimal = false, onChange }: FilterNumberInputProps) {
-  const fallbackPlaceholder = label.toLocaleLowerCase("pt-BR").includes("máximo")
+  const fallbackPlaceholder = label.toLowerCase().includes("max")
     ? (typeof max === "number" ? `Max ${max}` : "Max")
     : (typeof min === "number" ? `Min ${min}` : "Min");
 
@@ -2873,7 +2873,7 @@ function AdvancedAttributeFilters({ open, activeCount, ranges, onToggle, onClear
       {open && (
         <div className="border-t border-border p-4">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">Defina valores mínimos e máximos só nos atributos que importam para o perfil.</p>
+            <p className="text-sm text-muted-foreground">Set minimum and maximum values only on the attributes that matter for the profile.</p>
             {activeCount > 0 && (
               <button
                 type="button"
@@ -3195,7 +3195,7 @@ function PlayerComparisonModal({
       <section
         role="dialog"
         aria-modal="true"
-        aria-label="Comparison de jogadores"
+        aria-label="Player comparison"
         onMouseDown={(event) => event.stopPropagation()}
         className="mx-auto flex h-full max-h-[940px] w-full max-w-6xl flex-col overflow-hidden rounded-md border border-border bg-card shadow-2xl"
       >
@@ -3610,8 +3610,8 @@ function PlayerTableRow({
                   ? "border-primary/35 bg-primary/10 text-primary"
                   : "border-border bg-muted/40 text-muted-foreground hover:border-primary/35 hover:text-primary"
               }`}
-              aria-label={`${isShortlisted ? "Remove" : "Adicionar"} ${player.name} ${isShortlisted ? "da" : "à"} Shortlist`}
-              title={isShortlisted ? "Remove da Shortlist" : "Adicionar à Shortlist"}
+              aria-label={`${isShortlisted ? "Remove" : "Add"} ${player.name} ${isShortlisted ? "from" : "to"} Shortlist`}
+              title={isShortlisted ? "Remove from Shortlist" : "Add to Shortlist"}
             >
               {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
               <span>{isShortlisted ? "In list" : "Lista"}</span>
@@ -4007,7 +4007,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label={player ? `Details de ${player.name}` : "Details do jogador"}
+        aria-label={player ? `Details for ${player.name}` : "Player details"}
         onMouseDown={(event) => event.stopPropagation()}
         className="ml-auto flex h-full w-full max-w-4xl flex-col overflow-hidden border-l border-border bg-card shadow-2xl"
       >

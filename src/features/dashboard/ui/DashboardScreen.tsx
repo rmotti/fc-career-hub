@@ -393,7 +393,7 @@ const DashboardScreen = ({ saveId }: Props) => {
               {trophies.slice(0, 4).map((trophy) => (
                 <div key={trophy.id} className="rounded-md border border-border bg-background/30 px-3 py-2">
                   <p className="truncate text-sm font-medium text-foreground">{trophy.competition.name}</p>
-                  <p className="text-xs text-muted-foreground">{trophy.club ?? "Clube"} · {trophy.year}/{String(trophy.year + 1).slice(-2)}</p>
+                  <p className="text-xs text-muted-foreground">{trophy.club ?? "Club"} · {trophy.year}/{String(trophy.year + 1).slice(-2)}</p>
                 </div>
               ))}
             </div>

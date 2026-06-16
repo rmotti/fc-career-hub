@@ -765,10 +765,10 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
           playbookId: editingPlaybook.id,
           data: { name: payload.name, weights: payload.weights, preferences: payload.preferences, isDefault: payload.isDefault },
         });
-        toast.success("Playbook atualizado com sucesso.");
+        toast.success("Playbook updated.");
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Playbook criado com sucesso.");
+        toast.success("Playbook created.");
       }
       closeSheet();
     } catch (err) {

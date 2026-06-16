@@ -137,7 +137,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
   if (!stat) return null;
 
   const isLeague = stat.competition?.type === "League";
-  const competitionName = stat.competition?.name ?? "Competição";
+  const competitionName = stat.competition?.name ?? "Competition";
   const resultLabel = isLeague
     ? form.leaguePosition === "" ? "Position pending" : `${form.leaguePosition}th place`
     : CUP_OPTIONS.find((opt) => opt.value === form.cupResult)?.label ?? "Result pending";

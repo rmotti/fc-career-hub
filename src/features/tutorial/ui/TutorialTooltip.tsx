@@ -41,8 +41,8 @@ const TutorialTooltip = ({
             {...closeProps}
             type="button"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-            aria-label="Fechar tutorial"
-            title="Fechar tutorial"
+            aria-label="Close tutorial"
+            title="Close tutorial"
           >
             <X size={16} />
           </button>
@@ -65,7 +65,7 @@ const TutorialTooltip = ({
             type="button"
             className="rounded-md px-1 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
-            Pular
+            Skip
           </button>
 
           <div className="flex items-center gap-2">
@@ -74,8 +74,8 @@ const TutorialTooltip = ({
                 {...backProps}
                 type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background/55 text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                aria-label="Voltar"
-                title="Voltar"
+                aria-label="Back"
+                title="Back"
               >
                 <ChevronLeft size={17} />
               </button>
@@ -85,7 +85,7 @@ const TutorialTooltip = ({
               type="button"
               className="rounded-md bg-primary px-4 py-2.5 font-display text-sm font-bold text-primary-foreground shadow-[0_0_22px_hsl(var(--primary)/0.22)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              {isLastStep ? "Concluir" : "Próximo"}
+              {isLastStep ? "Finish" : "Next"}
             </button>
           </div>
         </footer>

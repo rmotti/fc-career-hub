@@ -87,9 +87,9 @@ const HubTutorial = ({ userId, startRequest }: HubTutorialProps) => {
             <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
               <Sparkles size={21} />
             </div>
-            <DialogTitle className="font-display text-2xl leading-none">Quer um tour rápido?</DialogTitle>
+            <DialogTitle className="font-display text-2xl leading-none">Want a quick tour?</DialogTitle>
             <DialogDescription className="leading-6">
-              Seu primeiro save está pronto. O tutorial mostra onde ficam os atalhos principais e pode ser reaberto pelo botão de ajuda depois.
+              Your first save is ready. The tutorial shows where the main shortcuts are and can be reopened later from the help button.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:space-x-0">
@@ -98,14 +98,14 @@ const HubTutorial = ({ userId, startRequest }: HubTutorialProps) => {
               onClick={skipTutorial}
               className="rounded-md border border-border bg-background/50 px-4 py-2.5 font-display text-sm font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
             >
-              Pular agora
+              Skip for now
             </button>
             <button
               type="button"
               onClick={startTutorial}
               className="rounded-md bg-primary px-4 py-2.5 font-display text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              Começar tutorial
+              Start tutorial
             </button>
           </DialogFooter>
         </DialogContent>

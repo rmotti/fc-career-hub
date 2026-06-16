@@ -171,7 +171,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                   {isExit ? (
                     <Select value={form.playerId || "none"} onValueChange={(value) => handlePlayerSelect(value === "none" ? "" : value)}>
                       <SelectTrigger className="h-10 border-border bg-background/40 text-sm text-foreground transition-colors hover:border-primary/40 focus:ring-primary/30">
-                        <SelectValue placeholder="Selecionar jogador do elenco" />
+                        <SelectValue placeholder="Select squad player" />
                       </SelectTrigger>
                       <SelectContent className="max-h-72 border-border bg-card text-foreground shadow-xl shadow-black/30">
                         <SelectItem value="none" className="text-muted-foreground focus:bg-muted focus:text-foreground">

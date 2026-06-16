@@ -61,14 +61,14 @@ const Index = () => {
         }
       }
 
-      toast.success("Save criado com sucesso!", { duration: 3000 });
+      toast.success("Save created successfully!", { duration: 3000 });
       setImportPromptSave(newSave);
     } catch (err: any) {
       setIsRedirectingToDashboard(false);
       const status = err?.status || err?.response?.status;
       const message =
         status === 409
-          ? "Você atingiu o limite de saves do seu plano. Exclua um save ou faça upgrade."
+          ? "You've reached your plan's save limit. Delete a save or upgrade."
           : extractErrorMessage(err);
       toast.error(message, { duration: 5000 });
       throw err;
@@ -86,14 +86,14 @@ const Index = () => {
     try {
       const result = await importFc26.mutateAsync({ saveId: importPromptSave.id });
       toast.success(
-        `Elenco importado: ${result.imported} jogador${result.imported === 1 ? "" : "es"}${
-          result.skipped > 0 ? `, ${result.skipped} já existia${result.skipped === 1 ? "" : "m"}` : ""
+        `Squad imported: ${result.imported} player${result.imported === 1 ? "" : "s"}${
+          result.skipped > 0 ? `, ${result.skipped} already existed` : ""
         }.`,
         { duration: 4000 },
       );
     } catch (importErr) {
-      toast.message("Não foi possível importar o elenco automaticamente.", {
-        description: `${extractErrorMessage(importErr)} Você pode adicionar jogadores manualmente.`,
+      toast.message("Could not import the squad automatically.", {
+        description: `${extractErrorMessage(importErr)} You can add players manually.`,
         duration: 6000,
       });
     } finally {
@@ -106,16 +106,16 @@ const Index = () => {
 
     try {
       await signOut();
-      toast.success("Sessão encerrada.");
+      toast.success("Session ended.");
     } catch {
-      toast.error("Não foi possível encerrar a sessão.");
+      toast.error("Could not end the session.");
     }
   };
 
   return (
     <>
       <SaveSelect
-        userName={user?.name ?? "Jogador"}
+        userName={user?.name ?? "Player"}
         userPlan={user?.plan ?? "FREE"}
         saves={saves}
         loading={savesLoading}

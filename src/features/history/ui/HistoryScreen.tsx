@@ -536,7 +536,7 @@ const TrophyRoom = ({
                   <CssTrophy type={activeTrophy.competition.type} selected miniature />
                 </div>
                 <p className="line-clamp-2 min-h-10 font-display text-xl font-bold leading-tight">{activeTrophy.competition.name}</p>
-                <p className="mt-2 text-xs font-bold uppercase">{activeTrophy.club ?? "Clube"}</p>
+                <p className="mt-2 text-xs font-bold uppercase">{activeTrophy.club ?? "Club"}</p>
                 <p className="font-display text-2xl font-bold leading-none">{activeTrophy.year}</p>
               </div>
               <div className="mt-8 flex items-center gap-2">
@@ -659,7 +659,7 @@ const TrophyShelfRow = ({
                   ? "border-[hsl(var(--gold)/0.62)] shadow-[0_0_28px_hsl(var(--gold)/0.28)]"
                   : "border-white/10 hover:border-[hsl(var(--gold)/0.32)]"
               }`}
-              aria-label={`Selecionar ${trophy.competition.name}`}
+              aria-label={`Select ${trophy.competition.name}`}
               title={trophy.competition.name}
             >
               <span className={`absolute inset-x-3 top-2 h-8 rounded-full blur-lg ${isSelected ? "bg-[hsl(var(--gold)/0.3)]" : "bg-white/10"}`} />
