@@ -1,5 +1,7 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { ProtectedRoute, PublicOnlyRoute, PlanRoute } from "@/features/auth/ui/AuthGuards";
+import { registerForbiddenHandler } from "@/shared/api/client";
 import { PRO_FEATURE_PLANS } from "@/shared/config/plans";
 import Landing from "@/pages/Landing";
 import Pricing from "@/pages/Pricing";
@@ -20,9 +22,38 @@ import Register from "@/pages/Register";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
 
+// Bridges API-layer 403s on PRO endpoints (registered in client.ts) to an
+// in-app redirect to /pricing. The route guard (PlanRoute) only catches FREE
+// users on the locally-cached plan; this covers a downgrade that happens
+// mid-session, where the cached plan is still PRO but the API now says 403.
+function ApiForbiddenBridge() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locationRef = useRef(location);
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  useEffect(() => {
+    registerForbiddenHandler(() => {
+      // Already on /pricing → nothing to do, and avoids any redirect loop.
+      if (locationRef.current.pathname === "/pricing") return;
+      navigate("/pricing", {
+        replace: true,
+        state: { from: locationRef.current.pathname, reason: "plan-required" },
+      });
+    });
+    return () => registerForbiddenHandler(null);
+  }, [navigate]);
+
+  return null;
+}
+
 export function Router() {
   return (
     <BrowserRouter>
+      <ApiForbiddenBridge />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/pricing" element={<Pricing />} />

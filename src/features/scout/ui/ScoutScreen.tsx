@@ -50,6 +50,7 @@ import { toast } from "sonner";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
+import { useRateLimitBackoff } from "@/features/scout/model/useRateLimitBackoff";
 import { filterOutCurrentClubPlayers, isSameClubName } from "@/features/scout/model/currentClubFilter";
 import { usePlaybooks } from "@/features/playbooks/model/usePlaybooks";
 import {
@@ -1150,6 +1151,10 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     playbooksData?.playbooks.find((p) => p.isDefault) ?? playbooksData?.defaultPlaybook ?? null;
 
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters, saveId);
+  // A 429 here is rate limiting, not a hard failure: show a backoff countdown
+  // (mirroring the chat) instead of the generic "could not load" error.
+  const { isRateLimited: isScoutRateLimited, retryAfterSeconds: scoutRetryAfterSeconds } =
+    useRateLimitBackoff(error);
   const {
     data: selectedPlayerDetails,
     isError: isSelectedPlayerError,
@@ -2116,18 +2121,41 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                 Loading players...
               </div>
             ) : isError ? (
-              <div className="p-6 text-center">
-                <p className="font-display text-lg font-semibold text-foreground">Could not load scout</p>
-                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{extractErrorMessage(error)}</p>
-                <button
-                  type="button"
-                  onClick={() => void refetch()}
-                  className="mt-5 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  <RotateCcw size={15} />
-                  Try again
-                </button>
-              </div>
+              isScoutRateLimited ? (
+                <div className="p-6 text-center">
+                  <div className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-sm text-warning">
+                    <LockKeyhole size={15} className="shrink-0" />
+                    <span>
+                      Too many scout searches.{" "}
+                      {scoutRetryAfterSeconds && scoutRetryAfterSeconds > 0
+                        ? `Wait ${scoutRetryAfterSeconds}s before trying again.`
+                        : "Please wait a moment before trying again."}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!!scoutRetryAfterSeconds && scoutRetryAfterSeconds > 0}
+                    onClick={() => void refetch()}
+                    className="mt-5 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <RotateCcw size={15} />
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="font-display text-lg font-semibold text-foreground">Could not load scout</p>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{extractErrorMessage(error)}</p>
+                  <button
+                    type="button"
+                    onClick={() => void refetch()}
+                    className="mt-5 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    <RotateCcw size={15} />
+                    Try again
+                  </button>
+                </div>
+              )
             ) : players.length === 0 ? (
               <div className="p-6 text-center">
                 <p className="font-display text-lg font-semibold text-foreground">No player matches these filters</p>
