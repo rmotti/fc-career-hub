@@ -546,8 +546,6 @@ export interface ApiTeamStats {
   losses: number;
   leaguePosition?: number | null;
   cupResult?: string | null;
-  europeanCupResult?: string | null;
-  nationalCupResult?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
