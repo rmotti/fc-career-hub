@@ -31,6 +31,7 @@ import { usePlayer, useUpdatePlayer, useUpdatePlayerStats } from "@/features/squ
 import TransferModal from "@/features/transfers/ui/TransferModal";
 import PlayerModal from "@/features/squad/ui/PlayerModal";
 import { formatCurrency, formatCurrencyInMillions, formatSignedCurrencyInMillions } from "@/shared/lib/currency";
+import { m, type Money } from "@/shared/lib/money";
 import { shouldRemovePlayerFromSquad } from "@/shared/lib/playerTransferStatus";
 
 interface Props {
@@ -103,7 +104,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   const [tab, setTab] = useState<"current" | "history">("current");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ApiTransfer | null>(null);
-  const [variation, setVariation] = useState<{ amount: number; type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida" } | null>(null);
+  const [variation, setVariation] = useState<{ amount: Money<"M">; type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida" } | null>(null);
   const [purchasePlayerId, setPurchasePlayerId] = useState<string | null>(null);
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
   const [historyTypeFilter, setHistoryTypeFilter] = useState<TransferTypeFilter>("all");
@@ -159,13 +160,13 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   const currentIncoming = currentTransfers.filter(isIncomingTransfer);
   const currentOutgoing = currentTransfers.filter(isOutgoingTransfer);
   const currentLoans = currentTransfers.filter(isLoanTransfer);
-  const transferSpend = currentTransfers
+  const transferSpend = m(currentTransfers
     .filter((transfer) => transfer.type === "compra")
-    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0);
-  const transferRevenue = currentTransfers
+    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0));
+  const transferRevenue = m(currentTransfers
     .filter((transfer) => transfer.type === "venda")
-    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0);
-  const transferNet = transferRevenue - transferSpend;
+    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0));
+  const transferNet = m(transferRevenue - transferSpend);
   const biggestPurchase = [...currentTransfers]
     .filter((transfer) => transfer.type === "compra")
     .sort((a, b) => (b.fee ?? 0) - (a.fee ?? 0))[0] ?? null;
@@ -182,7 +183,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
       toast.success(t("transfers.toasts.updated"), { duration: 3000 });
     } else {
       const response = await createTransfer.mutateAsync({ saveId, data });
-      setVariation({ amount: data.fee || 0, type: data.type });
+      setVariation({ amount: m(data.fee || 0), type: data.type });
       setTimeout(() => setVariation(null), 5000);
 
       if ((data.type === "compra" || data.type === "emprestimo_entrada") && response.transfer?.playerId) {

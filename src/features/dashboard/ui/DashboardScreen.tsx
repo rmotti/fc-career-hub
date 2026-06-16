@@ -23,6 +23,7 @@ import { useTrophies } from "@/features/history/model/useTrophies";
 import type { ApiPlayer, ApiTransfer } from "@/shared/api/client";
 import { CUP_LABELS, getAggregateTeamStats, getLeagueStats } from "@/shared/lib/competitions";
 import { formatCurrency, formatCurrencyInMillions, formatSignedCurrencyInMillions } from "@/shared/lib/currency";
+import { m } from "@/shared/lib/money";
 
 interface Props {
   saveId: string;
@@ -115,13 +116,13 @@ const DashboardScreen = ({ saveId }: Props) => {
     .slice(0, 4);
   const boughtCount = transfers.filter(isIncomingTransfer).length;
   const soldCount = transfers.filter(isOutgoingTransfer).length;
-  const transferSpend = transfers
+  const transferSpend = m(transfers
     .filter((transfer) => transfer.type === "compra")
-    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0);
-  const transferRevenue = transfers
+    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0));
+  const transferRevenue = m(transfers
     .filter((transfer) => transfer.type === "venda")
-    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0);
-  const transferNet = transferRevenue - transferSpend;
+    .reduce((sum, transfer) => sum + (transfer.fee ?? 0), 0));
+  const transferNet = m(transferRevenue - transferSpend);
   const biggestPurchase = [...transfers]
     .filter((transfer) => transfer.type === "compra")
     .sort((a, b) => (b.fee ?? 0) - (a.fee ?? 0))[0] ?? null;
@@ -375,7 +376,7 @@ const DashboardScreen = ({ saveId }: Props) => {
             id: player.id,
             title: player.name,
             meta: `${player.position} · ${player.marketValueFormatted ?? "sem valor"}`,
-            value: `+${formatCurrencyInMillions(player.marketValueDelta ?? 0)}`,
+            value: `+${formatCurrencyInMillions(m(player.marketValueDelta ?? 0))}`,
             tone: "accent",
           }))}
         />

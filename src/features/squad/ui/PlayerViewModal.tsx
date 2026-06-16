@@ -24,6 +24,7 @@ import {
   formatCurrencyInThousands,
   formatSignedCurrencyInMillions,
 } from "@/shared/lib/currency";
+import { m } from "@/shared/lib/money";
 import { roundToSingleDecimal } from "@/shared/lib/rounding";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { getAlternativePositions, formatPosition } from "@/shared/lib/playerPositions";
@@ -73,12 +74,12 @@ const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
 
 const Delta = ({ value, suffix = "", moneyUnit }: { value: number | null | undefined; suffix?: string; moneyUnit?: "M" }) => {
   if (value == null) return <span className="text-muted-foreground">—</span>;
-  const label = moneyUnit === "M" ? formatSignedCurrencyInMillions(value) : `${value > 0 ? "+" : ""}${value}${suffix}`;
+  const label = moneyUnit === "M" ? formatSignedCurrencyInMillions(m(value)) : `${value > 0 ? "+" : ""}${value}${suffix}`;
   if (value === 0) {
     return (
       <span className="text-muted-foreground flex items-center gap-0.5">
         <Minus size={12} />
-        {moneyUnit === "M" ? formatCurrencyInMillions(0) : `0${suffix}`}
+        {moneyUnit === "M" ? formatCurrencyInMillions(m(0)) : `0${suffix}`}
       </span>
     );
   }

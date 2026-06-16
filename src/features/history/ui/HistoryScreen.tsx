@@ -30,6 +30,7 @@ import { useTeamStats } from "@/features/stats/model/useTeamStats";
 import type { ApiTrophy } from "@/shared/api/client";
 import { formatTrophyLabel, getCompetitionAccent } from "@/shared/lib/competitions";
 import { formatCurrencyInMillions } from "@/shared/lib/currency";
+import { m } from "@/shared/lib/money";
 import {
   Dialog,
   DialogContent,
@@ -93,9 +94,9 @@ const feeToNum = (fee?: string | number | null) => {
 };
 
 const formatSignedCurrency = (value: number) => {
-  if (value === 0) return formatCurrencyInMillions(0);
+  if (value === 0) return formatCurrencyInMillions(m(0));
 
-  const formatted = formatCurrencyInMillions(Math.abs(value));
+  const formatted = formatCurrencyInMillions(m(Math.abs(value)));
   return `${value > 0 ? "+" : "-"}${formatted}`;
 };
 
@@ -204,8 +205,8 @@ const HistoryScreen = ({ saveId }: Props) => {
 
   const purchases = transfers.filter((transfer) => transfer.type === "compra");
   const sales = transfers.filter((transfer) => transfer.type === "venda");
-  const transferSpend = purchases.reduce((sum, transfer) => sum + feeToNum(transfer.fee), 0);
-  const transferRevenue = sales.reduce((sum, transfer) => sum + feeToNum(transfer.fee), 0);
+  const transferSpend = m(purchases.reduce((sum, transfer) => sum + feeToNum(transfer.fee), 0));
+  const transferRevenue = m(sales.reduce((sum, transfer) => sum + feeToNum(transfer.fee), 0));
   const transferNet = transferRevenue - transferSpend;
 
   const top5Buys = [...purchases]
@@ -959,7 +960,7 @@ const TransferPodium = ({ transfer, tone }: { transfer: TransferRankingItem; ton
       </div>
       <div className="shrink-0 text-right">
         <p className={`font-display text-3xl font-bold leading-none ${toneClass[tone]}`}>
-          {transfer.fee ? formatCurrencyInMillions(transfer.fee) : "Free"}
+          {transfer.fee ? formatCurrencyInMillions(m(transfer.fee)) : "Free"}
         </p>
         <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">value</p>
       </div>
@@ -1110,7 +1111,7 @@ const TransferRecordRow = ({
       </div>
     </div>
     <span className={`shrink-0 text-sm font-bold ${toneClass[tone]}`}>
-      {transfer.fee ? formatCurrencyInMillions(transfer.fee) : "Free"}
+      {transfer.fee ? formatCurrencyInMillions(m(transfer.fee)) : "Free"}
     </span>
   </div>
 );

@@ -1,21 +1,23 @@
 ﻿import { type ApiTransfer } from "@/shared/api/client";
+import { eur, mToEur, type Money } from "@/shared/lib/money";
 
-const ONE_MILLION = 1_000_000;
-
-function getTransferImpact(transfer: ApiTransfer): number {
-  if (!transfer.fee) return 0;
+function getTransferImpact(transfer: ApiTransfer): Money<"eur"> {
+  if (!transfer.fee) return eur(0);
 
   if (transfer.type === "venda") {
-    return transfer.fee * ONE_MILLION;
+    return mToEur(transfer.fee);
   }
 
   if (transfer.type === "compra") {
-    return -transfer.fee * ONE_MILLION;
+    return eur(-mToEur(transfer.fee));
   }
 
-  return 0;
+  return eur(0);
 }
 
-export function calculateBalanceFromTransfers(budget: number, transfers: ApiTransfer[]): number {
-  return transfers.reduce((total, transfer) => total + getTransferImpact(transfer), budget);
+export function calculateBalanceFromTransfers(budget: Money<"eur">, transfers: ApiTransfer[]): Money<"eur"> {
+  return transfers.reduce<Money<"eur">>(
+    (total, transfer) => eur(total + getTransferImpact(transfer)),
+    budget,
+  );
 }

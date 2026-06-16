@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { calculateBalanceFromTransfers } from "@/shared/lib/finance";
+import { eur, m } from "@/shared/lib/money";
 
 describe("finance", () => {
   it("recalculates the balance from budget and current transfers", () => {
-    const balance = calculateBalanceFromTransfers(85_000_000, [
+    const balance = calculateBalanceFromTransfers(eur(85_000_000), [
       {
         id: "1",
         saveId: "save-1",
@@ -11,7 +12,7 @@ describe("finance", () => {
         type: "compra",
         from: "Clube A",
         to: "Clube B",
-        fee: 20,
+        fee: m(20),
         season: "2026/27",
       },
       {
@@ -21,7 +22,7 @@ describe("finance", () => {
         type: "venda",
         from: "Clube B",
         to: "Clube C",
-        fee: 12.5,
+        fee: m(12.5),
         season: "2026/27",
       },
       {
@@ -31,7 +32,7 @@ describe("finance", () => {
         type: "emprestimo_entrada",
         from: "Clube C",
         to: "Clube B",
-        fee: 3,
+        fee: m(3),
         season: "2026/27",
       },
     ]);
@@ -40,7 +41,7 @@ describe("finance", () => {
   });
 
   it("ignores transfers with no financial impact", () => {
-    const balance = calculateBalanceFromTransfers(50_000_000, [
+    const balance = calculateBalanceFromTransfers(eur(50_000_000), [
       {
         id: "1",
         saveId: "save-1",

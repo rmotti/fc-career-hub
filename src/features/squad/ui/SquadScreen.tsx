@@ -38,6 +38,7 @@ import PlayerViewModal from "@/features/squad/ui/PlayerViewModal";
 import { getBadge, type SquadRole } from "@/entities/player/model/playerBadge";
 import Flag from "react-world-flags";
 import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/shared/lib/currency";
+import { k, m, type Money } from "@/shared/lib/money";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { getAlternativePositions, playerCanPlayPosition, formatPosition } from "@/shared/lib/playerPositions";
 
@@ -66,14 +67,14 @@ const formatDecimal = (value: number, maximumFractionDigits = 1) =>
     minimumFractionDigits: value % 1 === 0 ? 0 : 1,
   }).format(value);
 
-const formatSquadMarketTotal = (valueInMillions: number) => {
-  if (valueInMillions >= 1000) return `€${formatDecimal(valueInMillions / 1000, 2)}B`;
-  return formatCurrencyInMillions(valueInMillions);
+const formatSquadMarketTotal = (value: Money<"M">) => {
+  if (value >= 1000) return `€${formatDecimal(value / 1000, 2)}B`;
+  return formatCurrencyInMillions(value);
 };
 
-const formatWeeklyWageTotal = (valueInThousands: number) => {
-  if (valueInThousands >= 1000) return `€${formatDecimal(valueInThousands / 1000, 2)}M/wk`;
-  return `${formatCurrencyInThousands(valueInThousands)}/wk`;
+const formatWeeklyWageTotal = (value: Money<"k">) => {
+  if (value >= 1000) return `€${formatDecimal(value / 1000, 2)}M/wk`;
+  return `${formatCurrencyInThousands(value)}/wk`;
 };
 
 const positionColor: Record<string, string> = {
@@ -164,8 +165,8 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       : 0;
     const totalGoals = players.reduce((sum, player) => sum + ((player.currentSeasonStats || player.totalStats)?.goals ?? 0), 0);
     const totalAssists = players.reduce((sum, player) => sum + ((player.currentSeasonStats || player.totalStats)?.assists ?? 0), 0);
-    const totalMarketValue = players.reduce((sum, player) => sum + (player.marketValue ?? 0), 0);
-    const weeklyWages = players.reduce((sum, player) => sum + (player.salary ?? 0), 0);
+    const totalMarketValue = m(players.reduce((sum, player) => sum + (player.marketValue ?? 0), 0));
+    const weeklyWages = k(players.reduce((sum, player) => sum + (player.salary ?? 0), 0));
     const prospects = players.filter((player) => player.age <= 23 && (player.potential ?? 0) >= Math.max(80, player.ovr + 4)).length;
     const incompleteStats = players.filter((player) => {
       const stats = player.currentSeasonStats || player.totalStats;
@@ -446,7 +447,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         <SquadHighlight
           label={t("squad.highlights.appreciation")}
           player={squadHighlights.valuePlayer}
-          value={squadHighlights.valuePlayer ? `+${formatCurrencyInMillions(squadHighlights.valuePlayer.marketValueDelta ?? 0)}` : "-"}
+          value={squadHighlights.valuePlayer ? `+${formatCurrencyInMillions(m(squadHighlights.valuePlayer.marketValueDelta ?? 0))}` : "-"}
           icon={CircleDollarSign}
           tone="accent"
           emptyText={t("squad.highlights.monitorSquad")}
@@ -813,7 +814,7 @@ function PlayerTableCells({ columns, player, squadRole }: PlayerTableCellsProps)
                 <span>{marketValueLabel}</span>
                 {player.marketValueDelta != null && (
                   <span className={`text-xs font-bold ${player.marketValueDelta > 0 ? "text-green-500" : player.marketValueDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                    {player.marketValueDelta > 0 ? `▲${formatCurrencyInMillions(player.marketValueDelta)}` : player.marketValueDelta < 0 ? `▼${formatCurrencyInMillions(Math.abs(player.marketValueDelta))}` : "—"}
+                    {player.marketValueDelta > 0 ? `▲${formatCurrencyInMillions(player.marketValueDelta)}` : player.marketValueDelta < 0 ? `▼${formatCurrencyInMillions(m(Math.abs(player.marketValueDelta)))}` : "—"}
                   </span>
                 )}
               </div>

@@ -63,6 +63,8 @@ import {
   type PlayerPosition,
 } from "@/shared/api/client";
 import { PLAYER_POSITIONS, POSITION_LABELS, formatPosition } from "@/shared/lib/playerPositions";
+import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/shared/lib/currency";
+import { m, type Money } from "@/shared/lib/money";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { useJuniorChat, type ConversationEntry } from "@/features/scout/model/useJuniorChat";
@@ -705,14 +707,14 @@ function draftFromFilters(filters: AppliedScoutFilters): DraftFilters {
   };
 }
 
-function formatMarketValue(value: number | null) {
+function formatMarketValue(value: Money<"M"> | null | undefined) {
   if (value === null || value === undefined) return "—";
-  return `€${value.toFixed(value >= 100 ? 0 : 1)}M`;
+  return formatCurrencyInMillions(value);
 }
 
-function formatWage(value: number | null) {
+function formatWage(value: Money<"k"> | null | undefined) {
   if (value === null || value === undefined) return "—";
-  return `€${Math.round(value)}K/wk`;
+  return `${formatCurrencyInThousands(value)}/wk`;
 }
 
 function formatRating(value: number | null | undefined) {
@@ -962,9 +964,9 @@ function formatFilterRange(label: string, min?: number, max?: number) {
 }
 
 function formatMarketValueFilterRange(min?: number, max?: number) {
-  if (typeof min === "number" && typeof max === "number") return `Value: ${formatMarketValue(min)}-${formatMarketValue(max)}`;
-  if (typeof min === "number") return `Value: ${formatMarketValue(min)}+`;
-  if (typeof max === "number") return `Value: up to ${formatMarketValue(max)}`;
+  if (typeof min === "number" && typeof max === "number") return `Value: ${formatMarketValue(m(min))}-${formatMarketValue(m(max))}`;
+  if (typeof min === "number") return `Value: ${formatMarketValue(m(min))}+`;
+  if (typeof max === "number") return `Value: up to ${formatMarketValue(m(max))}`;
   return null;
 }
 
@@ -1001,7 +1003,7 @@ function createSavedQueryTitle(filters: AppliedScoutFilters) {
   if (filters.preferredFoot) titleParts.push(filters.preferredFoot === "Left" ? "left-footed" : "right-footed");
   if (typeof filters.maxAge === "number") titleParts.push(`u${filters.maxAge + 1}`);
   if (typeof filters.minPotential === "number") titleParts.push(`pot. ${filters.minPotential}+`);
-  if (typeof filters.maxMarketValue === "number") titleParts.push(`up to ${formatMarketValue(filters.maxMarketValue)}`);
+  if (typeof filters.maxMarketValue === "number") titleParts.push(`up to ${formatMarketValue(m(filters.maxMarketValue))}`);
   if (filters.objective && filters.objective !== "balanced") titleParts.push(FIT_OBJECTIVE_LABELS[filters.objective].toLocaleLowerCase());
 
   return titleParts.length ? `Scout ${titleParts.join(" · ")}` : "Scout query";

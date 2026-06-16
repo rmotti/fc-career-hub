@@ -7,80 +7,81 @@ import {
   normalizeStoredBudget,
   parseBudgetInMillionsInput,
 } from "@/shared/lib/currency";
+import { eur, k, m } from "@/shared/lib/money";
 import { formatRoundedSingleDecimal, roundToSingleDecimal } from "@/shared/lib/rounding";
 
 describe("formatCurrency", () => {
   describe("zero", () => {
     it("formata zero", () => {
-      expect(formatCurrency(0)).toBe("€0.0");
+      expect(formatCurrency(eur(0))).toBe("€0.0");
     });
   });
 
   describe("valores abaixo de 1K", () => {
     it("retorna valor bruto com uma casa decimal e símbolo €", () => {
-      expect(formatCurrency(500)).toBe("€500.0");
-      expect(formatCurrency(1)).toBe("€1.0");
-      expect(formatCurrency(999)).toBe("€999.0");
+      expect(formatCurrency(eur(500))).toBe("€500.0");
+      expect(formatCurrency(eur(1))).toBe("€1.0");
+      expect(formatCurrency(eur(999))).toBe("€999.0");
     });
   });
 
   describe("valores em milhares (K)", () => {
     it("formata múltiplos exatos de 1K", () => {
-      expect(formatCurrency(1_000)).toBe("€1.0K");
-      expect(formatCurrency(10_000)).toBe("€10.0K");
-      expect(formatCurrency(750_000)).toBe("€750.0K");
+      expect(formatCurrency(eur(1_000))).toBe("€1.0K");
+      expect(formatCurrency(eur(10_000))).toBe("€10.0K");
+      expect(formatCurrency(eur(750_000))).toBe("€750.0K");
     });
 
     it("mantém uma casa decimal", () => {
-      expect(formatCurrency(1_500)).toBe("€1.5K");
-      expect(formatCurrency(2_500)).toBe("€2.5K");
+      expect(formatCurrency(eur(1_500))).toBe("€1.5K");
+      expect(formatCurrency(eur(2_500))).toBe("€2.5K");
     });
 
     it("não usa notação K acima de 999K", () => {
-      expect(formatCurrency(999_000)).toBe("€999.0K");
+      expect(formatCurrency(eur(999_000))).toBe("€999.0K");
     });
   });
 
   describe("valores em milhões (M)", () => {
     it("formata múltiplos exatos de 1M", () => {
-      expect(formatCurrency(1_000_000)).toBe("€1.0M");
-      expect(formatCurrency(35_000_000)).toBe("€35.0M");
-      expect(formatCurrency(100_000_000)).toBe("€100.0M");
+      expect(formatCurrency(eur(1_000_000))).toBe("€1.0M");
+      expect(formatCurrency(eur(35_000_000))).toBe("€35.0M");
+      expect(formatCurrency(eur(100_000_000))).toBe("€100.0M");
     });
 
     it("mantém uma casa decimal", () => {
-      expect(formatCurrency(1_500_000)).toBe("€1.5M");
-      expect(formatCurrency(2_750_000)).toBe("€2.8M");
+      expect(formatCurrency(eur(1_500_000))).toBe("€1.5M");
+      expect(formatCurrency(eur(2_750_000))).toBe("€2.8M");
     });
 
     it("usa bilhões a partir de 1000M", () => {
-      expect(formatCurrency(1_000_000_000)).toBe("€1.0B");
-      expect(formatCurrency(1_250_000_000)).toBe("€1.3B");
+      expect(formatCurrency(eur(1_000_000_000))).toBe("€1.0B");
+      expect(formatCurrency(eur(1_250_000_000))).toBe("€1.3B");
     });
   });
 
   describe("valores negativos", () => {
     it("prefixo negativo antes do símbolo €", () => {
-      expect(formatCurrency(-1_000_000)).toBe("-€1.0M");
-      expect(formatCurrency(-750_000)).toBe("-€750.0K");
-      expect(formatCurrency(-500)).toBe("-€500.0");
+      expect(formatCurrency(eur(-1_000_000))).toBe("-€1.0M");
+      expect(formatCurrency(eur(-750_000))).toBe("-€750.0K");
+      expect(formatCurrency(eur(-500))).toBe("-€500.0");
     });
   });
 });
 
 describe("currency unit helpers", () => {
   it("formata milhões e milhares com uma casa decimal", () => {
-    expect(formatCurrencyInMillions(4)).toBe("€4.0M");
-    expect(formatCurrencyInMillions(999.9)).toBe("€999.9M");
-    expect(formatCurrencyInMillions(1000)).toBe("€1.0B");
-    expect(formatCurrencyInMillions(1250)).toBe("€1.3B");
-    expect(formatCurrencyInThousands(45)).toBe("€45.0K");
+    expect(formatCurrencyInMillions(m(4))).toBe("€4.0M");
+    expect(formatCurrencyInMillions(m(999.9))).toBe("€999.9M");
+    expect(formatCurrencyInMillions(m(1000))).toBe("€1.0B");
+    expect(formatCurrencyInMillions(m(1250))).toBe("€1.3B");
+    expect(formatCurrencyInThousands(k(45))).toBe("€45.0K");
   });
 
   it("formata deltas monetários com uma casa decimal", () => {
-    expect(formatSignedCurrencyInMillions(0.2999999999999998)).toBe("+€0.3M");
-    expect(formatSignedCurrencyInMillions(-1)).toBe("-€1.0M");
-    expect(formatSignedCurrencyInMillions(1000)).toBe("+€1.0B");
+    expect(formatSignedCurrencyInMillions(m(0.2999999999999998))).toBe("+€0.3M");
+    expect(formatSignedCurrencyInMillions(m(-1))).toBe("-€1.0M");
+    expect(formatSignedCurrencyInMillions(m(1000))).toBe("+€1.0B");
   });
 });
 

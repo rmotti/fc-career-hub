@@ -1,3 +1,5 @@
+import { type Money } from "@/shared/lib/money";
+
 // Fallback API host for builds where VITE_API_URL is not provided.
 // Prefer setting VITE_API_URL explicitly (see .env.example).
 const DEFAULT_API_URL = "https://ample-love-production.up.railway.app";
@@ -216,9 +218,9 @@ export interface ApiSave {
   currentYear: number;
   currentSeason: string;
   europeanCompetitionId?: string | null;
-  budget: number;
+  budget: Money<"eur">;
   budgetFormatted?: string;
-  balance: number;
+  balance: Money<"eur">;
   balanceFormatted?: string;
   currentClubStint?: ApiClubStint;
   createdAt?: string;
@@ -291,18 +293,18 @@ export interface Fc26Player {
   age: number;
   ovr: number;
   potential: number;
-  marketValue: number | null;
+  marketValue: Money<"M"> | null;
   nation: string | null;
   club: string | null;
   league: string | null;
-  wage: number | null;
+  wage: Money<"k"> | null;
   longName: string | null;
   dob: string | null;
   height: number | null;
   weight: number | null;
   playerFaceUrl: string | null;
   contractUntil: number | null;
-  releaseClause: number | null;
+  releaseClause: Money<"M"> | null;
   preferredFoot: "Right" | "Left" | null;
   weakFoot: number | null;
   skillMoves: number | null;
@@ -462,17 +464,17 @@ export interface ApiPlayer {
   age: number;
   status: "Crucial" | "Important" | "Role" | "Sporadic" | "Promising" | "Loan";
   ovr: number;
-  salary?: number | null;
+  salary?: Money<"k"> | null;
   salaryFormatted?: string | null;
-  marketValue?: number | null;
+  marketValue?: Money<"M"> | null;
   marketValueFormatted?: string | null;
   potential?: number | null;
   shirtNumber?: number | null;
   ovrDelta?: number | null;
-  marketValueDelta?: number | null;
+  marketValueDelta?: Money<"M"> | null;
   loanedTo?: string | null;
   loanSeason?: string | null;
-  ovrHistory?: Array<{ season: string; ovr: number; marketValue?: number }>;
+  ovrHistory?: Array<{ season: string; ovr: number; marketValue?: Money<"M"> }>;
   isActive: boolean;
   currentSeasonStats?: ApiPlayerSeasonStats;
   totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; };
@@ -529,7 +531,7 @@ export interface ApiTransfer {
   type: "compra" | "venda" | "emprestimo_entrada" | "emprestimo_saida";
   from: string;
   to: string;
-  fee?: number;
+  fee?: Money<"M">;
   feeFormatted?: string;
   season: string;
   playerId?: string;
