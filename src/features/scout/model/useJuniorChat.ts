@@ -24,6 +24,19 @@ interface CurrentChatState {
 
 const MAX_HISTORY = 20;
 
+// Transient failures (network drop, upstream OpenAI/MCP 5xx) are retried with
+// backoff before the chat falls back to an explicit degraded state.
+const TRANSIENT_RETRIES = 2;
+const BACKOFF_MS = [600, 1800];
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function isTransient(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false;
+  if (err.isNetworkError) return true;
+  return err.status !== undefined && err.status >= 500;
+}
+
 function getCurrentKey(userId: string) {
   return `junior-chat:${userId}`;
 }
@@ -86,7 +99,9 @@ export function useJuniorChat(userId: string | undefined) {
   const [history, setHistory] = useState<ConversationEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | null>(null);
+  const [isUnavailable, setIsUnavailable] = useState(false);
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastFailedTextRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -121,56 +136,80 @@ export function useJuniorChat(userId: string | undefined) {
     };
   }, [retryAfterSeconds]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || isLoading || retryAfterSeconds !== null) return;
-
-    const userMessage: JuniorChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text.trim(),
-      timestamp: Date.now(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+  // Sends an already-appended user turn, retrying transient failures with
+  // backoff and falling back to a degraded state instead of a bare toast.
+  const runRequest = useCallback(async (trimmed: string) => {
     setIsLoading(true);
+    setIsUnavailable(false);
 
-    try {
-      const response = await chatApi.sendMessage({
-        message: text.trim(),
-        ...(lastResponseId ? { previousResponseId: lastResponseId } : {}),
-      });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const response = await chatApi.sendMessage({
+          message: trimmed,
+          ...(lastResponseId ? { previousResponseId: lastResponseId } : {}),
+        });
 
-      const assistantMessage: JuniorChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: response.reply,
-        timestamp: Date.now(),
-      };
+        const assistantMessage: JuniorChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: response.reply,
+          timestamp: Date.now(),
+        };
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setLastResponseId(response.responseId);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 429) {
+        setMessages((prev) => [...prev, assistantMessage]);
+        setLastResponseId(response.responseId);
+        lastFailedTextRef.current = null;
+        break;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 429) {
           const seconds = Number.isFinite(err.retryAfter) && (err.retryAfter ?? 0) > 0
             ? err.retryAfter!
             : 60;
           setRetryAfterSeconds(seconds);
           toast.warning(`Too many messages. Please wait ${seconds} seconds to continue.`);
-        } else if (err.status === 502) {
-          toast.error("Junior did not respond. Please try again.", {
-            action: { label: "Try again", onClick: () => void sendMessage(text) },
-          });
-        } else {
-          toast.error(extractErrorMessage(err));
+          break;
         }
-      } else {
-        toast.error("Connection error. Check your network.");
+
+        if (isTransient(err)) {
+          if (attempt < TRANSIENT_RETRIES) {
+            await sleep(BACKOFF_MS[attempt] ?? 1800);
+            continue;
+          }
+          // Retries exhausted: surface a degraded state the UI can render.
+          lastFailedTextRef.current = trimmed;
+          setIsUnavailable(true);
+          break;
+        }
+
+        toast.error(extractErrorMessage(err as ApiError));
+        break;
       }
-    } finally {
-      setIsLoading(false);
     }
-  }, [isLoading, retryAfterSeconds, lastResponseId]);
+
+    setIsLoading(false);
+  }, [lastResponseId]);
+
+  const sendMessage = useCallback((text: string) => {
+    if (!text.trim() || isLoading || retryAfterSeconds !== null) return;
+
+    const trimmed = text.trim();
+    const userMessage: JuniorChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: trimmed,
+      timestamp: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    void runRequest(trimmed);
+  }, [isLoading, retryAfterSeconds, runRequest]);
+
+  // Re-runs the last failed turn (its user bubble is already in the thread).
+  const retryLastMessage = useCallback(() => {
+    const text = lastFailedTextRef.current;
+    if (!text || isLoading) return;
+    void runRequest(text);
+  }, [isLoading, runRequest]);
 
   const startNewConversation = useCallback((currentMessages: JuniorChatMessage[], currentResponseId: string | null) => {
     if (!userId) return;
@@ -239,7 +278,9 @@ export function useJuniorChat(userId: string | undefined) {
     isLoading,
     isRateLimited: retryAfterSeconds !== null && retryAfterSeconds > 0,
     retryAfterSeconds,
+    isUnavailable,
     sendMessage,
+    retryLastMessage,
     startNewConversation,
     loadConversation,
     deleteConversation,

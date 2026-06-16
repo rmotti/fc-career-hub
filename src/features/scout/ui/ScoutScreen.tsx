@@ -41,6 +41,7 @@ import {
   UserRound,
   UsersRound,
   Weight,
+  WifiOff,
   X,
   Zap,
 } from "lucide-react";
@@ -1128,7 +1129,9 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     isLoading: isChatLoading,
     isRateLimited,
     retryAfterSeconds,
+    isUnavailable: isChatUnavailable,
     sendMessage,
+    retryLastMessage,
     startNewConversation,
     loadConversation,
     deleteConversation,
@@ -1630,6 +1633,20 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                       <span>Too many messages. Wait {retryAfterSeconds}s to continue.</span>
                     </div>
                   )}
+                  {isChatUnavailable && !isChatLoading && (
+                    <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                      <WifiOff size={13} className="shrink-0" />
+                      <span className="flex-1">Junior is unavailable right now. Check your connection and try again.</span>
+                      <button
+                        type="button"
+                        onClick={() => retryLastMessage()}
+                        className="flex items-center gap-1 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 font-semibold transition-colors hover:bg-destructive/20"
+                      >
+                        <RotateCcw size={12} />
+                        Try again
+                      </button>
+                    </div>
+                  )}
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -1655,13 +1672,13 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                         }
                       }}
                       placeholder="Ask Junior… (Enter to send, Shift+Enter for new line)"
-                      disabled={isChatLoading || isRateLimited}
+                      disabled={isChatLoading || isRateLimited || isChatUnavailable}
                       rows={2}
                       className="min-w-0 flex-1 resize-none rounded-md border border-border bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                     <button
                       type="submit"
-                      disabled={isChatLoading || isRateLimited || !chatInput.trim()}
+                      disabled={isChatLoading || isRateLimited || isChatUnavailable || !chatInput.trim()}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
                       aria-label="Send message"
                     >

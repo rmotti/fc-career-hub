@@ -96,7 +96,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
       );
       resetForm();
     } catch {
-      // A mensagem de erro ja e exibida no fluxo de criacao.
+      // The error message is already surfaced by the creation flow.
     }
   };
 

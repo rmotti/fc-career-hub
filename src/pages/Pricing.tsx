@@ -295,7 +295,7 @@ export default function Pricing() {
                       to="/app"
                       className={`landing-btn-primary flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-display text-sm font-bold transition-all ${plan.ctaStyle}`}
                     >
-                      Ir para o Hub
+                      Go to Hub
                       <ArrowRight size={14} />
                     </Link>
                   ) : (

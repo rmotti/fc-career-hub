@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.signOut();
     } catch {
-      // Mesmo que o endpoint falhe, encerrar a sessão local completa o fluxo de logout.
+      // Even if the endpoint fails, clearing the local session completes the logout flow.
     } finally {
       clearSession();
     }
