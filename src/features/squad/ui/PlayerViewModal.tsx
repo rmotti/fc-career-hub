@@ -64,10 +64,10 @@ const POSITION_COLORS: Record<string, string> = {
   ME: "bg-primary/20 text-primary",
   MD: "bg-primary/20 text-primary",
   MEI: "bg-primary/20 text-primary",
-  PE: "bg-destructive/20 text-destructive",
-  PD: "bg-destructive/20 text-destructive",
-  SA: "bg-destructive/20 text-destructive",
-  ATA: "bg-destructive/20 text-destructive",
+  PE: "bg-destructive/20 text-destructive-text",
+  PD: "bg-destructive/20 text-destructive-text",
+  SA: "bg-destructive/20 text-destructive-text",
+  ATA: "bg-destructive/20 text-destructive-text",
 };
 
 const CLEAN_SHEETS_POSITIONS = new Set(["GOL", "ZAG", "LD", "LE", "VOL"]);
@@ -84,7 +84,7 @@ const Delta = ({ value, suffix = "", moneyUnit }: { value: number | null | undef
     );
   }
   if (value > 0) return <span className="text-green-500 flex items-center gap-0.5"><TrendingUp size={12} />{label}</span>;
-  return <span className="text-destructive flex items-center gap-0.5"><TrendingDown size={12} />{label}</span>;
+  return <span className="text-destructive-text flex items-center gap-0.5"><TrendingDown size={12} />{label}</span>;
 };
 
 const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
@@ -283,7 +283,7 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
                         <td className="px-3 py-2 font-display text-accent">{entry.cleanSheets}</td>
                       )}
                       <td className="px-3 py-2 text-warning">{entry.yellowCards}</td>
-                      <td className="px-3 py-2 text-destructive">{entry.redCards}</td>
+                      <td className="px-3 py-2 text-destructive-text">{entry.redCards}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -178,7 +178,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   <span className="text-muted-foreground">Season</span>
                   {nextSeason
                     ? <span className="font-display font-bold text-primary">{nextSeason}</span>
-                    : <span className="text-destructive text-xs">Invalid current season.</span>
+                    : <span className="text-destructive-text text-xs">Invalid current season.</span>
                   }
                 </div>
               </div>
@@ -206,7 +206,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1.5">Enter the value in millions. E.g.: `150` = `150M`.</p>
-                {budgetError && <p className="text-xs text-destructive mt-1.5 font-medium">{budgetError}</p>}
+                {budgetError && <p className="text-xs text-destructive-text mt-1.5 font-medium">{budgetError}</p>}
               </div>
               <div>
                 <label className={labelClass}>European competition</label>
@@ -275,7 +275,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                         <p className="text-xs text-muted-foreground">D</p>
                       </div>
                       <div>
-                        <p className="text-lg font-display font-bold text-destructive">{teamStats.losses}</p>
+                        <p className="text-lg font-display font-bold text-destructive-text">{teamStats.losses}</p>
                         <p className="text-xs text-muted-foreground">L</p>
                       </div>
                     </div>
@@ -342,7 +342,7 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
                       <p className="text-xs text-muted-foreground">Scored</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-display font-bold text-destructive">{teamStats.goalsAgainst}</p>
+                      <p className="text-2xl font-display font-bold text-destructive-text">{teamStats.goalsAgainst}</p>
                       <p className="text-xs text-muted-foreground">Conceded</p>
                     </div>
                     <div>

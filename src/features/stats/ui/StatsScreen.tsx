@@ -70,7 +70,7 @@ const toneClass: Record<Tone, string> = {
   accent: "text-accent",
   gold: "text-[hsl(var(--gold))]",
   warning: "text-[hsl(var(--warning))]",
-  destructive: "text-destructive",
+  destructive: "text-destructive-text",
   muted: "text-muted-foreground",
 };
 
@@ -259,7 +259,7 @@ function CampaignSummary({ teamStats, competitions, keyPlayer, totalGoals }: Cam
                   <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Draws</p>
                 </div>
                 <div className="pl-3 text-center">
-                  <p className="font-display text-5xl font-bold leading-none text-destructive">{teamStats.losses}</p>
+                  <p className="font-display text-5xl font-bold leading-none text-destructive-text">{teamStats.losses}</p>
                   <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Losses</p>
                 </div>
               </div>
@@ -378,7 +378,7 @@ function CompetitionCard({ stat, canEdit, onEdit, onRemove }: CompetitionCardPro
             <button
               type="button"
               onClick={onRemove}
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive-text"
               title="Remove competition"
               aria-label="Remove competition"
             >

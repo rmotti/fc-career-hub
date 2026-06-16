@@ -68,7 +68,7 @@ const toneClass: Record<Tone, string> = {
   accent: "text-accent",
   gold: "text-[hsl(var(--gold))]",
   warning: "text-[hsl(var(--warning))]",
-  destructive: "text-destructive",
+  destructive: "text-destructive-text",
   muted: "text-muted-foreground",
 };
 

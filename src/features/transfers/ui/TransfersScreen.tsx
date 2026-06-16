@@ -57,7 +57,7 @@ const toneClass: Record<TransferTone, string> = {
   primary: "text-primary",
   accent: "text-accent",
   warning: "text-[hsl(var(--warning))]",
-  destructive: "text-destructive",
+  destructive: "text-destructive-text",
   muted: "text-muted-foreground",
 };
 
@@ -65,7 +65,7 @@ const badgeClass: Record<TransferTone, string> = {
   primary: "border-primary/20 bg-primary/10 text-primary",
   accent: "border-accent/20 bg-accent/10 text-accent",
   warning: "border-[hsl(var(--warning))]/25 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]",
-  destructive: "border-destructive/20 bg-destructive/10 text-destructive",
+  destructive: "border-destructive/20 bg-destructive/10 text-destructive-text",
   muted: "border-border bg-muted/50 text-muted-foreground",
 };
 
@@ -294,7 +294,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
               <button
                 type="button"
                 onClick={() => handleDelete(transfer)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-text"
                 aria-label={`Delete ${transfer.playerName}`}
               >
                 <Trash2 size={13} />
@@ -352,7 +352,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
               <button
                 type="button"
                 onClick={() => handleDelete(transfer)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-text"
                 aria-label={`Delete ${transfer.playerName}`}
               >
                 <Trash2 size={13} />

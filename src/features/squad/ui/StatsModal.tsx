@@ -37,7 +37,7 @@ interface NumberFieldProps {
 const toneFieldClass = {
   primary: "border-primary/25 focus:ring-primary text-primary",
   warning: "border-[hsl(var(--warning)/0.25)] focus:ring-[hsl(var(--warning))] text-[hsl(var(--warning))]",
-  destructive: "border-destructive/25 focus:ring-destructive text-destructive",
+  destructive: "border-destructive/25 focus:ring-destructive text-destructive-text",
   neutral: "border-border focus:ring-primary text-foreground",
 };
 
@@ -175,7 +175,7 @@ const StatsModal = ({ open, onOpenChange, stat, onSave }: Props) => {
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pts</p>
                 </div>
                 <div className="text-center">
-                  <p className={`font-display text-xl font-bold ${derived.goalDiff >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <p className={`font-display text-xl font-bold ${derived.goalDiff >= 0 ? "text-primary" : "text-destructive-text"}`}>
                     {derived.goalDiff > 0 ? `+${derived.goalDiff}` : derived.goalDiff}
                   </p>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">GD</p>

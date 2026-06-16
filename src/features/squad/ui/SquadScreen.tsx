@@ -87,10 +87,10 @@ const positionColor: Record<string, string> = {
   ME: "bg-primary/20 text-primary",
   MD: "bg-primary/20 text-primary",
   MEI: "bg-primary/20 text-primary",
-  PE: "bg-destructive/20 text-destructive",
-  PD: "bg-destructive/20 text-destructive",
-  SA: "bg-destructive/20 text-destructive",
-  ATA: "bg-destructive/20 text-destructive",
+  PE: "bg-destructive/20 text-destructive-text",
+  PD: "bg-destructive/20 text-destructive-text",
+  SA: "bg-destructive/20 text-destructive-text",
+  ATA: "bg-destructive/20 text-destructive-text",
 };
 
 const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
@@ -561,7 +561,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                           </button>
                           <button
                             onClick={() => handleDelete(p)}
-                            className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive-text transition-colors"
                             title={t("squad.releaseHint")}
                           >
                             <Trash2 size={14} />
@@ -780,7 +780,7 @@ function PlayerTableCells({ columns, player, squadRole }: PlayerTableCellsProps)
                   {player.ovr}
                 </span>
                 {player.ovrDelta != null && (
-                  <span className={`text-xs font-bold ${player.ovrDelta > 0 ? "text-green-500" : player.ovrDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  <span className={`text-xs font-bold ${player.ovrDelta > 0 ? "text-green-500" : player.ovrDelta < 0 ? "text-destructive-text" : "text-muted-foreground"}`}>
                     {player.ovrDelta > 0 ? `▲${player.ovrDelta}` : player.ovrDelta < 0 ? `▼${Math.abs(player.ovrDelta)}` : "—"}
                   </span>
                 )}
@@ -813,7 +813,7 @@ function PlayerTableCells({ columns, player, squadRole }: PlayerTableCellsProps)
               <div className="flex items-center justify-end gap-1.5">
                 <span>{marketValueLabel}</span>
                 {player.marketValueDelta != null && (
-                  <span className={`text-xs font-bold ${player.marketValueDelta > 0 ? "text-green-500" : player.marketValueDelta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  <span className={`text-xs font-bold ${player.marketValueDelta > 0 ? "text-green-500" : player.marketValueDelta < 0 ? "text-destructive-text" : "text-muted-foreground"}`}>
                     {player.marketValueDelta > 0 ? `▲${formatCurrencyInMillions(player.marketValueDelta)}` : player.marketValueDelta < 0 ? `▼${formatCurrencyInMillions(m(Math.abs(player.marketValueDelta)))}` : "—"}
                   </span>
                 )}

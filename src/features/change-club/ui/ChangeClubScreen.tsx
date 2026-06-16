@@ -360,7 +360,7 @@ const ChangeClubScreen = ({ saveId, currentClub }: Props) => {
                     className={`h-11 w-full rounded-md border bg-background/50 px-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-shadow focus:outline-none focus:ring-2 ${budgetError ? "border-destructive focus:ring-destructive/50" : "border-border focus:ring-primary/40"}`}
                   />
                   <p className="mt-1.5 text-xs text-muted-foreground">Enter in millions. E.g.: 100 = 100M.</p>
-                  {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive">{budgetError}</p>}
+                  {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive-text">{budgetError}</p>}
                 </div>
               </div>
 

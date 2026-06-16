@@ -34,6 +34,8 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          // Lighter red for destructive *text* on the dark canvas (AA-compliant).
+          text: "hsl(var(--destructive-text))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

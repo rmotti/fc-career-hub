@@ -37,7 +37,7 @@ export default function Unauthorized() {
         <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
           <div className="absolute inset-0 rounded-full bg-destructive/10 blur-xl" />
           <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-destructive/30 bg-destructive/8">
-            <Lock size={32} className="text-destructive" strokeWidth={1.5} />
+            <Lock size={32} className="text-destructive-text" strokeWidth={1.5} />
           </div>
         </div>
 

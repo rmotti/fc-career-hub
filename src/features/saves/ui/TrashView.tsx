@@ -105,7 +105,7 @@ const TrashView = ({ onBack }: Props) => {
                   onClick={() => handlePurge(save)}
                   disabled={deleteSave.isPending}
                   title="Delete permanently"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive-text disabled:opacity-50"
                 >
                   <Trash2 size={15} />
                 </button>

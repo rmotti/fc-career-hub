@@ -181,7 +181,7 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             <button
               type="button"
               onClick={onSignOut}
-              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card/70 px-4 font-display text-sm font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card/70 px-4 font-display text-sm font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive-text"
               title="Sign out and return to the home screen"
             >
               <LogOut size={16} />
@@ -329,7 +329,7 @@ const SaveCard = ({ save, onSelectSave, onDelete, deleting }: SaveCardProps) => 
     <button
       onClick={() => onDelete(save)}
       disabled={deleting}
-      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive-text disabled:opacity-50"
       title="Delete save"
     >
       {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
@@ -473,7 +473,7 @@ const CreateSavePanel = ({
               }`}
             />
             <p className="mt-1.5 text-xs text-muted-foreground">Enter in millions. E.g.: 100 = 100M.</p>
-            {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive">{budgetError}</p>}
+            {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive-text">{budgetError}</p>}
           </Field>
 
           <Field label="Initial European competition">

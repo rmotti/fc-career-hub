@@ -22,14 +22,14 @@ const DeleteSaveDialog = ({ save, open, onOpenChange, onArchive, onPurge, pendin
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle className="flex items-center gap-2">
-          <Trash2 size={18} className="text-destructive" />
+          <Trash2 size={18} className="text-destructive-text" />
           Delete “{save?.name}”?
         </AlertDialogTitle>
         <AlertDialogDescription asChild>
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>Choose how you want to remove this save.</p>
             <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-foreground">
-              <TriangleAlert size={16} className="mt-0.5 shrink-0 text-destructive" />
+              <TriangleAlert size={16} className="mt-0.5 shrink-0 text-destructive-text" />
               <span>Deleting permanently cannot be undone. Archiving moves the save to the trash, where you can restore it later.</span>
             </div>
           </div>

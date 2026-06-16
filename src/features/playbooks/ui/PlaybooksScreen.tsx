@@ -294,7 +294,7 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
               <button
                 onClick={() => onDelete?.(playbook)}
                 title="Delete playbook"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-text"
               >
                 <Trash2 size={14} />
               </button>
@@ -565,7 +565,7 @@ function PlaybookSheet({
                     className={`rounded-md border px-2 py-0.5 text-[11px] font-bold ${
                       total > 0
                         ? "border-primary/25 bg-primary/10 text-primary"
-                        : "border-destructive/25 bg-destructive/10 text-destructive"
+                        : "border-destructive/25 bg-destructive/10 text-destructive-text"
                     }`}
                   >
                     Total: {total} pts
@@ -577,7 +577,7 @@ function PlaybookSheet({
               </div>
 
               {total === 0 && (
-                <p className="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <p className="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive-text">
                   At least one weight must be greater than zero.
                 </p>
               )}
@@ -848,7 +848,7 @@ export default function PlaybooksScreen({ saveId, currentClub, currentSeason }: 
           Loading playbooks...
         </div>
       ) : isError ? (
-        <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive-text">
           {extractErrorMessage(error)}
         </div>
       ) : (

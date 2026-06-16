@@ -1577,7 +1577,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                           <button
                             type="button"
                             onClick={() => deleteConversation(entry.id)}
-                            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/25 hover:bg-destructive/5 hover:text-destructive"
+                            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/25 hover:bg-destructive/5 hover:text-destructive-text"
                           >
                             <Trash2 size={11} />
                             Delete
@@ -1639,7 +1639,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                     </div>
                   )}
                   {isChatUnavailable && !isChatLoading && (
-                    <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                    <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive-text">
                       <WifiOff size={13} className="shrink-0" />
                       <span className="flex-1">Junior is unavailable right now. Check your connection and try again.</span>
                       <button
@@ -1780,7 +1780,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                       <button
                         type="button"
                         onClick={() => removeSavedQuery(selectedSavedQuery.id)}
-                        className="inline-flex h-9 items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/15"
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 text-sm font-semibold text-destructive-text transition-colors hover:bg-destructive/15"
                       >
                         <Trash2 size={15} />
                         Remove
@@ -2592,7 +2592,7 @@ function ShortlistPlayerRow({
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-destructive/25 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/15"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-destructive/25 bg-destructive/10 text-destructive-text transition-colors hover:bg-destructive/15"
           title="Remove da Shortlist"
         >
           <X size={14} />
@@ -4080,7 +4080,7 @@ function PlayerDetailDrawer({ player, isLoading, isError, error, onClose }: Play
               Loading details...
             </div>
           ) : isError && !player ? (
-            <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive">
+            <div className="rounded-md border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive-text">
               {extractErrorMessage(error)}
             </div>
           ) : player ? (

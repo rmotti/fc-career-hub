@@ -331,7 +331,7 @@ const HubSidebar = ({
               t("sidebar.account.signOut"),
               <button
                 onClick={handleSignOut}
-                className={`flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-destructive transition-all min-h-[42px] hover:bg-destructive/10 ${
+                className={`flex w-full min-w-0 items-center gap-3 rounded-md text-sm font-medium text-destructive-text transition-all min-h-[42px] hover:bg-destructive/10 ${
                   collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
                 }`}
               >

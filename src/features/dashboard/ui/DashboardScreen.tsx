@@ -36,7 +36,7 @@ const toneClass: Record<HighlightTone, string> = {
   accent: "text-accent",
   gold: "text-[hsl(var(--gold))]",
   warning: "text-[hsl(var(--warning))]",
-  destructive: "text-destructive",
+  destructive: "text-destructive-text",
   muted: "text-muted-foreground",
 };
 
@@ -218,7 +218,7 @@ const DashboardScreen = ({ saveId }: Props) => {
                 <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Draws</p>
               </div>
               <div className="pl-4 text-center">
-                <p className="font-display text-6xl font-bold leading-none text-destructive">{teamStats?.losses ?? 0}</p>
+                <p className="font-display text-6xl font-bold leading-none text-destructive-text">{teamStats?.losses ?? 0}</p>
                 <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Losses</p>
               </div>
             </div>
@@ -258,7 +258,7 @@ const DashboardScreen = ({ saveId }: Props) => {
                             <p className="truncate text-sm font-semibold text-foreground">{stat.competition?.name ?? "Competition"}</p>
                             <p className="text-xs text-muted-foreground">{competitionMeta}</p>
                           </div>
-                          <span className={`shrink-0 font-display text-sm font-bold ${statGoalDiff >= 0 ? "text-primary" : "text-destructive"}`}>
+                          <span className={`shrink-0 font-display text-sm font-bold ${statGoalDiff >= 0 ? "text-primary" : "text-destructive-text"}`}>
                             {stat.wins}V {stat.draws}E {stat.losses}D
                           </span>
                         </div>
@@ -316,10 +316,10 @@ const DashboardScreen = ({ saveId }: Props) => {
         <div data-tour="dashboard-finance" className={`card-gamer p-6 ${isLowBalance ? "border-destructive/50" : ""}`}>
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <CircleDollarSign size={15} className={isLowBalance ? "text-destructive" : "text-primary"} />
+              <CircleDollarSign size={15} className={isLowBalance ? "text-destructive-text" : "text-primary"} />
               <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Financial health</p>
             </div>
-            <span className={`text-xs font-semibold ${isLowBalance ? "text-destructive" : "text-primary"}`}>
+            <span className={`text-xs font-semibold ${isLowBalance ? "text-destructive-text" : "text-primary"}`}>
               {Math.round(balancePct)}% remaining
             </span>
           </div>
@@ -331,7 +331,7 @@ const DashboardScreen = ({ saveId }: Props) => {
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Available balance</p>
-              <p className={`mt-2 font-display text-3xl font-bold leading-none ${isLowBalance ? "text-destructive" : "text-primary text-glow-primary"}`}>
+              <p className={`mt-2 font-display text-3xl font-bold leading-none ${isLowBalance ? "text-destructive-text" : "text-primary text-glow-primary"}`}>
                 {displayBalance}
               </p>
             </div>

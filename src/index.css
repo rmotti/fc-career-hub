@@ -22,13 +22,19 @@
     --secondary-foreground: 210 20% 85%;
 
     --muted: 220 14% 14%;
-    --muted-foreground: 215 12% 50%;
+    /* Bumped 50% → 58% so secondary/body text clears WCAG AA (≥4.5) on
+       background (5.99), card (5.62), surface (5.34) and secondary (4.76). */
+    --muted-foreground: 215 12% 58%;
 
     --accent: 195 90% 50%;
     --accent-foreground: 220 20% 7%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
+    /* Filled destructive (bg-destructive + white text) must stay dark, so red
+       *text* on the dark canvas needs a lighter token to reach AA. 0 80% 65%
+       hits ≥5.4 on background/card and on the bg-destructive/10 tint. */
+    --destructive-text: 0 80% 65%;
 
     --border: 220 14% 18%;
     --input: 220 14% 18%;
