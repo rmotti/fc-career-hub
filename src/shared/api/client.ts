@@ -29,6 +29,32 @@ export function registerUnauthorizedHandler(handler: (() => void) | null) {
   unauthorizedHandler = handler;
 }
 
+let forbiddenHandler: (() => void) | null = null;
+
+export function registerForbiddenHandler(handler: (() => void) | null) {
+  forbiddenHandler = handler;
+}
+
+// Endpoints that live behind a paid plan. A 403 from one of these means the
+// session was downgraded to FREE mid-flight (the route guard gates on the
+// locally-cached plan, which can be stale), so we route the user to /pricing
+// instead of showing a dead-end permission error. A 403 from any other path is
+// a genuine resource-permission error and keeps its normal generic handling.
+//
+// Prefix-matched roots. "/scout" also covers "/scouting" and "/scout/*" by design.
+const PRO_FEATURE_PREFIXES = ["/fc26-players", "/scout", "/chat"];
+// PRO sub-resources nested under /saves/:saveId/... — matched by path segment so we
+// gate only these, not the whole (non-PRO) /saves tree (players, transfers, trophies,
+// team-stats, club-stints, snapshots, … all live under /saves and must NOT redirect).
+const PRO_FEATURE_SEGMENTS = ["shortlist", "saved-searches"];
+
+export function isProFeaturePath(path: string): boolean {
+  const pathname = path.split("?")[0];
+  if (PRO_FEATURE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return true;
+  const segments = pathname.split("/");
+  return PRO_FEATURE_SEGMENTS.some((segment) => segments.includes(segment));
+}
+
 // The session token lives in a cross-site httpOnly cookie, so the SPA can't read
 // the matching csrf cookie via document.cookie. Instead it keeps the CSRF token
 // in memory (from the sign-in body or GET /auth/csrf) and echoes it back in the
@@ -174,6 +200,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       !path.startsWith("/auth/session")
     ) {
       unauthorizedHandler?.();
+    }
+    if (res.status === 403 && isProFeaturePath(path)) {
+      forbiddenHandler?.();
     }
     throw new ApiError(err.error || `HTTP ${res.status}`, res.status, err, false, retryAfter);
   }
