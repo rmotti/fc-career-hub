@@ -10,13 +10,22 @@ import {
   Pencil,
   Plus,
   Repeat2,
+  RotateCcw,
   Trash2,
   TrendingDown,
   TrendingUp,
+  TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { type ApiTransfer, extractErrorMessage } from "@/shared/api/client";
-import { useTransfers, useCreateTransfer, useUpdateTransfer, useDeleteTransfer } from "@/features/transfers/model/useTransfers";
+import { useTransfers, useCreateTransfer, useUpdateTransfer, useDeleteTransfer, useReverseTransfer } from "@/features/transfers/model/useTransfers";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { useFinancialSnapshot } from "@/features/dashboard/model/useFinancialSnapshot";
 import { usePlayer, useUpdatePlayer, useUpdatePlayerStats } from "@/features/squad/model/usePlayers";
 import TransferModal from "@/features/transfers/ui/TransferModal";
@@ -100,6 +109,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   const [historyTypeFilter, setHistoryTypeFilter] = useState<TransferTypeFilter>("all");
   const [historySeasonFilter, setHistorySeasonFilter] = useState("all");
   const [historySort, setHistorySort] = useState<HistorySort>("recent");
+  const [transferToReverse, setTransferToReverse] = useState<ApiTransfer | null>(null);
 
   const { data: save } = useFinancialSnapshot(saveId);
   const { data: allTransfers = [], isLoading } = useTransfers(saveId);
@@ -107,6 +117,7 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
   const createTransfer = useCreateTransfer();
   const updateTransfer = useUpdateTransfer();
   const deleteTransfer = useDeleteTransfer();
+  const reverseTransfer = useReverseTransfer();
   const updatePlayer = useUpdatePlayer();
   const updateStats = useUpdatePlayerStats();
 
@@ -212,6 +223,16 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
     });
   };
 
+  const handleReverse = (transfer: ApiTransfer) => {
+    reverseTransfer.mutate({ saveId, transferId: transfer.id }, {
+      onSuccess: () => {
+        toast.success(t("transfers.toasts.reversed", { name: transfer.playerName }), { duration: 4000 });
+        setTransferToReverse(null);
+      },
+      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+    });
+  };
+
   const openEditModal = (transfer: ApiTransfer) => {
     setEditingTransfer(transfer);
     setModalOpen(true);
@@ -262,6 +283,15 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
               </button>
               <button
                 type="button"
+                onClick={() => setTransferToReverse(transfer)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/10 hover:text-accent"
+                aria-label={t("transfers.reverse.aria", { name: transfer.playerName })}
+                title={t("transfers.reverse.tooltip")}
+              >
+                <RotateCcw size={13} />
+              </button>
+              <button
+                type="button"
                 onClick={() => handleDelete(transfer)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 aria-label={`Delete ${transfer.playerName}`}
@@ -308,6 +338,15 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
                 aria-label={`Edit ${transfer.playerName}`}
               >
                 <Pencil size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setTransferToReverse(transfer)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/10 hover:text-accent"
+                aria-label={t("transfers.reverse.aria", { name: transfer.playerName })}
+                title={t("transfers.reverse.tooltip")}
+              >
+                <RotateCcw size={13} />
               </button>
               <button
                 type="button"
@@ -539,6 +578,48 @@ const TransfersScreen = ({ saveId, currentClub, currentSeason, selectedSeason }:
         onSave={handleSavePurchasePlayer}
         saveId={saveId}
       />
+
+      <AlertDialog
+        open={transferToReverse !== null}
+        onOpenChange={(open) => { if (!open && !reverseTransfer.isPending) setTransferToReverse(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw size={18} className="text-accent" />
+              {t("transfers.reverse.dialogTitle", { name: transferToReverse?.playerName })}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>{t("transfers.reverse.dialogBody")}</p>
+                <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
+                  <TriangleAlert size={16} className="mt-0.5 shrink-0 text-warning" />
+                  <span>{t("transfers.reverse.dialogWarning")}</span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              disabled={reverseTransfer.isPending}
+              onClick={() => setTransferToReverse(null)}
+              className="rounded-lg border border-border bg-background/50 px-4 py-2.5 font-display text-sm font-bold text-foreground transition-colors hover:border-primary/40 disabled:opacity-50"
+            >
+              {t("transfers.reverse.cancel")}
+            </button>
+            <button
+              type="button"
+              disabled={reverseTransfer.isPending || !transferToReverse}
+              onClick={() => transferToReverse && handleReverse(transferToReverse)}
+              className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 font-display text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {reverseTransfer.isPending ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+              {t("transfers.reverse.confirm")}
+            </button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

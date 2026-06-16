@@ -30,6 +30,9 @@ export function useChangeClub() {
       qc.invalidateQueries({ queryKey: ["clubStints", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["saves", vars.saveId] });
       qc.invalidateQueries({ queryKey: ["saves"] });
+      // Changing club snapshots + audits on the backend (pre-club-change).
+      qc.invalidateQueries({ queryKey: ["snapshots", vars.saveId] });
+      qc.invalidateQueries({ queryKey: ["audit", vars.saveId] });
     },
   });
 }

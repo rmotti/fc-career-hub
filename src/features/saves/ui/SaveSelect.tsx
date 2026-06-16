@@ -5,6 +5,8 @@ import { extractErrorMessage, type ApiSave, type UserPlan } from "@/shared/api/c
 import { useClubsByLeague } from "@/features/change-club/model/useClubs";
 import { useEuropeanCompetitions } from "@/features/change-club/model/useCompetitions";
 import { useDeleteSave } from "@/features/saves/model/useSaves";
+import DeleteSaveDialog from "@/features/saves/ui/DeleteSaveDialog";
+import TrashView from "@/features/saves/ui/TrashView";
 import { parseBudgetInMillionsInput } from "@/shared/lib/currency";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/shared/ui/carousel";
 import SaveSelectTutorial from "@/features/tutorial/ui/SaveSelectTutorial";
@@ -40,6 +42,8 @@ const formatUpdatedAt = (value?: string) => {
 
 const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreateSave, onSignOut, creating }: Props) => {
   const [showForm, setShowForm] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [saveToDelete, setSaveToDelete] = useState<ApiSave | null>(null);
   const deleteSave = useDeleteSave();
   const [newName, setNewName] = useState("");
   const [newLeague, setNewLeague] = useState("");
@@ -98,6 +102,32 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
 
   const canCreate = !!newName.trim() && !!newClub && parseBudgetInMillionsInput(newBudget) !== null && !creating;
 
+  const handleArchive = (save: ApiSave) => {
+    deleteSave.mutate(
+      { saveId: save.id },
+      {
+        onSuccess: () => {
+          toast.success(`“${save.name}” archived. You can restore it from the trash.`, { duration: 4000 });
+          setSaveToDelete(null);
+        },
+        onError: (error) => toast.error(extractErrorMessage(error), { duration: 5000 }),
+      },
+    );
+  };
+
+  const handlePurge = (save: ApiSave) => {
+    deleteSave.mutate(
+      { saveId: save.id, purge: true },
+      {
+        onSuccess: () => {
+          toast.success(`“${save.name}” deleted permanently.`, { duration: 3000 });
+          setSaveToDelete(null);
+        },
+        onError: (error) => toast.error(extractErrorMessage(error), { duration: 5000 }),
+      },
+    );
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:52px_52px]" />
@@ -137,6 +167,19 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
             </div>
             <button
               type="button"
+              onClick={() => { setShowTrash((value) => !value); setShowForm(false); }}
+              className={`flex h-10 items-center justify-center gap-2 rounded-lg border px-4 font-display text-sm font-bold transition-colors ${
+                showTrash
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-primary"
+              }`}
+              title="View archived saves"
+            >
+              <Trash2 size={16} />
+              Trash
+            </button>
+            <button
+              type="button"
               onClick={onSignOut}
               className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card/70 px-4 font-display text-sm font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
               title="Sign out and return to the home screen"
@@ -157,6 +200,8 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
               <span className="font-medium">Loading saves...</span>
             </div>
           </div>
+        ) : showTrash ? (
+          <TrashView onBack={() => setShowTrash(false)} />
         ) : showForm ? (
           <CreateSavePanel
             budgetError={budgetError}
@@ -208,16 +253,8 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
                     <SaveCard
                       save={save}
                       onSelectSave={onSelectSave}
-                      onDelete={(selectedSave) => {
-                        if (confirm(`Delete save "${selectedSave.name}"? This action cannot be undone.`)) {
-                          deleteSave.mutate(selectedSave.id, {
-                            onError: (error) => {
-                              toast.error(extractErrorMessage(error), { duration: 5000 });
-                            },
-                          });
-                        }
-                      }}
-                      deleting={deleteSave.isPending}
+                      onDelete={(selectedSave) => setSaveToDelete(selectedSave)}
+                      deleting={deleteSave.isPending && deleteSave.variables?.saveId === save.id}
                     />
                   </CarouselItem>
                 ))}
@@ -237,6 +274,15 @@ const SaveSelect = ({ userName, userPlan, saves, loading, onSelectSave, onCreate
           </section>
         )}
       </main>
+
+      <DeleteSaveDialog
+        save={saveToDelete}
+        open={saveToDelete !== null}
+        onOpenChange={(open) => { if (!open) setSaveToDelete(null); }}
+        onArchive={handleArchive}
+        onPurge={handlePurge}
+        pending={deleteSave.isPending}
+      />
     </div>
   );
 };

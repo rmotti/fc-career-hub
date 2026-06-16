@@ -8,6 +8,24 @@ function refreshSaveQueries(qc: ReturnType<typeof useQueryClient>, saveId: strin
   ]);
 }
 
+// A reverse refunds the balance and puts the player back/removes them, so the
+// squad, transfers, save balance and audit log all need refreshing.
+export function useReverseTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId, transferId }: { saveId: string; transferId: string }) =>
+      transfersApi.reverse(saveId, transferId),
+    onSuccess: async (_res, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["players", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["audit", vars.saveId] }),
+        refreshSaveQueries(qc, vars.saveId),
+      ]);
+    },
+  });
+}
+
 export function useTransfers(saveId: string | null, season?: "current") {
   return useQuery({
     queryKey: ["transfers", saveId, { season }],

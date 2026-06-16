@@ -71,10 +71,10 @@ describe("useDeleteSave", () => {
 
     const { result } = renderHook(() => useDeleteSave(), { wrapper: Wrapper });
     await act(async () => {
-      await result.current.mutateAsync("save-1");
+      await result.current.mutateAsync({ saveId: "save-1" });
     });
 
-    expect(savesApiMock.delete).toHaveBeenCalledWith("save-1");
+    expect(savesApiMock.delete).toHaveBeenCalledWith("save-1", { purge: undefined });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["saves"] });
   });
 });

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt,
-  Trophy, BriefcaseBusiness, Shield, Bot, Search, Folder, ListChecks, Sliders
+  Trophy, BriefcaseBusiness, Shield, Bot, Search, Folder, ListChecks, Sliders, Activity
 } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 import { ScrollArea } from "@/shared/ui/scroll-area";
@@ -56,6 +56,7 @@ const HubSidebar = ({
   const careerItems: { type: "button" | "link"; label: string; description?: string; icon: ElementType; to?: string; onClick?: "newSeason" }[] = [
     { type: "button", label: t("sidebar.career.newSeason"), description: t("sidebar.career.newSeasonDesc"), icon: CalendarPlus, onClick: "newSeason" },
     { type: "link", label: t("sidebar.career.changeClub"), icon: RefreshCw, to: "/change-club" },
+    { type: "link", label: t("sidebar.career.activity"), icon: Activity, to: "/activity" },
   ];
 
   const scoutItems: { to: string; label: string; icon: ElementType }[] = [

@@ -57,8 +57,13 @@ export function useImportFc26Players() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ saveId }: { saveId: string }) => playersApi.importFc26(saveId),
+    // Import snapshots + audits on the backend (pre-fc26-import).
     onSuccess: (_res, vars) => {
-      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["players", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["snapshots", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["audit", vars.saveId] }),
+      ]);
     },
   });
 }
@@ -68,8 +73,14 @@ export function useReleasePlayer() {
   return useMutation({
     mutationFn: ({ saveId, playerId }: { saveId: string; playerId: string }) =>
       playersApi.release(saveId, playerId),
+    // Release snapshots + audits on the backend (pre-player-release), and is
+    // reversible via a snapshot restore.
     onSuccess: (_res, vars) => {
-      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["players", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["snapshots", vars.saveId] }),
+        qc.invalidateQueries({ queryKey: ["audit", vars.saveId] }),
+      ]);
     },
   });
 }

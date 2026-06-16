@@ -10,6 +10,7 @@ import Squad from "@/pages/hub/Squad";
 import Stats from "@/pages/hub/Stats";
 import History from "@/pages/hub/History";
 import Transfers from "@/pages/hub/Transfers";
+import Activity from "@/pages/hub/Activity";
 import ChangeClub from "@/pages/hub/ChangeClub";
 import Field from "@/pages/hub/Field";
 import Scout from "@/pages/hub/Scout";
@@ -39,6 +40,7 @@ export function Router() {
             <Route path="/squad" element={<Squad />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/history" element={<History />} />
+            <Route path="/activity" element={<Activity />} />
             <Route path="/transfers" element={<Transfers />} />
             <Route path="/change-club" element={<ChangeClub />} />
             <Route path="/field" element={<Field />} />

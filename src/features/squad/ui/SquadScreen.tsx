@@ -561,7 +561,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                           <button
                             onClick={() => handleDelete(p)}
                             className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                            title={t("squad.release")}
+                            title={t("squad.releaseHint")}
                           >
                             <Trash2 size={14} />
                           </button>

@@ -21,7 +21,8 @@
     "career": {
       "newSeason": "New Season",
       "newSeasonDesc": "Advance calendar",
-      "changeClub": "Change Club"
+      "changeClub": "Change Club",
+      "activity": "Activity"
     },
     "scout": {
       "aiCoach": "AIssistent Coach",
@@ -74,6 +75,7 @@
     "editTitle": "Edit data and stats",
     "viewDetails": "View details",
     "release": "Release",
+    "releaseHint": "Release (reversible from Activity)",
     "columns": {
       "name": "Name",
       "pos": "Pos",
@@ -535,7 +537,67 @@
       "playerSold": "Player sold and removed from squad.",
       "playerLoaned": "Player sent on loan and removed from squad.",
       "playerUpdated": "Player updated!",
-      "deleted": "Transfer removed."
+      "deleted": "Transfer removed.",
+      "reversed": "Transfer for {{name}} reversed."
+    },
+    "reverse": {
+      "tooltip": "Reverse: refunds the money and the player",
+      "aria": "Reverse transfer for {{name}}",
+      "dialogTitle": "Reverse transfer for {{name}}?",
+      "dialogBody": "This undoes the deal: the balance is refunded and the player goes back to (or is taken out of) the squad.",
+      "dialogWarning": "Unlike deleting, this restores the money and the squad. The transfer record is removed.",
+      "cancel": "Cancel",
+      "confirm": "Reverse"
+    }
+  },
+  "activity": {
+    "kicker": "Save activity",
+    "title": "Activity & restore points",
+    "loading": "Loading...",
+    "tabs": {
+      "snapshots": "Restore points",
+      "audit": "History"
+    },
+    "reasons": {
+      "preSeasonAdvance": "Before advancing season",
+      "preDelete": "Before deleting save",
+      "preTransferReverse": "Before reversing transfer",
+      "prePlayerRelease": "Before releasing player",
+      "preClubChange": "Before changing club",
+      "preFc26Import": "Before importing squad",
+      "manual": "Manual save point"
+    },
+    "snapshots": {
+      "title": "Restore points",
+      "subtitle": "Automatic snapshots are taken before destructive operations. You can also create your own.",
+      "create": "Create restore point",
+      "created": "Restore point created.",
+      "restore": "Restore",
+      "restored": "Save restored to the selected point.",
+      "empty": "No restore points yet. Create one before risky changes.",
+      "restoreDialogTitle": "Restore this point?",
+      "restoreDialogBody": "Restore “{{reason}}” from {{date}}.",
+      "restoreDialogWarning": "This reverts the entire save to that point — anything done afterwards (transfers, players, stats) will be undone.",
+      "cancel": "Cancel",
+      "restoreConfirm": "Restore"
+    },
+    "audit": {
+      "empty": "No activity recorded yet.",
+      "actions": {
+        "seasonAdvance": "Advanced season from {{from}} to {{to}}",
+        "softDelete": "Archived save “{{name}}”",
+        "purge": "Permanently deleted save “{{name}}”",
+        "restore": "Restored save from the trash",
+        "snapshotCreate": "Created a restore point",
+        "snapshotRestore": "Restored the save to an earlier point",
+        "financeEdit": "Edited finances",
+        "financeBudget": "Budget {{from}} → {{to}}",
+        "financeBalance": "Balance {{from}} → {{to}}",
+        "transferReverse": "Reversed the transfer for {{name}}",
+        "playerRelease": "Released {{name}}",
+        "clubChange": "Changed club from {{from}} to {{to}} ({{season}})",
+        "squadImport": "Imported squad for {{club}} ({{importing}} added, {{skipped}} skipped)"
+      }
     }
   },
   "history": {

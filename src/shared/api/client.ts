@@ -79,7 +79,6 @@ export interface ApiSession {
 }
 
 export interface AuthSuccessResponse {
-  token: string;
   csrfToken: string;
   user: ApiUser;
 }
@@ -96,6 +95,11 @@ export function extractErrorMessage(err: any): string {
 
   if (err?.data?.error === "SHIRT_NUMBER_CONFLICT") {
     return err.data.message;
+  }
+
+  // Standardized API errors: { error, statusCode, code? }.
+  if (err?.data?.code === "DELETE_CONFIRMATION_REQUIRED") {
+    return "Delete confirmation is required. Please try again.";
   }
 
   const status = err?.status || err?.response?.status;
@@ -161,7 +165,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     if (
       res.status === 401 &&
       !path.startsWith("/auth/sign-in") &&
-      !path.startsWith("/auth/sign-up")
+      !path.startsWith("/auth/sign-up") &&
+      // GET /auth/session now answers 401 when unauthenticated. That's the probe
+      // we use to learn we're logged out — handling it here would just re-enter
+      // the same clearSession the caller already runs, so let the caller decide.
+      !path.startsWith("/auth/session")
     ) {
       unauthorizedHandler?.();
     }
@@ -184,8 +192,16 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  getSession: () =>
-    request<SessionResponse | null>("/auth/session"),
+  getSession: async (): Promise<SessionResponse | null> => {
+    try {
+      return await request<SessionResponse>("/auth/session");
+    } catch (err) {
+      // Unauthenticated now returns 401 (previously `{}` with 200). Treat that as
+      // "signed out" rather than letting the error bubble up.
+      if (err instanceof ApiError && err.status === 401) return null;
+      throw err;
+    }
+  },
   signOut: () =>
     request<{ success: true }>("/auth/sign-out", {
       method: "POST",
@@ -217,6 +233,47 @@ export interface ApiClubStint {
   startYear: number;
   endYear?: number | null;
   isCurrent: boolean;
+}
+
+// A save that has been soft-deleted (archived). Carries the normal save fields
+// plus the archive timestamp.
+export interface ApiDeletedSave extends ApiSave {
+  deletedAt: string;
+}
+
+export type SnapshotReason =
+  | "pre-season-advance"
+  | "pre-delete"
+  | "pre-transfer-reverse"
+  | "pre-player-release"
+  | "pre-club-change"
+  | "pre-fc26-import"
+  | "manual";
+
+export interface ApiSnapshot {
+  id: string;
+  reason: SnapshotReason;
+  createdAt: string;
+}
+
+export type AuditAction =
+  | "save.season_advance"
+  | "save.soft_delete"
+  | "save.purge"
+  | "save.restore"
+  | "save.snapshot_create"
+  | "save.snapshot_restore"
+  | "save.finance_edit"
+  | "transfer.reverse"
+  | "player.release"
+  | "clubstint.change"
+  | "squad.import";
+
+export interface ApiAuditEntry {
+  id: string;
+  action: AuditAction | string;
+  meta: Record<string, any>;
+  createdAt: string;
 }
 
 export type PlayerPosition = "GOL" | "LD" | "LE" | "ZAG" | "VOL" | "MC" | "ME" | "MD" | "MEI" | "PE" | "PD" | "SA" | "ATA";
@@ -513,8 +570,25 @@ export const savesApi = {
     request<ApiSave>("/saves", { method: "POST", body: JSON.stringify(data) }),
   update: (saveId: string, data: { currentYear?: number; currentSeason?: string; budget?: string; balance?: string; europeanCompetitionId?: string | null }) =>
     request<ApiSave>(`/saves/${saveId}`, { method: "PATCH", body: JSON.stringify(data) }),
-  delete: (saveId: string) =>
-    request<void>(`/saves/${saveId}`, { method: "DELETE" }),
+  // Defaults to a reversible soft-delete (archive). Pass `purge: true` to delete
+  // permanently. The `confirm` query param must equal the saveId or the API
+  // rejects with 400 / code DELETE_CONFIRMATION_REQUIRED.
+  delete: (saveId: string, options?: { purge?: boolean }) => {
+    const params = new URLSearchParams({ confirm: saveId });
+    if (options?.purge) params.set("purge", "true");
+    return request<{ purged: boolean }>(`/saves/${saveId}?${params.toString()}`, { method: "DELETE" });
+  },
+  listDeleted: () => request<ApiDeletedSave[]>("/saves/deleted"),
+  restore: (saveId: string) =>
+    request<{ restored: boolean }>(`/saves/${saveId}/restore`, { method: "POST" }),
+  listSnapshots: (saveId: string) =>
+    request<ApiSnapshot[]>(`/saves/${saveId}/snapshots`),
+  createSnapshot: (saveId: string) =>
+    request<ApiSnapshot>(`/saves/${saveId}/snapshots`, { method: "POST" }),
+  restoreSnapshot: (saveId: string, snapshotId: string) =>
+    request<{ restored: boolean }>(`/saves/${saveId}/snapshots/${snapshotId}/restore`, { method: "POST" }),
+  audit: (saveId: string) =>
+    request<ApiAuditEntry[]>(`/saves/${saveId}/audit`),
 };
 
 // ─── Club Stints ────────────────────────────────────────────────────
@@ -652,6 +726,11 @@ export const transfersApi = {
     request<ApiTransfer>(`/saves/${saveId}/transfers/${transferId}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (saveId: string, transferId: string) =>
     request<void>(`/saves/${saveId}/transfers/${transferId}`, { method: "DELETE" }),
+  // Truly undoes a transfer: refunds the balance, puts the player back (on a
+  // sale) or removes them (on a purchase), and deletes the record. Prefer this
+  // over `delete` when the intent is "undo".
+  reverse: (saveId: string, transferId: string) =>
+    request<{ reversed: boolean }>(`/saves/${saveId}/transfers/${transferId}/reverse`, { method: "POST" }),
 };
 
 // ─── Scout Playbooks ────────────────────────────────────────────────
