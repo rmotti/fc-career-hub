@@ -15,6 +15,9 @@ const queryClient = new QueryClient({
       retry: (failureCount, error) => {
         if (error instanceof ApiError && typeof error.status === "number") {
           if (error.status >= 400 && error.status < 500) return false;
+          // 503 is retried at the HTTP layer (up to 3 attempts with Retry-After
+          // backoff); by the time React Query sees it, retries are exhausted.
+          if (error.status === 503) return false;
         }
         return failureCount < 3;
       },

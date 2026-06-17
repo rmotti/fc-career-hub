@@ -60,7 +60,7 @@ const HubSidebar = ({
   ];
 
   const scoutItems: { to: string; label: string; icon: ElementType }[] = [
-    { to: "/scout/ia", label: t("sidebar.scout.aiCoach"), icon: Bot },
+    // { to: "/scout/ia", label: t("sidebar.scout.aiCoach"), icon: Bot }, // hidden for presentation
     { to: "/scout/filtros", label: t("sidebar.scout.searchPlayers"), icon: Search },
     { to: "/scout/consultas", label: t("sidebar.scout.savedQueries"), icon: Folder },
     { to: "/scout/shortlist", label: t("sidebar.scout.shortlist"), icon: ListChecks },

@@ -29,7 +29,7 @@ The frontend lives in this repo. The API ([`docs/career-hub-api/`](career-hub-ap
 ### Backend (separate repo, mirrored at `docs/career-hub-api/`)
 - **Fastify 4** + **@fastify/cors**, **compress**, **swagger**, **swagger-ui**.
 - **Prisma + PostgreSQL** (Neon in prod).
-- **Better Auth** with bearer token (`Authorization: Bearer <token>`).
+- **Better Auth** — session delivered to the browser as an httpOnly cookie (credentialed CORS + CSRF double-submit); `Authorization: Bearer` is kept for non-browser clients (MCP/mobile).
 - **Redis (ioredis)** — session cache (5 min) and per-service TTL caches.
 - **OpenAI Responses API + MCP** — Mister assistant (`/api/chat/messages`).
 - Runs on **Railway**; Swagger UI at `/docs`.
@@ -83,7 +83,7 @@ features/<name>/
 - Mutations must invalidate the matching query keys in `onSuccess`. Cross-domain invalidation when a save mutates: invalidate `["saves"]`, `["saves", saveId]`, `["teamStats", saveId]`, `["players", saveId]`, `["trophies", saveId]`.
 
 ### 3. Auth and session
-- Token is read from `localStorage["session_token"]` by `request()` in `shared/api/client.ts` and sent as `Authorization: Bearer <token>`.
+- The session token is an httpOnly cookie (not JS-readable, never in localStorage). `request()` in `shared/api/http.ts` sends `credentials: "include"` and adds an `X-CSRF-Token` header on writes (CSRF token held in memory). `isAuthenticated` is just `!!user`.
 - `AuthProvider` in [`src/features/auth/model/AuthContext.tsx`](../src/features/auth/model/AuthContext.tsx) owns session state; use [`useAuth`](../src/features/auth/model/useAuth.ts) to read it.
 - On HTTP 401 (except sign-in/up), the global `unauthorizedHandler` clears the session and forces re-login. **Do not** add per-component 401 handling.
 
@@ -152,11 +152,11 @@ Match the API contract exactly (see API's `CLAUDE.md`):
 
 ## Anti-patterns (do not introduce)
 
-- Direct `fetch()` calls outside `src/shared/api/client.ts`.
+- Direct `fetch()` calls outside `src/shared/api/` (the `request` helper in `http.ts` is the only `fetch` site).
 - Importing from a feature's internal file (`features/X/ui/Foo.tsx`) — go through `features/X/index.ts`.
 - Adding `axios`, alternative state libraries (Redux/Zustand/MobX), alternative UI kits, or alternative icon packs.
 - Per-component 401 handling — the global `unauthorizedHandler` owns this.
-- Storing auth tokens anywhere other than `localStorage["session_token"]` (see `features/auth/lib/auth-storage`).
+- Storing the session token in JS-readable storage (localStorage/sessionStorage). It's an httpOnly cookie owned by the API; the frontend only caches `session_user` + `active-save-id:<userId>` (see `features/auth/lib/auth-storage`).
 - Hardcoding currency formatting — use helpers, the API returns both raw and `*Formatted` fields.
 - Calling Prisma / Postgres directly from the frontend.
 
@@ -164,7 +164,7 @@ Match the API contract exactly (see API's `CLAUDE.md`):
 
 ## Checklist before considering a change done
 
-- [ ] No new `fetch` outside `shared/api/client.ts`.
+- [ ] No new `fetch` outside `shared/api/` (only `http.ts`'s `request`).
 - [ ] React Query keys invalidated on mutation success.
 - [ ] FSD layer direction respected.
 - [ ] Plan gating applied if the feature is paid-only.

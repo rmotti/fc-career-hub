@@ -1,5 +1,55 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, extractErrorMessage, fc26PlayersApi } from "@/shared/api/client";
+import {
+  ApiError,
+  extractErrorMessage,
+  fc26PlayersApi,
+  registerRetryHandler,
+  savedSearchesApi,
+  scoutingApi,
+  shortlistApi,
+} from "@/shared/api/client";
+
+const SAVE_ID = "11111111-1111-4111-8111-111111111111";
+
+// A fetch stub that records calls and returns the given JSON body. Defaults to a
+// 200; pass `status: 204` for no-content responses.
+function stubFetch(body: unknown, init?: { status?: number }) {
+  const status = init?.status ?? 200;
+  const fetchMock = vi.fn(
+    async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(status === 204 ? null : JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+// /auth/csrf is fetched lazily before the first write. Stub it so the real write
+// is always the *last* recorded call.
+function stubFetchWithCsrf(body: unknown, init?: { status?: number }) {
+  const status = init?.status ?? 200;
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+    if (String(input).includes("/auth/csrf")) {
+      return new Response(JSON.stringify({ csrfToken: "csrf-test" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(status === 204 ? null : JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function lastCall(fetchMock: ReturnType<typeof vi.fn>) {
+  const calls = fetchMock.mock.calls;
+  return calls[calls.length - 1] as [RequestInfo | URL, RequestInit | undefined];
+}
 
 describe("ApiError", () => {
   it("cria erro com propriedades corretas", () => {
@@ -94,9 +144,22 @@ describe("extractErrorMessage", () => {
       expect(extractErrorMessage(err)).toBe("Internal error. Try again in a moment.");
     });
 
-    it("returns generic message for status 503", () => {
+    it("returns transient message for status 503", () => {
       const err = { status: 503 };
-      expect(extractErrorMessage(err)).toBe("Internal error. Try again in a moment.");
+      expect(extractErrorMessage(err)).toBe("Service temporarily unavailable. Try again in a moment.");
+    });
+
+    it("returns API message for SERVICE_UNAVAILABLE error code", () => {
+      const err = {
+        status: 503,
+        data: {
+          error: "SERVICE_UNAVAILABLE",
+          message: "Banco de dados temporariamente indisponível. Tente novamente em instantes.",
+        },
+      };
+      expect(extractErrorMessage(err)).toBe(
+        "Banco de dados temporariamente indisponível. Tente novamente em instantes.",
+      );
     });
   });
 
@@ -168,5 +231,288 @@ describe("fc26PlayersApi", () => {
 
     expect(requestUrl.searchParams.get("sortBy")).toBeNull();
     expect(requestUrl.searchParams.get("sortOrder")).toBeNull();
+  });
+});
+
+describe("shortlistApi", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lista a shortlist do save e devolve o envelope { items }", async () => {
+    const fetchMock = stubFetch({ items: [{ id: "s1", fc26PlayerId: 7 }] });
+
+    const res = await shortlistApi.list(SAVE_ID);
+
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.pathname).toBe(`/api/saves/${SAVE_ID}/shortlist`);
+    expect(lastCall(fetchMock)[1]?.method ?? "GET").toBe("GET");
+    expect(res.items).toHaveLength(1);
+  });
+
+  it("adiciona um jogador via POST com o corpo correto", async () => {
+    const fetchMock = stubFetchWithCsrf({ id: "s1", fc26PlayerId: 7, notes: "alvo", priority: "HIGH" });
+
+    await shortlistApi.add(SAVE_ID, { fc26PlayerId: 7, notes: "alvo", priority: "HIGH" });
+
+    const [input, init] = lastCall(fetchMock);
+    expect(new URL(String(input)).pathname).toBe(`/api/saves/${SAVE_ID}/shortlist`);
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual({ fc26PlayerId: 7, notes: "alvo", priority: "HIGH" });
+  });
+
+  it("atualiza um item via PATCH no itemId", async () => {
+    const fetchMock = stubFetchWithCsrf({ id: "item-9", priority: "LOW" });
+
+    await shortlistApi.update(SAVE_ID, "item-9", { priority: "LOW" });
+
+    const [input, init] = lastCall(fetchMock);
+    expect(new URL(String(input)).pathname).toBe(`/api/saves/${SAVE_ID}/shortlist/item-9`);
+    expect(init?.method).toBe("PATCH");
+  });
+
+  it("remove um item via DELETE e resolve para undefined em 204", async () => {
+    const fetchMock = stubFetchWithCsrf(null, { status: 204 });
+
+    const res = await shortlistApi.remove(SAVE_ID, "item-9");
+
+    const [input, init] = lastCall(fetchMock);
+    expect(new URL(String(input)).pathname).toBe(`/api/saves/${SAVE_ID}/shortlist/item-9`);
+    expect(init?.method).toBe("DELETE");
+    expect(res).toBeUndefined();
+  });
+});
+
+describe("savedSearchesApi", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lista as buscas salvas e devolve o envelope { items }", async () => {
+    const fetchMock = stubFetch({ items: [] });
+
+    const res = await savedSearchesApi.list(SAVE_ID);
+
+    expect(new URL(String(fetchMock.mock.calls[0][0])).pathname).toBe(
+      `/api/saves/${SAVE_ID}/saved-searches`,
+    );
+    expect(res.items).toEqual([]);
+  });
+
+  it("cria uma busca via POST com name + filters", async () => {
+    const fetchMock = stubFetchWithCsrf({ id: "q1", name: "Pontas jovens" });
+
+    await savedSearchesApi.create(SAVE_ID, {
+      name: "Pontas jovens",
+      filters: { positions: ["PE", "PD"], maxAge: 23 },
+    });
+
+    const [input, init] = lastCall(fetchMock);
+    expect(new URL(String(input)).pathname).toBe(`/api/saves/${SAVE_ID}/saved-searches`);
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      name: "Pontas jovens",
+      filters: { positions: ["PE", "PD"], maxAge: 23 },
+    });
+  });
+});
+
+describe("503 retry behavior", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+    registerRetryHandler(null);
+  });
+
+  it("retries a GET on 503 and resolves on second attempt", async () => {
+    vi.useFakeTimers();
+    let callCount = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      callCount++;
+      if (callCount < 2) {
+        return new Response(
+          JSON.stringify({ error: "SERVICE_UNAVAILABLE", message: "down", statusCode: 503 }),
+          { status: 503, headers: { "Content-Type": "application/json", "Retry-After": "1" } },
+        );
+      }
+      return new Response(JSON.stringify({ gaps: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    const promise = scoutingApi.gaps("save-1");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(callCount).toBe(2);
+    expect(result).toEqual({ gaps: [] });
+  });
+
+  it("fires the retry notification callback on each 503 retry", async () => {
+    vi.useFakeTimers();
+    const notifications: { status: number; attempt: number }[] = [];
+    registerRetryHandler((info) => notifications.push(info));
+
+    let callCount = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      callCount++;
+      if (callCount < 3) {
+        return new Response(
+          JSON.stringify({ error: "SERVICE_UNAVAILABLE", statusCode: 503 }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ gaps: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    const promise = scoutingApi.gaps("save-1");
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(notifications).toHaveLength(2);
+    expect(notifications[0]).toMatchObject({ status: 503, attempt: 0 });
+    expect(notifications[1]).toMatchObject({ status: 503, attempt: 1 });
+  });
+
+  it("throws with retriesExhausted=true after 3 failed attempts", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(
+        JSON.stringify({ error: "SERVICE_UNAVAILABLE", statusCode: 503 }),
+        { status: 503, headers: { "Content-Type": "application/json" } },
+      )
+    ));
+
+    const assertion = expect(scoutingApi.gaps("save-1")).rejects.toMatchObject({
+      status: 503,
+      retriesExhausted: true,
+    });
+    await vi.runAllTimersAsync();
+    await assertion;
+  });
+
+  it("uses Retry-After header delay on 503", async () => {
+    vi.useFakeTimers();
+    const delays: number[] = [];
+    registerRetryHandler(({ delayMs }) => delays.push(delayMs));
+
+    let callCount = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      callCount++;
+      if (callCount < 3) {
+        return new Response(
+          JSON.stringify({ error: "SERVICE_UNAVAILABLE", statusCode: 503 }),
+          { status: 503, headers: { "Content-Type": "application/json", "Retry-After": "3" } },
+        );
+      }
+      return new Response(JSON.stringify({ gaps: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    const promise = scoutingApi.gaps("save-1");
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(delays).toEqual([3000, 3000]);
+  });
+
+  it("falls back to exponential backoff when Retry-After is absent", async () => {
+    vi.useFakeTimers();
+    const delays: number[] = [];
+    registerRetryHandler(({ delayMs }) => delays.push(delayMs));
+
+    let callCount = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      callCount++;
+      if (callCount < 3) {
+        return new Response(
+          JSON.stringify({ error: "SERVICE_UNAVAILABLE", statusCode: 503 }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ gaps: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    const promise = scoutingApi.gaps("save-1");
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(delays).toEqual([1000, 2000]);
+  });
+
+  it("retries a POST on 503 (write not applied per contract)", async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetchWithCsrf(null); // will be overridden below
+    let callCount = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/auth/csrf")) {
+        return new Response(JSON.stringify({ csrfToken: "csrf-test" }), { status: 200 });
+      }
+      callCount++;
+      if (callCount < 2) {
+        return new Response(
+          JSON.stringify({ error: "SERVICE_UNAVAILABLE", statusCode: 503 }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ id: "s1", fc26PlayerId: 7, notes: null, priority: null, createdAt: "" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }));
+    void fetchMock; // unused but satisfies linter
+
+    const SAVE_ID = "11111111-1111-4111-8111-111111111111";
+    const promise = shortlistApi.add(SAVE_ID, { fc26PlayerId: 7 });
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(callCount).toBe(2);
+    expect(result).toMatchObject({ fc26PlayerId: 7 });
+  });
+});
+
+describe("scoutingApi", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("busca gaps do elenco com a formação na query", async () => {
+    const fetchMock = stubFetch({ gaps: [] });
+
+    await scoutingApi.gaps(SAVE_ID, "4-2-3-1");
+
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.pathname).toBe(`/api/scouting/saves/${SAVE_ID}/gaps`);
+    expect(url.searchParams.get("formation")).toBe("4-2-3-1");
+  });
+
+  it("omite a query de formação quando não informada", async () => {
+    const fetchMock = stubFetch({ gaps: [] });
+
+    await scoutingApi.gaps(SAVE_ID);
+
+    expect(String(fetchMock.mock.calls[0][0])).not.toContain("formation");
+  });
+
+  it("monta a query de transfer-targets só com os parâmetros numéricos definidos", async () => {
+    const fetchMock = stubFetch({ players: [], total: 0, limit: 20, offset: 0 });
+
+    await scoutingApi.transferTargets({ position: "ZAG", minOverall: 80, saveId: SAVE_ID });
+
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.pathname).toBe("/api/scouting/transfer-targets");
+    expect(url.searchParams.get("position")).toBe("ZAG");
+    expect(url.searchParams.get("minOverall")).toBe("80");
+    expect(url.searchParams.get("saveId")).toBe(SAVE_ID);
+    expect(url.searchParams.has("maxAge")).toBe(false);
+    expect(url.searchParams.has("maxValue")).toBe(false);
+  });
+
+  it("avalia o encaixe de um sofifaId no save", async () => {
+    const fetchMock = stubFetch({ verdict: "strong" });
+
+    await scoutingApi.evaluate(SAVE_ID, 231747);
+
+    expect(new URL(String(fetchMock.mock.calls[0][0])).pathname).toBe(
+      `/api/scouting/saves/${SAVE_ID}/evaluate/231747`,
+    );
   });
 });
