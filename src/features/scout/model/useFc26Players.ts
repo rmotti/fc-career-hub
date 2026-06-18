@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fc26PlayersApi, type Fc26PlayerFilters, type Fc26PlayerListParams } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 function withScoutSaveContext(filters: Fc26PlayerFilters, saveId?: string | null): Fc26PlayerListParams {
   const { objective, ...baseFilters } = filters;
@@ -19,6 +20,7 @@ export function useFc26Players(filters: Fc26PlayerFilters | null, saveId?: strin
     queryFn: () => fc26PlayersApi.list(filters ? withScoutSaveContext(filters, saveId) : undefined),
     enabled: !!filters,
     placeholderData: (previousData) => previousData,
+    staleTime: CACHE_TTL.fc26Players,
   });
 }
 
@@ -27,6 +29,7 @@ export function useFc26Player(sofifaId: number | null) {
     queryKey: ["fc26-players", sofifaId],
     queryFn: () => fc26PlayersApi.get(sofifaId!),
     enabled: typeof sofifaId === "number",
+    staleTime: CACHE_TTL.fc26Players,
   });
 }
 
@@ -34,6 +37,6 @@ export function useFc26PlayerFilters() {
   return useQuery({
     queryKey: ["fc26-players", "filters"],
     queryFn: fc26PlayersApi.filters,
-    staleTime: 1000 * 60 * 60 * 24,
+    staleTime: CACHE_TTL.fc26Players,
   });
 }

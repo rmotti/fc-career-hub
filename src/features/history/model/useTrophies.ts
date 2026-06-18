@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { trophiesApi } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 export function useTrophies(saveId: string | null) {
   return useQuery({
@@ -9,6 +10,7 @@ export function useTrophies(saveId: string | null) {
       return Array.isArray(trophies) ? trophies : [];
     },
     enabled: !!saveId,
+    staleTime: CACHE_TTL.trophies,
   });
 }
 

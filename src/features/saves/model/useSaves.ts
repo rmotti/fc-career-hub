@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { savesApi, type ApiSave } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 export function useSaves() {
   return useQuery({
     queryKey: ["saves"],
     queryFn: savesApi.list,
+    staleTime: CACHE_TTL.savesList,
   });
 }
 
@@ -14,6 +16,7 @@ export function useSave(saveId: string | null) {
     queryFn: () => savesApi.get(saveId!),
     enabled: !!saveId,
     refetchOnWindowFocus: false,
+    staleTime: CACHE_TTL.save,
   });
 }
 

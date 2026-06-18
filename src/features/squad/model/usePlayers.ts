@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { playersApi, type ApiPlayer } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 export const usePlayers = (saveId: string, active?: boolean, season?: string, loaned?: boolean) => {
   return useQuery({
@@ -9,6 +10,8 @@ export const usePlayers = (saveId: string, active?: boolean, season?: string, lo
       return Array.isArray(players) ? players : [];
     },
     enabled: !!saveId,
+    // The API caches the active/loaned lists for a shorter window than the full roster.
+    staleTime: active || loaned ? CACHE_TTL.playersActive : CACHE_TTL.playersList,
   });
 };
 
@@ -17,6 +20,7 @@ export function usePlayer(saveId: string | null, playerId: string | null) {
     queryKey: ["players", saveId, playerId],
     queryFn: () => playersApi.get(saveId!, playerId!),
     enabled: !!saveId && !!playerId,
+    staleTime: CACHE_TTL.player,
   });
 }
 

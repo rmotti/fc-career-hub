@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clubStintsApi } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 export function useClubStints(saveId: string | null) {
   return useQuery({
     queryKey: ["clubStints", saveId],
     queryFn: () => clubStintsApi.list(saveId!),
     enabled: !!saveId,
+    staleTime: CACHE_TTL.clubStints,
   });
 }
 
@@ -14,6 +16,7 @@ export function useCurrentClubStint(saveId: string | null) {
     queryKey: ["clubStints", saveId, "current"],
     queryFn: () => clubStintsApi.getCurrent(saveId!),
     enabled: !!saveId,
+    staleTime: CACHE_TTL.clubStints,
   });
 }
 

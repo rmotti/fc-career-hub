@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transfersApi } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 function refreshSaveQueries(qc: ReturnType<typeof useQueryClient>, saveId: string) {
   return Promise.all([
@@ -34,6 +35,7 @@ export function useTransfers(saveId: string | null, season?: "current") {
       return Array.isArray(transfers) ? transfers : [];
     },
     enabled: !!saveId,
+    staleTime: CACHE_TTL.transfers,
   });
 }
 

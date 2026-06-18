@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamStatsApi } from "@/shared/api/client";
+import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 export function useTeamStats(saveId: string | null, season?: string, clubStintId?: string | null) {
   return useQuery({
@@ -9,6 +10,7 @@ export function useTeamStats(saveId: string | null, season?: string, clubStintId
       return Array.isArray(teamStats) ? teamStats : [];
     },
     enabled: !!saveId,
+    staleTime: CACHE_TTL.teamStats,
   });
 }
 
