@@ -61,15 +61,16 @@ The development server uses `http://localhost:8080` by default. Vite may pick th
 
 | Variable | Description |
 | --- | --- |
-| `VITE_API_URL` | Backend API base URL (the `/api` suffix is appended automatically). Only `VITE_*` names are read. |
+| `VITE_API_URL` | Backend API base URL. Defaults to the **same-origin** path `/api`; set an absolute URL only to bypass the proxy. The `/api` suffix is appended if missing. Only `VITE_*` names are read. |
+| `DEV_API_PROXY_TARGET` | Backend the Vite dev proxy forwards `/api` to (build-time only, not a `VITE_*` var). Defaults to the Railway host; override to point dev at a local backend. |
 
-Copy [`.env.example`](.env.example) to `.env.local` at the repository root and adjust the value:
+Copy [`.env.example`](.env.example) to `.env.local` at the repository root. Keep the default unless you have a reason to change it:
 
 ```env
-VITE_API_URL=https://your-api.com
+VITE_API_URL=/api
 ```
 
-If `VITE_API_URL` is unset, the client falls back to the default Railway host and logs a warning.
+API calls are proxied through the app's own origin — a [Vercel rewrite](vercel.json) in production and the Vite dev proxy ([`vite.config.ts`](vite.config.ts)) locally both forward `/api/*` to the real backend. This keeps the httpOnly session cookie **first-party**, so Safari's ITP (and other third-party-cookie restrictions) don't drop it. Setting an absolute URL (e.g. `https://your-api.com`) calls the backend directly with no proxy — the session cookie is then cross-site and subject to ITP.
 
 ---
 
@@ -77,8 +78,8 @@ If `VITE_API_URL` is unset, the client falls back to the default Railway host an
 
 ### Authentication
 
-- Register and sign in with JWT-based sessions.
-- Persist the authenticated user in local storage through `AuthContext`.
+- Register and sign in with httpOnly cookie sessions (first-party via the same-origin `/api` proxy).
+- Persist the authenticated user in local storage through `AuthContext` (the session cookie itself is never readable by JS).
 - Protect app routes with `ProtectedRoute`.
 - Keep login/register unavailable to already-authenticated users with `PublicOnlyRoute`.
 
