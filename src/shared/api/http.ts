@@ -3,25 +3,37 @@
 // modules under `./modules/*` import `request` (and the small query helpers)
 // from here; the public surface is re-exported through `./client`.
 
-// Fallback API host for builds where VITE_API_URL is not provided.
-// Prefer setting VITE_API_URL explicitly (see .env.example).
+// Same-origin API path used when VITE_API_URL is unset. The session cookie the
+// API sets is httpOnly and must survive reloads, but when the SPA and the API
+// live on different registrable domains the cookie is *cross-site* — Safari's
+// ITP (and tightening third-party-cookie rules in other browsers) then cap or
+// drop it, so the session silently dies. Routing requests through the SPA's own
+// origin makes the cookie first-party, which sidesteps ITP entirely. The
+// platform forwards "/api/*" to the real backend: a Vercel rewrite in
+// production (see vercel.json) and the Vite dev proxy locally (see
+// vite.config.ts).
+const SAME_ORIGIN_API_PATH = "/api";
+
+// Absolute fallback host, used only under the test runner, which has no origin
+// to resolve a relative URL against.
 const DEFAULT_API_URL = "https://ample-love-production.up.railway.app";
 
-function resolveBaseUrl() {
-  const configuredBaseUrl = import.meta.env.VITE_API_URL;
+export function resolveBaseUrl() {
+  const configured = import.meta.env.VITE_API_URL?.trim();
 
-  if (!configuredBaseUrl && import.meta.env.MODE !== "test") {
-    console.warn(
-      "[api] VITE_API_URL is not set; falling back to the default Railway host. " +
-        "Define VITE_API_URL in your .env file to make this explicit.",
-    );
+  // Explicit value. Accepts both a relative same-origin path ("/api") and an
+  // absolute URL ("https://host"); the latter is the cross-site escape hatch for
+  // setups without a same-origin proxy. The "/api" suffix is appended if missing.
+  if (configured) {
+    const normalized = configured.replace(/\/+$/, "");
+    return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
   }
 
-  const normalizedBaseUrl = (configuredBaseUrl || DEFAULT_API_URL).replace(/\/$/, "");
-
-  return normalizedBaseUrl.endsWith("/api")
-    ? normalizedBaseUrl
-    : `${normalizedBaseUrl}/api`;
+  // Unset: default to a same-origin "/api" path in the browser, but fall back to
+  // the absolute host under the test runner (relative URLs have no base there).
+  return import.meta.env.MODE === "test"
+    ? `${DEFAULT_API_URL}/api`
+    : SAME_ORIGIN_API_PATH;
 }
 
 const BASE_URL = resolveBaseUrl();
@@ -58,9 +70,9 @@ export function isProFeaturePath(path: string): boolean {
   return PRO_FEATURE_SEGMENTS.some((segment) => segments.includes(segment));
 }
 
-// The session token lives in a cross-site httpOnly cookie, so the SPA can't read
-// the matching csrf cookie via document.cookie. Instead it keeps the CSRF token
-// in memory (from the sign-in body or GET /auth/csrf) and echoes it back in the
+// The session token lives in an httpOnly cookie, so the SPA can't read the
+// matching csrf cookie via document.cookie. Instead it keeps the CSRF token in
+// memory (from the sign-in body or GET /auth/csrf) and echoes it back in the
 // X-CSRF-Token header on writes (double-submit).
 let inMemoryCsrfToken: string | null = null;
 

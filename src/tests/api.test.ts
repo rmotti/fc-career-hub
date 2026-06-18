@@ -4,6 +4,7 @@ import {
   extractErrorMessage,
   fc26PlayersApi,
   registerRetryHandler,
+  resolveBaseUrl,
   savedSearchesApi,
   scoutingApi,
   shortlistApi,
@@ -69,6 +70,39 @@ describe("ApiError", () => {
 
   it("é instância de Error", () => {
     expect(new ApiError("x")).toBeInstanceOf(Error);
+  });
+});
+
+describe("resolveBaseUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("keeps a same-origin relative path as-is (first-party cookie, ITP-safe)", () => {
+    vi.stubEnv("VITE_API_URL", "/api");
+    expect(resolveBaseUrl()).toBe("/api");
+  });
+
+  it("appends '/api' to a bare relative root", () => {
+    vi.stubEnv("VITE_API_URL", "/");
+    expect(resolveBaseUrl()).toBe("/api");
+  });
+
+  it("appends '/api' to an absolute host (cross-site escape hatch)", () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.com");
+    expect(resolveBaseUrl()).toBe("https://api.example.com/api");
+  });
+
+  it("does not double-append '/api' and strips trailing slashes", () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.com/api/");
+    expect(resolveBaseUrl()).toBe("https://api.example.com/api");
+  });
+
+  it("falls back to an absolute base under the test runner when unset", () => {
+    vi.stubEnv("VITE_API_URL", "");
+    const base = resolveBaseUrl();
+    expect(base.startsWith("http")).toBe(true);
+    expect(base.endsWith("/api")).toBe(true);
   });
 });
 
