@@ -31,5 +31,8 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/tests/playwright-fixture.ts"
   ]
 }
