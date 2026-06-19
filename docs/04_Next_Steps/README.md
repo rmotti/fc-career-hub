@@ -36,7 +36,7 @@ Sequência sugerida por **dependência e risco**, não só por impacto — cada 
 |---|---|---|---|
 | **A** | Polish & consistência (baixo risco, FE-only) | [C-03](4.1_Corrections.md) · [M-01](4.3_Improvements.md) · [M-02](4.3_Improvements.md) · [M-04](4.3_Improvements.md) · Task 15 (a11y, carried-over) | Frontend |
 | **B** ✅ | Cluster Empréstimos (defeitos + regras de domínio) — _concluída_ | [R-01](4.4_Business_Rule_Changes.md) → [C-01](4.1_Corrections.md) · [C-02](4.1_Corrections.md) → [F-02](4.2_Features.md) → [R-02](4.4_Business_Rule_Changes.md) | Ambos |
-| **C** | Persistência & dados (server-side, custo) | [M-09](4.3_Improvements.md) · [F-03](4.2_Features.md) · [M-08](4.3_Improvements.md) → [F-05](4.2_Features.md) | API + FE |
+| **C** ◐ | Persistência & dados (server-side, custo) — _em andamento_ | ✅ [M-09](4.3_Improvements.md) · ✅ [F-03](4.2_Features.md) · [M-08](4.3_Improvements.md) → [F-05](4.2_Features.md) | API + FE |
 | **D** | Scout & assistente (**discovery** primeiro) | [M-07](4.3_Improvements.md) · [M-06](4.3_Improvements.md) | Ambos |
 | **E** | Expansão de produto / reach | [F-01](4.2_Features.md) · [M-05](4.3_Improvements.md) · [M-03](4.3_Improvements.md) · [F-04](4.2_Features.md) (trilha própria) | Ambos |
 
@@ -44,7 +44,7 @@ Notas de sequenciamento:
 
 - **Fase A** destrava confiança rápido, sem tocar a API — bom aquecimento e baixa superfície de risco.
 - **Fase B** é um bloco coeso: defina o modelo de stats por contexto ([R-01](4.4_Business_Rule_Changes.md)) **antes** de consertar idade/edição, porque recall ([F-02](4.2_Features.md)) e empréstimo de 2 temporadas ([R-02](4.4_Business_Rule_Changes.md)) dependem desse modelo e do rollover.
-- **Fase C**: [M-08](4.3_Improvements.md) (retenção/arquivamento) define como o histórico é guardado, e [F-05](4.2_Features.md) (histórico por temporada no Squad) consome esse histórico — decidir retenção antes de expor a UI. [M-09](4.3_Improvements.md) é migração quase pura de FE (clients já existem).
+- **Fase C**: [M-09](4.3_Improvements.md) (saved queries + shortlist server-side) e [F-03](4.2_Features.md) (histórico de chat persistido) **concluídos**. Resta o par [M-08](4.3_Improvements.md) (retenção/arquivamento) → [F-05](4.2_Features.md): o M-08 define como o histórico é guardado e o F-05 (histórico por temporada no Squad) consome esse histórico — decidir retenção antes de expor a UI.
 - **Fase D** não deve ser estimada antes da rediscussão de funcionalidades do Scout e da persona.
 - **Fase E** é net-new surface; [F-04](4.2_Features.md) (pagamento) pode rodar como trilha paralela independente.
 
@@ -56,4 +56,4 @@ Notas de sequenciamento:
 
 > Esta divisão é a crença inicial a partir da leitura do FE; alguns itens marcados _a confirmar_ dependem de checar o repositório da API.
 
-_Last verified against commit `d3de087`._
+_Last verified against commit `25ed8f4`._
