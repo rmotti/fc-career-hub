@@ -34,6 +34,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
     from: "",
     to: "",
     fee: "",
+    loanSeasons: 1 as 1 | 2,
   });
 
   const isEntry = form.type === "compra" || form.type === "emprestimo_entrada";
@@ -64,6 +65,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
         from: transfer.from,
         to: transfer.to,
         fee: transfer.fee == null ? "" : String(transfer.fee),
+        loanSeasons: (transfer.loanSeasons as 1 | 2) ?? 1,
       });
     } else {
       setForm({
@@ -73,6 +75,7 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
         from: "",
         to: currentClub,
         fee: "",
+        loanSeasons: 1,
       });
     }
   }, [transfer, open, currentClub]);
@@ -121,10 +124,9 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
 
     setIsSubmitting(true);
     try {
-      await onSave(
-        { ...form, season: currentSeason, fee: form.fee ? parseFloat(form.fee) : undefined },
-        transfer?.id
-      );
+      const payload: any = { ...form, season: currentSeason, fee: form.fee ? parseFloat(form.fee) : undefined };
+      if (form.type !== "emprestimo_saida") delete payload.loanSeasons;
+      await onSave(payload, transfer?.id);
       onOpenChange(false);
     } catch (err: any) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
@@ -214,6 +216,27 @@ const TransferModal = ({ open, onOpenChange, transfer, currentClub, currentSeaso
                   </div>
                   {(form.type === "emprestimo_entrada" || form.type === "emprestimo_saida") && (
                     <p className="mt-1.5 text-xs text-muted-foreground">Loans do not affect the team balance.</p>
+                  )}
+                  {form.type === "emprestimo_saida" && (
+                    <div className="mt-3">
+                      <label className={labelClass}>Loan duration</label>
+                      <div className="flex gap-2">
+                        {([1, 2] as const).map((seasons) => (
+                          <button
+                            key={seasons}
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, loanSeasons: seasons }))}
+                            className={`flex-1 rounded-md border py-2 text-sm font-semibold transition-colors ${
+                              form.loanSeasons === seasons
+                                ? "border-primary/40 bg-primary/10 text-primary"
+                                : "border-border bg-background/40 text-muted-foreground hover:border-primary/25 hover:text-foreground"
+                            }`}
+                          >
+                            {seasons === 1 ? "1 season" : "2 seasons"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </Field>
 

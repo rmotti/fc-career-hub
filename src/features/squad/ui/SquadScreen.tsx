@@ -1,27 +1,33 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Activity,
   AlertTriangle,
   ArrowRightLeft,
   BarChart3,
+  ChevronDown,
+  ChevronUp,
   CircleDollarSign,
   Download,
   Dumbbell,
   Eye,
+  Info,
   Loader2,
   Pencil,
   Plus,
+  RotateCcw,
+  Save,
   Search,
   ShieldAlert,
   SlidersHorizontal,
   Target,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { type ApiPlayer, extractErrorMessage } from "@/shared/api/client";
-import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats, useImportFc26Players } from "@/features/squad/model/usePlayers";
+import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats, useImportFc26Players, useRecallPlayer, useLoanStats, useUpdateLoanStats } from "@/features/squad/model/usePlayers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,7 +140,9 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const releasePlayer = useReleasePlayer();
   const updateStats = useUpdatePlayerStats();
   const importFc26 = useImportFc26Players();
+  const recallPlayer = useRecallPlayer();
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
+  const [expandedLoanStatsId, setExpandedLoanStatsId] = useState<string | null>(null);
 
   const runFc26Import = () => {
     importFc26.mutate(
@@ -208,15 +216,11 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
   const loanedSummary = useMemo(() => {
     const destinationCount = new Set(loanedPlayers.map((player) => player.loanedTo).filter(Boolean)).size;
-    const withoutStats = loanedPlayers.filter((player) => {
-      const stats = player.currentSeasonStats || player.totalStats;
-      return !stats || ((stats.matches ?? 0) === 0 && stats.goals === 0 && stats.assists === 0 && stats.cleanSheets === 0);
-    }).length;
     const averageOvr = loanedPlayers.length > 0
       ? Math.round((loanedPlayers.reduce((sum, player) => sum + player.ovr, 0) / loanedPlayers.length) * 10) / 10
       : 0;
 
-    return { destinationCount, withoutStats, averageOvr };
+    return { destinationCount, averageOvr };
   }, [loanedPlayers]);
 
   const filteredPlayers = useMemo(() => {
@@ -317,6 +321,16 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     });
   };
 
+  const handleRecall = (player: ApiPlayer) => {
+    recallPlayer.mutate({ saveId, playerId: player.id }, {
+      onSuccess: () => {
+        toast.success(t("squad.loaned.recallSuccess", { name: player.name }), { duration: 3000 });
+        setExpandedLoanStatsId(null);
+      },
+      onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+    });
+  };
+
   const allColumns: SquadViewColumn[] = [
     { key: "name", label: t("squad.columns.name"), views: ["all", "management", "stats", "market", "development"] },
     { key: "position", label: t("squad.columns.pos"), views: ["all", "management", "stats", "market", "development"] },
@@ -338,11 +352,6 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     { key: "age", label: t("squad.columns.age") },
     { key: "ovr", label: "OVR" },
     { key: "potential", label: t("squad.columns.potential") },
-    { key: "matches", label: t("squad.columns.matches") },
-    { key: "goals", label: t("squad.columns.goals") },
-    { key: "assists", label: t("squad.columns.assists") },
-    { key: "goalContributions", label: t("squad.columns.contributions") },
-    { key: "cleanSheets", label: t("squad.columns.cleanSheets") },
     { key: "salary", label: t("squad.columns.salary"), align: "right" },
     { key: "marketValue", label: t("squad.columns.value"), align: "right" },
   ];
@@ -605,14 +614,11 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
             <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
               {t("squad.loaned.destinations", { count: loanedSummary.destinationCount })}
             </span>
-            <span className="rounded-md border border-border bg-background/30 px-2.5 py-1.5 text-muted-foreground">
-              {t("squad.loaned.noStats", { count: loanedSummary.withoutStats })}
-            </span>
           </div>
         </div>
 
         <ScrollArea scrollbars="horizontal" className="w-full">
-          <table className="min-w-[1380px] w-full text-sm">
+          <table className="min-w-[900px] w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 {loanedBaseColumns.map((col) => (
@@ -625,12 +631,13 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                 ))}
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.loanedTo")}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.seasonCol")}</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {isLoadingLoanedPlayers && (
                 <tr>
-                  <td colSpan={loanedBaseColumns.length + 2} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={loanedBaseColumns.length + 3} className="px-4 py-8 text-center text-muted-foreground">
                     <span className="inline-flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin" /> {t("squad.loaned.loading")}
                     </span>
@@ -638,15 +645,47 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                 </tr>
               )}
               {!isLoadingLoanedPlayers && loanedPlayers.map((player) => (
-                <tr key={player.id} className="border-b border-border/50 transition-colors hover:bg-muted/30">
-                  <PlayerTableCells columns={loanedBaseColumns} player={player} />
-                  <td className="min-w-[180px] px-4 py-3 font-medium text-foreground">{player.loanedTo ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{player.loanSeason ?? "—"}</td>
-                </tr>
+                <React.Fragment key={player.id}>
+                  <tr className="border-b border-border/50 transition-colors hover:bg-muted/30">
+                    <PlayerTableCells columns={loanedBaseColumns} player={player} />
+                    <td className="min-w-[160px] px-4 py-3 font-medium text-foreground">{player.loanedTo ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{player.loanSeason ?? "—"}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setExpandedLoanStatsId(expandedLoanStatsId === player.id ? null : player.id)}
+                          className={`flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold transition-colors ${expandedLoanStatsId === player.id ? "bg-warning/15 text-warning" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                          title={t("squad.loaned.loanPerformance")}
+                        >
+                          {expandedLoanStatsId === player.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                          {t("squad.loaned.statsBtn")}
+                        </button>
+                        {!isPastSeason && (
+                          <button
+                            onClick={() => handleRecall(player)}
+                            disabled={recallPlayer.isPending}
+                            className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                            title={t("squad.loaned.recallTitle")}
+                          >
+                            <RotateCcw size={13} />
+                            {t("squad.loaned.recall")}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedLoanStatsId === player.id && (
+                    <tr key={`${player.id}-loan-stats`} className="border-b border-warning/20 bg-warning/5">
+                      <td colSpan={loanedBaseColumns.length + 3} className="px-4 py-4">
+                        <LoanStatsPanel saveId={saveId} player={player} isPastSeason={isPastSeason} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
               {!isLoadingLoanedPlayers && loanedPlayers.length === 0 && (
                 <tr>
-                  <td colSpan={loanedBaseColumns.length + 2} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={loanedBaseColumns.length + 3} className="px-4 py-8 text-center text-muted-foreground">
                     {t("squad.loaned.noLoaned")}
                   </td>
                 </tr>
@@ -875,6 +914,118 @@ function SquadHighlight({ label, player, value, icon: Icon, tone, emptyText, emp
       <p className="mt-1 text-xs text-muted-foreground">
         {player ? `${[player.position, ...alternativePositions].map(formatPosition).join("/")} · ${player.ovr} OVR` : emptyDetail}
       </p>
+    </div>
+  );
+}
+
+interface LoanStatsPanelProps {
+  saveId: string;
+  player: ApiPlayer;
+  isPastSeason: boolean;
+}
+
+function LoanStatsPanel({ saveId, player, isPastSeason }: LoanStatsPanelProps) {
+  const { t } = useTranslation();
+  const { data: loanStats = [], isLoading } = useLoanStats(saveId, player.id);
+  const updateLoanStats = useUpdateLoanStats();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ goals: 0, assists: 0, matches: 0 });
+
+  const current = loanStats[loanStats.length - 1] ?? null;
+
+  const handleEdit = () => {
+    setForm({ goals: current?.goals ?? 0, assists: current?.assists ?? 0, matches: current?.matches ?? 0 });
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateLoanStats.mutateAsync({ saveId, playerId: player.id, data: form });
+      setEditing(false);
+    } catch (err: any) {
+      toast.error(extractErrorMessage(err), { duration: 5000 });
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Info size={13} className="shrink-0 text-warning" />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-warning">
+          {t("squad.loaned.loanPerformance")}
+        </p>
+        <span className="rounded border border-warning/25 bg-warning/10 px-1.5 py-0.5 text-[9px] font-semibold text-warning/80">
+          {t("squad.loaned.loanPerformanceNote")}
+        </span>
+      </div>
+
+      {isLoading ? (
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2 size={13} className="animate-spin" /> Loading…
+        </span>
+      ) : editing ? (
+        <div className="flex flex-wrap items-end gap-3">
+          {(["matches", "goals", "assists"] as const).map((field) => (
+            <div key={field} className="min-w-[80px]">
+              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {t(`squad.loaned.loan_${field}`)}
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={form[field]}
+                onChange={(e) => setForm((prev) => ({ ...prev, [field]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                className="h-8 w-full rounded border border-border bg-background/50 px-2 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+              />
+            </div>
+          ))}
+          <button
+            onClick={handleSave}
+            disabled={updateLoanStats.isPending}
+            className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {updateLoanStats.isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+            {t("squad.loaned.save")}
+          </button>
+          <button
+            onClick={() => setEditing(false)}
+            className="flex items-center gap-1 rounded-md bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X size={12} />
+            {t("squad.loaned.cancel")}
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-4">
+          <StatChip label={t("squad.loaned.loan_matches")} value={current?.matches ?? 0} />
+          <StatChip label={t("squad.loaned.loan_goals")} value={current?.goals ?? 0} highlight />
+          <StatChip label={t("squad.loaned.loan_assists")} value={current?.assists ?? 0} />
+          <StatChip label="G/A" value={current?.goalContributions ?? 0} />
+          {loanStats.length > 1 && (
+            <span className="text-xs text-muted-foreground">
+              {t("squad.loaned.multiSeason", { count: loanStats.length })}
+            </span>
+          )}
+          {!isPastSeason && (
+            <button
+              onClick={handleEdit}
+              className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+            >
+              <Pencil size={12} />
+              {t("squad.loaned.edit")}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatChip({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span className={`font-display text-lg font-bold leading-none ${highlight ? "text-primary" : "text-foreground"}`}>{value}</span>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
     </div>
   );
 }

@@ -132,9 +132,21 @@
       "players": "{{count}} player(s)",
       "avgOvr": "Avg OVR {{value}}",
       "destinations": "{{count}} destination(s)",
-      "noStats": "{{count}} without stats",
       "noLoaned": "No players loaned by the current club.",
-      "loading": "Loading loaned players..."
+      "loading": "Loading loaned players...",
+      "recall": "Recall",
+      "recallTitle": "Recall from loan",
+      "recallSuccess": "{{name}} recalled from loan",
+      "statsBtn": "Loan stats",
+      "loanPerformance": "Loan Performance",
+      "loanPerformanceNote": "Informational — not counted in career stats or club records",
+      "loan_matches": "Apps",
+      "loan_goals": "Goals",
+      "loan_assists": "Assists",
+      "multiSeason": "{{count}} seasons on record",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel"
     },
     "import": {
       "dialogTitle": "Import squad from FC26?",

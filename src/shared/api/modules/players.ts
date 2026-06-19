@@ -48,6 +48,21 @@ export interface ApiPlayerSeasonStats {
   cleanSheets: number;
 }
 
+export interface ApiLoanStats {
+  id: string;
+  saveId: string;
+  playerId: string;
+  transferId: string;
+  loanClub: string;
+  season: string;
+  goals: number;
+  assists: number;
+  matches: number;
+  goalContributions: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const playersApi = {
   list: (saveId: string, active?: boolean, season?: string, loaned?: boolean) => {
     const params = new URLSearchParams();
@@ -72,4 +87,10 @@ export const playersApi = {
       `/saves/${saveId}/players/import-fc26`,
       { method: "POST" },
     ),
+  recall: (saveId: string, playerId: string) =>
+    request<ApiPlayer>(`/saves/${saveId}/players/${playerId}/recall`, { method: "POST" }),
+  getLoanStats: (saveId: string, playerId: string) =>
+    request<ApiLoanStats[]>(`/saves/${saveId}/players/${playerId}/loan-stats`),
+  updateLoanStats: (saveId: string, playerId: string, data: { goals?: number; assists?: number; matches?: number }) =>
+    request<ApiLoanStats>(`/saves/${saveId}/players/${playerId}/loan-stats`, { method: "PATCH", body: JSON.stringify(data) }),
 };

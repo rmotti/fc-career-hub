@@ -17,14 +17,16 @@ export interface ApiTransfer {
   playerId?: string;
   player?: ApiPlayer;
   createdAt?: string;
+  returnSeason?: string | null;
+  loanSeasons?: 1 | 2 | null;
 }
 
 export const transfersApi = {
   list: (saveId: string, season?: "current") =>
     request<ApiTransfer[]>(`/saves/${saveId}/transfers${season ? `?season=${season}` : ""}`),
-  create: (saveId: string, data: { playerName: string; type: string; from: string; to: string; season: string; fee?: number; playerId?: string }) =>
+  create: (saveId: string, data: { playerName: string; type: string; from: string; to: string; season: string; fee?: number; playerId?: string; loanSeasons?: number }) =>
     request<{ transfer: ApiTransfer; playerId: string | null; save: ApiSave }>(`/saves/${saveId}/transfers`, { method: "POST", body: JSON.stringify(data) }),
-  update: (saveId: string, transferId: string, data: { playerName?: string; type?: string; from?: string; to?: string; fee?: string; season?: string }) =>
+  update: (saveId: string, transferId: string, data: { playerName?: string; type?: string; from?: string; to?: string; fee?: string; season?: string; loanSeasons?: number }) =>
     request<ApiTransfer>(`/saves/${saveId}/transfers/${transferId}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (saveId: string, transferId: string) =>
     request<void>(`/saves/${saveId}/transfers/${transferId}`, { method: "DELETE" }),

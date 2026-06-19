@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { playersApi, type ApiPlayer } from "@/shared/api/client";
+import { playersApi, type ApiPlayer, type ApiLoanStats } from "@/shared/api/client";
 import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 export const usePlayers = (saveId: string, active?: boolean, season?: string, loaned?: boolean) => {
@@ -85,6 +85,36 @@ export function useReleasePlayer() {
         qc.invalidateQueries({ queryKey: ["snapshots", vars.saveId] }),
         qc.invalidateQueries({ queryKey: ["audit", vars.saveId] }),
       ]);
+    },
+  });
+}
+
+export function useRecallPlayer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId, playerId }: { saveId: string; playerId: string }) =>
+      playersApi.recall(saveId, playerId),
+    onSuccess: (_res, vars) => {
+      return qc.invalidateQueries({ queryKey: ["players", vars.saveId] });
+    },
+  });
+}
+
+export function useLoanStats(saveId: string, playerId: string | null) {
+  return useQuery<ApiLoanStats[]>({
+    queryKey: ["loan-stats", saveId, playerId],
+    queryFn: () => playersApi.getLoanStats(saveId, playerId!),
+    enabled: !!saveId && !!playerId,
+  });
+}
+
+export function useUpdateLoanStats() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ saveId, playerId, data }: { saveId: string; playerId: string; data: Parameters<typeof playersApi.updateLoanStats>[2] }) =>
+      playersApi.updateLoanStats(saveId, playerId, data),
+    onSuccess: (_res, vars) => {
+      return qc.invalidateQueries({ queryKey: ["loan-stats", vars.saveId, vars.playerId] });
     },
   });
 }
