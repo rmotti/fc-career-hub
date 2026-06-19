@@ -1,18 +1,32 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import type React from "react";
-import { type ApiPlayer } from "@/shared/api/client";
+import { Fragment, useState } from "react";
+import { type ApiPlayer, type ApiPlayerSeason } from "@/shared/api/client";
 import { getBadge } from "@/entities/player/model/playerBadge";
+import { usePlayer } from "@/features/squad/model/usePlayers";
+import { useTransfers } from "@/features/transfers/model/useTransfers";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import Flag from "react-world-flags";
 import {
   BadgeEuro,
   Calendar,
   ChartNoAxesColumnIncreasing,
+  ChevronDown,
   CircleDollarSign,
   ClipboardList,
   Flag as FlagIcon,
   Medal,
   Minus,
   Pencil,
+  Plane,
   ShieldCheck,
   Shirt,
   Target,
@@ -20,18 +34,19 @@ import {
   TrendingUp,
 } from "lucide-react";
 import {
+  formatCurrency,
   formatCurrencyInMillions,
   formatCurrencyInThousands,
   formatSignedCurrencyInMillions,
 } from "@/shared/lib/currency";
-import { m } from "@/shared/lib/money";
-import { roundToSingleDecimal } from "@/shared/lib/rounding";
+import { m, mToEur, type Money } from "@/shared/lib/money";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { getAlternativePositions, formatPosition } from "@/shared/lib/playerPositions";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  saveId: string;
   player: ApiPlayer | null;
   onEdit: () => void;
 }
@@ -87,22 +102,138 @@ const Delta = ({ value, suffix = "", moneyUnit }: { value: number | null | undef
   return <span className="text-destructive-text flex items-center gap-0.5"><TrendingDown size={12} />{label}</span>;
 };
 
-const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
-  if (!player) return null;
+/** Aggregates a season's per-club rows into a single season total. */
+function sumClubs(clubs: ApiPlayerSeason["clubs"]) {
+  return clubs.reduce(
+    (acc, c) => ({
+      goals: acc.goals + c.goals,
+      assists: acc.assists + c.assists,
+      matches: acc.matches + c.matches,
+      yellowCards: acc.yellowCards + c.yellowCards,
+      redCards: acc.redCards + c.redCards,
+      cleanSheets: acc.cleanSheets + c.cleanSheets,
+      goalContributions: acc.goalContributions + c.goalContributions,
+    }),
+    { goals: 0, assists: 0, matches: 0, yellowCards: 0, redCards: 0, cleanSheets: 0, goalContributions: 0 },
+  );
+}
 
-  const stats = player.currentSeasonStats || player.totalStats;
-  const badge = getBadge(player);
-  const positionColor = POSITION_COLORS[player.position] ?? "bg-muted text-muted-foreground";
-  const alternativePositions = getAlternativePositions(player);
+function TrajectoryTooltip({ active, payload, label }: {
+  active?: boolean;
+  label?: string;
+  payload?: Array<{ dataKey: string; value: number | null }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const ovr = payload.find((entry) => entry.dataKey === "ovr")?.value;
+  const mv = payload.find((entry) => entry.dataKey === "marketValue")?.value;
+  return (
+    <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-md">
+      <p className="mb-1 font-semibold text-foreground">{label}</p>
+      {ovr != null && <p className="text-primary">OVR <span className="font-display font-bold">{ovr}</span></p>}
+      {mv != null && <p className="text-accent">{formatCurrency(mToEur(m(mv)))}</p>}
+    </div>
+  );
+}
+
+// A single-series season trajectory chart. Rendered once per metric (OVR and
+// market value) so each gets its own axis and scale instead of sharing one
+// dual-axis plot.
+function TrajectoryChart({ title, icon: Icon, iconClass, data, dataKey, color, yDomain, yWidth, allowDecimals, yTickFormatter }: {
+  title: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  iconClass: string;
+  data: Array<{ season: string; ovr: number | null; marketValue: Money<"M"> | null }>;
+  dataKey: "ovr" | "marketValue";
+  color: string;
+  yDomain: [number | string, number | string];
+  yWidth: number;
+  allowDecimals?: boolean;
+  yTickFormatter?: (value: number) => string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-muted/20">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <Icon size={15} className={iconClass} />
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      </div>
+      <div className="h-56 px-2 py-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="season" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} />
+            <YAxis domain={yDomain} allowDecimals={allowDecimals} width={yWidth} tickFormatter={yTickFormatter} tick={{ fill: color, fontSize: 11 }} tickLine={false} axisLine={false} />
+            <Tooltip content={<TrajectoryTooltip />} />
+            <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+const PlayerViewModal = ({ open, onOpenChange, saveId, player, onEdit }: Props) => {
+  // The list passes a lightweight player; the detail endpoint enriches it with
+  // `seasons` / `loanSpells` / `totalStats`. Fetch on open and prefer the
+  // enriched copy, falling back to the list item for an instant header render.
+  const { data: detail } = usePlayer(saveId, open ? player?.id ?? null : null);
+  const { data: transfers = [] } = useTransfers(open ? saveId : null);
+  const p = detail ?? player;
+
+  // Per-season club breakdown is collapsed by default; the season row toggles it.
+  const [expandedSeasons, setExpandedSeasons] = useState<Set<string>>(new Set());
+  const toggleSeason = (key: string) =>
+    setExpandedSeasons((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  if (!p) return null;
+
+  const showCleanSheets = CLEAN_SHEETS_POSITIONS.has(p.position);
+  // The stat cards and the cards detail show the *current season* only; the
+  // career-long view lives in the per-season table and trajectory charts below.
+  const seasonStats = p.currentSeasonStats;
+  const badge = getBadge(p);
+  const positionColor = POSITION_COLORS[p.position] ?? "bg-muted text-muted-foreground";
+  const alternativePositions = getAlternativePositions(p);
   const alternativePositionsLabel = alternativePositions.length > 0 ? alternativePositions.map(formatPosition).join(", ") : "—";
-  const statusLabel = STATUS_LABELS[player.status] ?? player.status;
-  const statusColor = STATUS_COLORS[player.status] ?? STATUS_COLORS.Role;
+  const statusLabel = STATUS_LABELS[p.status] ?? p.status;
+  const statusColor = STATUS_COLORS[p.status] ?? STATUS_COLORS.Role;
 
   const ovrColor =
-    player.ovr >= 83 ? "text-primary" : player.ovr >= 80 ? "text-accent" : "text-foreground";
+    p.ovr >= 83 ? "text-primary" : p.ovr >= 80 ? "text-accent" : "text-foreground";
 
-  const history = player.ovrHistory ?? [];
-  const goalContributions = stats?.goalContributions ?? ((stats?.goals ?? 0) + (stats?.assists ?? 0));
+  const seasons = p.seasons ?? [];
+  const loanSpells = p.loanSpells ?? [];
+  const goalContributions = seasonStats?.goalContributions ?? ((seasonStats?.goals ?? 0) + (seasonStats?.assists ?? 0));
+
+  // Fee paid to sign this player, keyed by the season it happened in, so each
+  // season row can show what the move cost (purchases only).
+  const feeBySeason = new Map<string, Money<"M">>();
+  for (const tr of transfers) {
+    if (tr.playerId === p.id && tr.type === "compra" && tr.fee != null) {
+      feeBySeason.set(tr.season, tr.fee);
+    }
+  }
+
+  // Chart: one point per season, oldest → newest. Keep nulls as gaps (never plot
+  // a missing snapshot as zero).
+  const trajectory = seasons.map((s) => ({
+    season: s.season,
+    ovr: s.ovr,
+    marketValue: s.marketValue,
+  }));
+  const enoughPoints = trajectory.length >= 2;
+  const showOvrChart = enoughPoints && seasons.some((s) => s.ovr != null);
+  const showMvChart = enoughPoints && seasons.some((s) => s.marketValue != null);
+
+  // Table: most recent first, marking the latest season as "Current".
+  const seasonRows = [...seasons].reverse();
+
+  const fmtMv = (value: Money<"M"> | null | undefined) =>
+    value == null ? "—" : formatCurrency(mToEur(value));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,34 +241,33 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
         <DialogHeader className="border-b border-border px-6 py-5">
           <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Player profile</p>
           <DialogTitle className="font-display text-2xl leading-none">
-            {player.name}
+            {p.name}
           </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(92vh-94px)]" viewportClassName="px-6 pb-6" scrollbars="vertical">
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 pt-5 lg:grid-cols-[1fr_180px]">
-            <div className="relative overflow-hidden rounded-lg border border-border bg-muted/25 p-5">
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-40 bg-primary/5" />
-              <div className="relative flex items-start gap-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-muted/25 p-5">
+              <div className="flex items-start gap-4">
                 <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border text-lg font-display font-bold ${positionColor}`}>
-                  {formatPosition(player.position)}
+                  {formatPosition(p.position)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    {player.shirtNumber != null && (
+                    {p.shirtNumber != null && (
                       <span className="rounded border border-border bg-background/40 px-2 py-0.5 font-mono text-xs text-muted-foreground">
-                        #{player.shirtNumber}
+                        #{p.shirtNumber}
                       </span>
                     )}
-                    {player.nation && (
-                      <Flag code={player.nation} style={{ width: 22, height: 15, borderRadius: 3, objectFit: "cover" }} />
+                    {p.nation && (
+                      <Flag code={p.nation} style={{ width: 22, height: 15, borderRadius: 3, objectFit: "cover" }} />
                     )}
                     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor}`}>
                       {statusLabel}
                     </span>
                   </div>
-                  <p className="mt-3 font-display text-3xl font-bold leading-none text-foreground">{player.name}</p>
+                  <p className="mt-3 font-display text-3xl font-bold leading-none text-foreground">{p.name}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {badge && (
                       <span
@@ -147,8 +277,8 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
                         {badge.icon} {badge.label}
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground">{player.age} yrs</span>
-                    {player.potential && <span className="text-xs text-muted-foreground">POT {player.potential}</span>}
+                    <span className="text-xs text-muted-foreground">{p.age} yrs</span>
+                    {p.potential && <span className="text-xs text-muted-foreground">POT {p.potential}</span>}
                   </div>
                 </div>
               </div>
@@ -156,28 +286,31 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
 
             <div className="rounded-lg border border-primary/20 bg-primary/8 p-5 text-center">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Overall</p>
-              <p className={`mt-2 font-display text-6xl font-bold leading-none ${ovrColor}`}>{player.ovr}</p>
+              <p className={`mt-2 font-display text-6xl font-bold leading-none ${ovrColor}`}>{p.ovr}</p>
               <div className="mt-2 flex justify-center text-sm font-semibold">
-                <Delta value={player.ovrDelta} />
+                <Delta value={p.ovrDelta} />
               </div>
-              {player.potential && (
+              {p.potential && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Potential <span className="font-semibold text-foreground">{player.potential}</span>
+                  Potential <span className="font-semibold text-foreground">{p.potential}</span>
                 </p>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <PlayerStatCard icon={Calendar} label="Apps" value={stats?.matches ?? 0} />
-            <PlayerStatCard icon={Target} label="Goals" value={stats?.goals ?? 0} tone="primary" />
-            <PlayerStatCard icon={ChartNoAxesColumnIncreasing} label="Assists" value={stats?.assists ?? 0} tone="accent" />
-            <PlayerStatCard
-              icon={CLEAN_SHEETS_POSITIONS.has(player.position) ? ShieldCheck : Medal}
-              label={CLEAN_SHEETS_POSITIONS.has(player.position) ? "Clean sheets" : "Particip."}
-              value={CLEAN_SHEETS_POSITIONS.has(player.position) ? (stats?.cleanSheets ?? 0) : goalContributions}
-              tone="gold"
-            />
+          <div>
+            <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Current season</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <PlayerStatCard icon={Calendar} label="Apps" value={seasonStats?.matches ?? 0} />
+              <PlayerStatCard icon={Target} label="Goals" value={seasonStats?.goals ?? 0} tone="primary" />
+              <PlayerStatCard icon={ChartNoAxesColumnIncreasing} label="Assists" value={seasonStats?.assists ?? 0} tone="accent" />
+              <PlayerStatCard
+                icon={showCleanSheets ? ShieldCheck : Medal}
+                label={showCleanSheets ? "Clean sheets" : "Particip."}
+                value={showCleanSheets ? (seasonStats?.cleanSheets ?? 0) : goalContributions}
+                tone="gold"
+              />
+            </div>
           </div>
 
           <section className="rounded-lg border border-border bg-muted/20">
@@ -186,66 +319,124 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Management data</p>
             </div>
             <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
-              <PlayerDetail icon={Shirt} label="Position" value={formatPosition(player.position)} badgeClass={positionColor} />
+              <PlayerDetail icon={Shirt} label="Position" value={formatPosition(p.position)} badgeClass={positionColor} />
               <PlayerDetail icon={Shirt} label="Alternatives" value={alternativePositionsLabel} />
-              <PlayerDetail icon={FlagIcon} label="Nation" value={player.nation ?? "—"} flag={player.nation} />
-              <PlayerDetail icon={BadgeEuro} label="Salary" value={player.salary != null ? `${formatCurrencyInThousands(player.salary)}/wk` : "—"} />
-              <PlayerDetail icon={CircleDollarSign} label="Market value" value={player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—"} delta={<Delta value={player.marketValueDelta} moneyUnit="M" />} />
-              <PlayerDetail icon={Calendar} label="Age" value={`${player.age} yrs`} />
-              <PlayerDetail
-                icon={ShieldCheck}
-                label="Cards"
-                value={`${stats?.yellowCards ?? 0} yellow / ${stats?.redCards ?? 0} red`}
-              />
+              <PlayerDetail icon={FlagIcon} label="Nation" value={p.nation ?? "—"} flag={p.nation} />
+              <PlayerDetail icon={BadgeEuro} label="Salary" value={p.salary != null ? `${formatCurrencyInThousands(p.salary)}/wk` : "—"} />
+              <PlayerDetail icon={CircleDollarSign} label="Market value" value={p.marketValue != null ? formatCurrencyInMillions(p.marketValue) : "—"} delta={<Delta value={p.marketValueDelta} moneyUnit="M" />} />
+              <PlayerDetail icon={Calendar} label="Age" value={`${p.age} yrs`} />
             </div>
           </section>
 
-          {history.length > 0 && (
+          {(showOvrChart || showMvChart) && (
+            <div className="space-y-4">
+              {showOvrChart && (
+                <TrajectoryChart
+                  title="OVR trajectory"
+                  icon={TrendingUp}
+                  iconClass="text-primary"
+                  data={trajectory}
+                  dataKey="ovr"
+                  color="hsl(var(--primary))"
+                  yDomain={["dataMin - 3", "dataMax + 3"]}
+                  yWidth={32}
+                  allowDecimals={false}
+                />
+              )}
+              {showMvChart && (
+                <TrajectoryChart
+                  title="Market value trajectory"
+                  icon={CircleDollarSign}
+                  iconClass="text-accent"
+                  data={trajectory}
+                  dataKey="marketValue"
+                  color="hsl(var(--accent))"
+                  yDomain={[0, "auto"]}
+                  yWidth={48}
+                  yTickFormatter={(v: number) => formatCurrency(mToEur(m(v)))}
+                />
+              )}
+            </div>
+          )}
+
+          {seasons.length > 0 && (
           <div className="overflow-hidden rounded-lg border border-border bg-muted/20">
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">OVR & Market Value History</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">Season by season</p>
             </div>
             <ScrollArea scrollbars="horizontal" className="w-full">
-              <table className="min-w-[560px] w-full text-sm">
+              <table className="min-w-[680px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
-                    <th className="px-4 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-body">Season</th>
-                    <th className="px-4 py-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body">OVR</th>
-                    <th className="px-4 py-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body">Change</th>
-                    <th className="px-4 py-2 text-right text-[10px] uppercase tracking-wider text-muted-foreground font-body">Market Value</th>
+                    {["Season", "OVR", "Value", "Apps", "Goals", "Assists", "G+A", "🟨/🟥", ...(showCleanSheets ? ["CS"] : [])].map((h) => (
+                      <th key={h} className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-body">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((entry, idx) => {
-                    const prevEntry = history[idx + 1];
-                    const ovrDelta = prevEntry != null ? entry.ovr - prevEntry.ovr : null;
-                    const mvDelta = prevEntry?.marketValue != null && entry.marketValue != null
-                      ? roundToSingleDecimal(entry.marketValue - prevEntry.marketValue)
-                      : null;
+                  {seasonRows.map((season, idx) => {
+                    const total = sumClubs(season.clubs);
                     const isLatest = idx === 0;
+                    const splitSeason = season.clubs.length > 1;
+                    const isExpanded = expandedSeasons.has(season.season);
+                    // Clubs played this season, joined with an arrow when a mid-season
+                    // transfer split it across more than one club, plus the fee paid
+                    // when the player was signed that season.
+                    const clubLabel = season.clubs.map((c) => c.club).filter(Boolean).join(" → ");
+                    const transferFee = feeBySeason.get(season.season);
+                    const clubLine = transferFee != null
+                      ? `${clubLabel}${clubLabel ? " · " : ""}${formatCurrencyInMillions(transferFee)}`
+                      : clubLabel;
                     return (
-                      <tr key={entry.season} className={`border-b border-border/30 ${isLatest ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}>
-                        <td className="px-4 py-2.5 font-medium text-foreground">
-                          {entry.season}
-                          {isLatest && <span className="ml-2 text-[10px] text-primary font-semibold uppercase tracking-wider">Current</span>}
-                        </td>
-                        <td className="px-4 py-2.5 text-center">
-                          <span className={`font-display font-bold ${entry.ovr >= 83 ? "text-primary" : entry.ovr >= 80 ? "text-accent" : "text-foreground"}`}>
-                            {entry.ovr}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-center text-xs font-medium">
-                          <Delta value={ovrDelta} />
-                        </td>
-                        <td className="px-4 py-2.5 text-right text-muted-foreground">
-                          {entry.marketValue != null ? (
-                            <span className="flex items-center justify-end gap-1.5">
-                              <span>{formatCurrencyInMillions(entry.marketValue)}</span>
-                              {mvDelta != null && <Delta value={mvDelta} moneyUnit="M" />}
-                            </span>
-                          ) : "—"}
-                        </td>
-                      </tr>
+                      <Fragment key={season.season}>
+                        <tr
+                          className={`border-b border-border/30 transition-colors ${isLatest ? "bg-primary/5" : "hover:bg-muted/30"} ${splitSeason ? "cursor-pointer" : ""}`}
+                          onClick={splitSeason ? () => toggleSeason(season.season) : undefined}
+                        >
+                          <td className="px-3 py-2 font-medium text-foreground">
+                            <div className="flex items-center gap-1.5">
+                              {splitSeason ? (
+                                <ChevronDown
+                                  size={13}
+                                  className={`text-muted-foreground transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                                />
+                              ) : (
+                                <span className="inline-block w-[13px]" />
+                              )}
+                              {season.season}
+                              {isLatest && <span className="ml-1 text-[10px] text-primary font-semibold uppercase tracking-wider">Current</span>}
+                            </div>
+                            {clubLine && (
+                              <span className="mt-0.5 block pl-[19px] text-xs italic text-muted-foreground">{clubLine}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {season.ovr != null ? (
+                              <span className={`font-display font-bold ${season.ovr >= 83 ? "text-primary" : season.ovr >= 80 ? "text-accent" : "text-foreground"}`}>{season.ovr}</span>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{fmtMv(season.marketValue)}</td>
+                          <td className="px-3 py-2 font-display">{total.matches}</td>
+                          <td className="px-3 py-2 font-display font-bold">{total.goals}</td>
+                          <td className="px-3 py-2 font-display">{total.assists}</td>
+                          <td className="px-3 py-2 font-display text-primary">{total.goalContributions}</td>
+                          <td className="px-3 py-2 text-xs"><span className="text-warning">{total.yellowCards}</span> / <span className="text-destructive-text">{total.redCards}</span></td>
+                          {showCleanSheets && <td className="px-3 py-2 font-display text-accent">{total.cleanSheets}</td>}
+                        </tr>
+                        {splitSeason && isExpanded && season.clubs.map((club) => (
+                          <tr key={`${season.season}-${club.club}`} className="border-b border-border/20 bg-background/30 text-xs text-muted-foreground">
+                            <td className="py-1.5 pl-7 pr-3 italic">↳ {club.club}</td>
+                            <td className="px-3 py-1.5" />
+                            <td className="px-3 py-1.5" />
+                            <td className="px-3 py-1.5 font-display">{club.matches}</td>
+                            <td className="px-3 py-1.5 font-display">{club.goals}</td>
+                            <td className="px-3 py-1.5 font-display">{club.assists}</td>
+                            <td className="px-3 py-1.5 font-display">{club.goalContributions}</td>
+                            <td className="px-3 py-1.5">{club.yellowCards} / {club.redCards}</td>
+                            {showCleanSheets && <td className="px-3 py-1.5 font-display">{club.cleanSheets}</td>}
+                          </tr>
+                        ))}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -254,36 +445,33 @@ const PlayerViewModal = ({ open, onOpenChange, player, onEdit }: Props) => {
           </div>
           )}
 
-          {player.history && player.history.length > 1 && (
-          <div className="overflow-hidden rounded-lg border border-border bg-muted/20">
-            <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-body">Statistics History</p>
+          {loanSpells.length > 0 && (
+          <div className="overflow-hidden rounded-lg border border-warning/30 bg-warning/5">
+            <div className="flex items-center gap-2 border-b border-warning/30 px-4 py-3">
+              <Plane size={15} className="text-warning" />
+              <p className="text-[11px] uppercase tracking-[0.2em] text-warning">While on loan</p>
             </div>
+            <p className="px-4 pt-3 text-xs text-muted-foreground">
+              Form while loaned out. These figures do <span className="font-semibold text-foreground">not</span> count toward the player's club totals or records.
+            </p>
             <ScrollArea scrollbars="horizontal" className="w-full">
-              <table className="min-w-[640px] w-full text-sm">
+              <table className="mt-2 min-w-[520px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
-                    {["Season", "Apps", "Goals", "Assists", "Contrib.", ...(CLEAN_SHEETS_POSITIONS.has(player.position) ? ["CS"] : []), "🟨", "🟥"].map((h) => (
+                    {["Season", "Loan club", "Apps", "Goals", "Assists", "G+A"].map((h) => (
                       <th key={h} className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-body">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {player.history.map((entry, idx) => (
-                    <tr key={entry.season} className={`border-b border-border/30 ${idx === 0 ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}>
-                      <td className="px-3 py-2 font-medium text-foreground">
-                        {entry.season}
-                        {idx === 0 && <span className="ml-2 text-[10px] text-primary font-semibold uppercase tracking-wider">Atual</span>}
-                      </td>
-                      <td className="px-3 py-2 font-display">{entry.matches ?? 0}</td>
-                      <td className="px-3 py-2 font-display font-bold">{entry.goals}</td>
-                      <td className="px-3 py-2 font-display">{entry.assists}</td>
-                      <td className="px-3 py-2 font-display text-primary">{entry.goalContributions ?? 0}</td>
-                      {CLEAN_SHEETS_POSITIONS.has(player.position) && (
-                        <td className="px-3 py-2 font-display text-accent">{entry.cleanSheets}</td>
-                      )}
-                      <td className="px-3 py-2 text-warning">{entry.yellowCards}</td>
-                      <td className="px-3 py-2 text-destructive-text">{entry.redCards}</td>
+                  {loanSpells.map((spell) => (
+                    <tr key={`${spell.season}-${spell.loanClub}`} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                      <td className="px-3 py-2 font-medium text-foreground">{spell.season}</td>
+                      <td className="px-3 py-2 text-foreground">{spell.loanClub}</td>
+                      <td className="px-3 py-2 font-display">{spell.matches}</td>
+                      <td className="px-3 py-2 font-display font-bold">{spell.goals}</td>
+                      <td className="px-3 py-2 font-display">{spell.assists}</td>
+                      <td className="px-3 py-2 font-display text-primary">{spell.goalContributions}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -735,6 +735,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
       <PlayerViewModal
         open={viewModalOpen}
         onOpenChange={(open) => { setViewModalOpen(open); if (!open) setViewingPlayer(null); }}
+        saveId={saveId}
         player={viewingPlayer}
         onEdit={() => { setEditingPlayer(viewingPlayer); setModalOpen(true); setViewingPlayer(null); }}
       />

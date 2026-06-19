@@ -33,6 +33,42 @@ export interface ApiPlayer {
   currentSeasonStats?: ApiPlayerSeasonStats;
   totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; };
   history?: Array<{ season: string; goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; }>;
+  // Enriched on the detail endpoint (GET /saves/:saveId/players/:playerId).
+  // `seasons` is the merged, chronologically-ordered (oldest → newest) source of
+  // truth for the trajectory chart and per-season table. `loanSpells` is purely
+  // informative and never counts toward totalStats / records.
+  seasons?: ApiPlayerSeason[];
+  loanSpells?: ApiPlayerLoanSpell[];
+}
+
+export interface ApiPlayerSeasonClubStats {
+  club: string;
+  goals: number;
+  assists: number;
+  matches: number;
+  yellowCards: number;
+  redCards: number;
+  cleanSheets: number;
+  goalContributions: number;
+}
+
+export interface ApiPlayerSeason {
+  season: string;
+  /** Season-end OVR snapshot, or null when no snapshot exists for the season. */
+  ovr: number | null;
+  /** Market value in millions of € (40 = €40M), or null when no snapshot exists. */
+  marketValue: Money<"M"> | null;
+  /** Usually one club; 2+ when the player changed clubs mid-season. May be empty. */
+  clubs: ApiPlayerSeasonClubStats[];
+}
+
+export interface ApiPlayerLoanSpell {
+  season: string;
+  loanClub: string;
+  goals: number;
+  assists: number;
+  matches: number;
+  goalContributions: number;
 }
 
 export interface ApiPlayerSeasonStats {
