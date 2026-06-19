@@ -33,6 +33,13 @@ One file per functional module, grouped by responsibility (not by file):
 - [3.6.11 Dashboard](03_Technical/Modules/3.6.11_Dashboard.md)
 - [3.6.12 Tutorial](03_Technical/Modules/3.6.12_Tutorial.md)
 
+### [04_Next_Steps](04_Next_Steps/)
+Backlog triado dos próximos passos, agora que o débito técnico foi quitado. Um documento por natureza do trabalho:
+- [4.1 Correções](04_Next_Steps/4.1_Corrections.md) — comportamento existente errado/quebrado.
+- [4.2 Features](04_Next_Steps/4.2_Features.md) — capacidade nova.
+- [4.3 Melhorias](04_Next_Steps/4.3_Improvements.md) — refinamento de algo que já funciona.
+- [4.4 Alterações de Regra de Negócio](04_Next_Steps/4.4_Business_Rule_Changes.md) — mudança deliberada no domínio.
+
 ### Top-level
 - [AI_RULES.md](AI_RULES.md) — operational rules for AI agents working in this repo.
 
