@@ -16,12 +16,14 @@ vi.mock("@/features/auth/model/useAuth", () => ({
 vi.mock("@/features/scout/model/useJuniorChat", () => ({
   useJuniorChat: () => ({
     messages: [],
-    lastResponseId: null,
     history: [],
+    activeConversationId: null,
     isLoading: false,
+    isHistoryLoading: false,
     isRateLimited: false,
     retryAfterSeconds: 0,
     sendMessage: vi.fn(),
+    retryLastMessage: vi.fn(),
     startNewConversation: vi.fn(),
     loadConversation: vi.fn(),
     deleteConversation: vi.fn(),

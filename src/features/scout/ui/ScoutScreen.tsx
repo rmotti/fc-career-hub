@@ -73,8 +73,7 @@ import { PLAYER_POSITIONS, POSITION_LABELS, formatPosition } from "@/shared/lib/
 import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/shared/lib/currency";
 import { m, type Money } from "@/shared/lib/money";
 import ReactMarkdown from "react-markdown";
-import { useAuth } from "@/features/auth/model/useAuth";
-import { useJuniorChat, type ConversationEntry } from "@/features/scout/model/useJuniorChat";
+import { useJuniorChat, type ChatConversation } from "@/features/scout/model/useJuniorChat";
 
 interface Props {
   section: ScoutSection;
@@ -1123,10 +1122,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const knownPlayersRef = useRef<Map<number, Fc26Player>>(new Map());
   const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(null);
 
-  const { user } = useAuth();
   const {
     messages: chatMessages,
-    lastResponseId: chatLastResponseId,
     history: chatHistory,
     isLoading: isChatLoading,
     isRateLimited,
@@ -1137,7 +1134,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     startNewConversation,
     loadConversation,
     deleteConversation,
-  } = useJuniorChat(user?.id);
+  } = useJuniorChat(saveId);
   const [chatInput, setChatInput] = useState("");
   const [showChatHistory, setShowChatHistory] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -1602,7 +1599,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                 </button>
                 <button
                   type="button"
-                  onClick={() => { startNewConversation(chatMessages, chatLastResponseId); setShowChatHistory(false); }}
+                  onClick={() => { startNewConversation(); setShowChatHistory(false); }}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/25 hover:bg-primary/5 hover:text-primary"
                 >
                   <RotateCcw size={13} />
@@ -1622,17 +1619,16 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                       <p className="mt-1 text-xs text-muted-foreground/60">Start a new conversation and it will appear here.</p>
                     </div>
                   ) : (
-                    chatHistory.map((entry: ConversationEntry) => (
+                    chatHistory.map((entry: ChatConversation) => (
                       <div key={entry.id} className="rounded-md border border-border bg-background/30 p-3">
-                        <p className="truncate text-sm font-semibold text-foreground">{entry.title}</p>
+                        <p className="truncate text-sm font-semibold text-foreground">{entry.title ?? "Conversa sem título"}</p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {new Date(entry.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          {" · "}{entry.messages.length} mensagen{entry.messages.length !== 1 ? "s" : ""}
+                          {new Date(entry.updatedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </p>
                         <div className="mt-2.5 flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => { loadConversation(entry, chatMessages, chatLastResponseId); setShowChatHistory(false); }}
+                            onClick={() => { void loadConversation(entry.id); setShowChatHistory(false); }}
                             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
                           >
                             <RotateCcw size={11} />
@@ -1640,7 +1636,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                           </button>
                           <button
                             type="button"
-                            onClick={() => deleteConversation(entry.id)}
+                            onClick={() => void deleteConversation(entry.id)}
                             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/25 hover:bg-destructive/5 hover:text-destructive-text"
                           >
                             <Trash2 size={11} />

@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { chatApi, ApiError, extractErrorMessage } from "@/shared/api/client";
+import {
+  chatApi,
+  ApiError,
+  extractErrorMessage,
+  type ChatConversation,
+  type ChatHistoryMessage,
+} from "@/shared/api/client";
 
 export interface JuniorChatMessage {
   id: string;
@@ -9,20 +15,8 @@ export interface JuniorChatMessage {
   timestamp: number;
 }
 
-export interface ConversationEntry {
-  id: string;
-  title: string;
-  messages: JuniorChatMessage[];
-  lastResponseId: string | null;
-  createdAt: number;
-}
-
-interface CurrentChatState {
-  messages: JuniorChatMessage[];
-  lastResponseId: string | null;
-}
-
-const MAX_HISTORY = 20;
+// Re-exported so the UI can type the conversation list it renders.
+export type { ChatConversation };
 
 // Transient failures (network drop, upstream OpenAI/MCP 5xx) are retried with
 // backoff before the chat falls back to an explicit degraded state.
@@ -37,84 +31,63 @@ function isTransient(err: unknown): boolean {
   return err.status !== undefined && err.status >= 500;
 }
 
-function getCurrentKey(userId: string) {
-  return `junior-chat:${userId}`;
+function isNotFound(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 404;
 }
 
-function getHistoryKey(userId: string) {
-  return `junior-chat-history:${userId}`;
+// First user message, trimmed to a short title used at conversation creation
+// (the API only accepts `title` on create for now).
+function deriveTitle(text: string): string {
+  return text.length > 45 ? text.slice(0, 42) + "…" : text;
 }
 
-function loadCurrentState(userId: string): CurrentChatState {
-  try {
-    const raw = localStorage.getItem(getCurrentKey(userId));
-    if (raw) return JSON.parse(raw) as CurrentChatState;
-  } catch {
-    // ignore malformed storage
-  }
-  return { messages: [], lastResponseId: null };
+function toMessage(m: ChatHistoryMessage): JuniorChatMessage {
+  return {
+    id: m.id,
+    role: m.role,
+    content: m.content,
+    timestamp: Date.parse(m.createdAt) || Date.now(),
+  };
 }
 
-function saveCurrentState(userId: string, state: CurrentChatState) {
-  try {
-    localStorage.setItem(getCurrentKey(userId), JSON.stringify(state));
-  } catch {
-    // ignore storage quota errors
-  }
-}
-
-function clearCurrentState(userId: string) {
-  localStorage.removeItem(getCurrentKey(userId));
-}
-
-function loadHistory(userId: string): ConversationEntry[] {
-  try {
-    const raw = localStorage.getItem(getHistoryKey(userId));
-    if (raw) return JSON.parse(raw) as ConversationEntry[];
-  } catch {
-    // ignore malformed storage
-  }
-  return [];
-}
-
-function saveHistory(userId: string, history: ConversationEntry[]) {
-  try {
-    localStorage.setItem(getHistoryKey(userId), JSON.stringify(history));
-  } catch {
-    // ignore storage quota errors
-  }
-}
-
-function deriveTitle(messages: JuniorChatMessage[]): string {
-  const firstUserMsg = messages.find((m) => m.role === "user");
-  if (!firstUserMsg) return "Untitled conversation";
-  return firstUserMsg.content.length > 45
-    ? firstUserMsg.content.slice(0, 42) + "…"
-    : firstUserMsg.content;
-}
-
-export function useJuniorChat(userId: string | undefined) {
+// Server-side persisted chat. The source of truth is the API (per user/save via
+// the session cookie), which enables roaming across devices; nothing is kept in
+// localStorage anymore.
+export function useJuniorChat(saveId: string | null | undefined) {
   const [messages, setMessages] = useState<JuniorChatMessage[]>([]);
-  const [lastResponseId, setLastResponseId] = useState<string | null>(null);
-  const [history, setHistory] = useState<ConversationEntry[]>([]);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | null>(null);
   const [isUnavailable, setIsUnavailable] = useState(false);
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastFailedTextRef = useRef<string | null>(null);
+  // Tracks the selected conversation inside async callbacks without re-creating
+  // them on every selection change.
+  const conversationIdRef = useRef<string | null>(null);
+  conversationIdRef.current = conversationId;
 
-  useEffect(() => {
-    if (!userId) return;
-    const state = loadCurrentState(userId);
-    setMessages(state.messages);
-    setLastResponseId(state.lastResponseId);
-    setHistory(loadHistory(userId));
-  }, [userId]);
+  const loadConversations = useCallback(async () => {
+    setIsHistoryLoading(true);
+    try {
+      const list = await chatApi.listConversations(saveId);
+      setConversations(list);
+    } catch {
+      // Non-fatal: the thread still works; the history list just stays empty.
+      setConversations([]);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, [saveId]);
 
+  // Load the conversation list when the chat opens or the save changes, and
+  // reset the active thread to "no selection".
   useEffect(() => {
-    if (!userId) return;
-    saveCurrentState(userId, { messages, lastResponseId });
-  }, [userId, messages, lastResponseId]);
+    setMessages([]);
+    setConversationId(null);
+    void loadConversations();
+  }, [loadConversations]);
 
   useEffect(() => {
     if (retryAfterSeconds === null || retryAfterSeconds <= 0) {
@@ -136,18 +109,24 @@ export function useJuniorChat(userId: string | undefined) {
     };
   }, [retryAfterSeconds]);
 
-  // Sends an already-appended user turn, retrying transient failures with
-  // backoff and falling back to a degraded state instead of a bare toast.
-  const runRequest = useCallback(async (trimmed: string) => {
+  // A 404 means the conversation no longer exists (or isn't ours): drop the
+  // selection and reload the list.
+  const handleNotFound = useCallback(() => {
+    setConversationId(null);
+    setMessages([]);
+    toast.warning("This conversation is no longer available.");
+    void loadConversations();
+  }, [loadConversations]);
+
+  // Posts a turn against `convId`, retrying transient failures with backoff and
+  // falling back to a degraded state instead of a bare toast.
+  const runRequest = useCallback(async (trimmed: string, convId: string) => {
     setIsLoading(true);
     setIsUnavailable(false);
 
     for (let attempt = 0; ; attempt++) {
       try {
-        const response = await chatApi.sendMessage({
-          message: trimmed,
-          ...(lastResponseId ? { previousResponseId: lastResponseId } : {}),
-        });
+        const response = await chatApi.sendMessage({ message: trimmed, conversationId: convId });
 
         const assistantMessage: JuniorChatMessage = {
           id: crypto.randomUUID(),
@@ -157,8 +136,9 @@ export function useJuniorChat(userId: string | undefined) {
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
-        setLastResponseId(response.responseId);
         lastFailedTextRef.current = null;
+        // Bump the conversation to the top of the list (updatedAt changed).
+        void loadConversations();
         break;
       } catch (err) {
         if (err instanceof ApiError && err.status === 429) {
@@ -167,6 +147,11 @@ export function useJuniorChat(userId: string | undefined) {
             : 60;
           setRetryAfterSeconds(seconds);
           toast.warning(`Too many messages. Please wait ${seconds} seconds to continue.`);
+          break;
+        }
+
+        if (isNotFound(err)) {
+          handleNotFound();
           break;
         }
 
@@ -187,7 +172,44 @@ export function useJuniorChat(userId: string | undefined) {
     }
 
     setIsLoading(false);
-  }, [lastResponseId]);
+  }, [loadConversations, handleNotFound]);
+
+  // Resolves the active conversation, creating one (tied to the current save)
+  // on the first message. Returns null if creation failed.
+  const ensureConversation = useCallback(async (firstText: string): Promise<string | null> => {
+    if (conversationIdRef.current) return conversationIdRef.current;
+    try {
+      const conversation = await chatApi.createConversation({
+        title: deriveTitle(firstText),
+        ...(saveId ? { saveId } : {}),
+      });
+      setConversationId(conversation.id);
+      setConversations((prev) => [conversation, ...prev]);
+      return conversation.id;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 429) {
+        const seconds = Number.isFinite(err.retryAfter) && (err.retryAfter ?? 0) > 0
+          ? err.retryAfter!
+          : 60;
+        setRetryAfterSeconds(seconds);
+        toast.warning(`Too many messages. Please wait ${seconds} seconds to continue.`);
+        return null;
+      }
+      lastFailedTextRef.current = firstText;
+      setIsUnavailable(true);
+      return null;
+    }
+  }, [saveId]);
+
+  const submit = useCallback(async (trimmed: string) => {
+    setIsLoading(true);
+    const convId = await ensureConversation(trimmed);
+    if (!convId) {
+      setIsLoading(false);
+      return;
+    }
+    await runRequest(trimmed, convId);
+  }, [ensureConversation, runRequest]);
 
   const sendMessage = useCallback((text: string) => {
     if (!text.trim() || isLoading || retryAfterSeconds !== null) return;
@@ -201,81 +223,63 @@ export function useJuniorChat(userId: string | undefined) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    void runRequest(trimmed);
-  }, [isLoading, retryAfterSeconds, runRequest]);
+    void submit(trimmed);
+  }, [isLoading, retryAfterSeconds, submit]);
 
   // Re-runs the last failed turn (its user bubble is already in the thread).
   const retryLastMessage = useCallback(() => {
     const text = lastFailedTextRef.current;
     if (!text || isLoading) return;
-    void runRequest(text);
-  }, [isLoading, runRequest]);
+    void submit(text);
+  }, [isLoading, submit]);
 
-  const startNewConversation = useCallback((currentMessages: JuniorChatMessage[], currentResponseId: string | null) => {
-    if (!userId) return;
-
-    if (currentMessages.length > 0) {
-      const entry: ConversationEntry = {
-        id: crypto.randomUUID(),
-        title: deriveTitle(currentMessages),
-        messages: currentMessages,
-        lastResponseId: currentResponseId,
-        createdAt: Date.now(),
-      };
-      setHistory((prev) => {
-        const next = [entry, ...prev].slice(0, MAX_HISTORY);
-        saveHistory(userId, next);
-        return next;
-      });
-    }
-
+  // Clears the active thread; the next message starts a fresh conversation.
+  // Persisted history is untouched (the server already saved everything).
+  const startNewConversation = useCallback(() => {
     setMessages([]);
-    setLastResponseId(null);
-    clearCurrentState(userId);
-  }, [userId]);
+    setConversationId(null);
+    setIsUnavailable(false);
+  }, []);
 
-  const loadConversation = useCallback((entry: ConversationEntry, currentMessages: JuniorChatMessage[], currentResponseId: string | null) => {
-    if (!userId) return;
-
-    if (currentMessages.length > 0) {
-      const currentEntry: ConversationEntry = {
-        id: crypto.randomUUID(),
-        title: deriveTitle(currentMessages),
-        messages: currentMessages,
-        lastResponseId: currentResponseId,
-        createdAt: Date.now(),
-      };
-      setHistory((prev) => {
-        const next = [currentEntry, ...prev.filter((h) => h.id !== entry.id)].slice(0, MAX_HISTORY);
-        saveHistory(userId, next);
-        return next;
-      });
-    } else {
-      setHistory((prev) => {
-        const next = prev.filter((h) => h.id !== entry.id);
-        saveHistory(userId, next);
-        return next;
-      });
+  const loadConversation = useCallback(async (id: string) => {
+    setConversationId(id);
+    setMessages([]);
+    setIsUnavailable(false);
+    try {
+      const history = await chatApi.listMessages(id);
+      setMessages(history.map(toMessage));
+    } catch (err) {
+      if (isNotFound(err)) {
+        handleNotFound();
+        return;
+      }
+      toast.error(extractErrorMessage(err as ApiError));
     }
+  }, [handleNotFound]);
 
-    setMessages(entry.messages);
-    setLastResponseId(entry.lastResponseId);
-  }, [userId]);
-
-  const deleteConversation = useCallback((entryId: string) => {
-    if (!userId) return;
-    setHistory((prev) => {
-      const next = prev.filter((h) => h.id !== entryId);
-      saveHistory(userId, next);
-      return next;
-    });
-  }, [userId]);
+  const deleteConversation = useCallback(async (id: string) => {
+    try {
+      await chatApi.deleteConversation(id);
+    } catch (err) {
+      if (!isNotFound(err)) {
+        toast.error(extractErrorMessage(err as ApiError));
+        return;
+      }
+      // 404: already gone — fall through and drop it from the list.
+    }
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (conversationIdRef.current === id) {
+      setConversationId(null);
+      setMessages([]);
+    }
+  }, []);
 
   return {
     messages,
-    lastResponseId,
-    history,
+    history: conversations,
+    activeConversationId: conversationId,
     isLoading,
+    isHistoryLoading,
     isRateLimited: retryAfterSeconds !== null && retryAfterSeconds > 0,
     retryAfterSeconds,
     isUnavailable,
