@@ -1,17 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Activity,
   AlertTriangle,
   ArrowRightLeft,
   BarChart3,
-  ChevronDown,
-  ChevronUp,
   CircleDollarSign,
   Download,
   Dumbbell,
   Eye,
-  Info,
   Loader2,
   Pencil,
   Plus,
@@ -23,11 +20,11 @@ import {
   Target,
   Trash2,
   Users,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { type ApiPlayer, extractErrorMessage } from "@/shared/api/client";
+import { type ApiPlayer, type ApiTransfer, extractErrorMessage } from "@/shared/api/client";
 import { usePlayers, useCreatePlayer, useUpdatePlayer, useReleasePlayer, useUpdatePlayerStats, useImportFc26Players, useRecallPlayer, useLoanStats, useUpdateLoanStats } from "@/features/squad/model/usePlayers";
+import { useTransfers } from "@/features/transfers/model/useTransfers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
 import { useSave } from "@/features/saves/model/useSaves";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import PlayerModal from "@/features/squad/ui/PlayerModal";
 import PlayerViewModal from "@/features/squad/ui/PlayerViewModal";
 import { getBadge, type SquadRole } from "@/entities/player/model/playerBadge";
@@ -116,6 +114,26 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const { data: save } = useSave(saveId);
   const { data: players = [], isLoading } = usePlayers(saveId, true);
   const { data: loanedPlayers = [], isLoading: isLoadingLoanedPlayers } = usePlayers(saveId, undefined, undefined, true);
+  const { data: allTransfers = [] } = useTransfers(saveId);
+
+  // "Loaned until" comes from the loan transfer (season + loanSeasons), not the
+  // player record — the player only carries loanSeason. Picks the most recent
+  // emprestimo_saida per player so a 2-season loan resolves to the right end.
+  const loanUntilByPlayer = useMemo(() => {
+    const latest = new Map<string, ApiTransfer>();
+    for (const transfer of allTransfers) {
+      if (transfer.type !== "emprestimo_saida" || !transfer.playerId) continue;
+      const current = latest.get(transfer.playerId);
+      if (!current || transfer.season.localeCompare(current.season) > 0) {
+        latest.set(transfer.playerId, transfer);
+      }
+    }
+    const out = new Map<string, string>();
+    latest.forEach((transfer, playerId) => {
+      out.set(playerId, computeLoanEndSeason(transfer.season, transfer.loanSeasons ?? 1));
+    });
+    return out;
+  }, [allTransfers]);
 
   const squadRoles = useMemo(() => {
     const roles = new Map<string, SquadRole>();
@@ -142,7 +160,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
   const importFc26 = useImportFc26Players();
   const recallPlayer = useRecallPlayer();
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
-  const [expandedLoanStatsId, setExpandedLoanStatsId] = useState<string | null>(null);
+  const [loanEditPlayer, setLoanEditPlayer] = useState<ApiPlayer | null>(null);
 
   const runFc26Import = () => {
     importFc26.mutate(
@@ -325,7 +343,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     recallPlayer.mutate({ saveId, playerId: player.id }, {
       onSuccess: () => {
         toast.success(t("squad.loaned.recallSuccess", { name: player.name }), { duration: 3000 });
-        setExpandedLoanStatsId(null);
+        setLoanEditPlayer(null);
       },
       onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
     });
@@ -352,6 +370,10 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
     { key: "age", label: t("squad.columns.age") },
     { key: "ovr", label: "OVR" },
     { key: "potential", label: t("squad.columns.potential") },
+    { key: "matches", label: t("squad.columns.matches") },
+    { key: "goals", label: t("squad.columns.goals") },
+    { key: "assists", label: t("squad.columns.assists") },
+    { key: "goalContributions", label: t("squad.columns.contributions") },
     { key: "salary", label: t("squad.columns.salary"), align: "right" },
     { key: "marketValue", label: t("squad.columns.value"), align: "right" },
   ];
@@ -618,7 +640,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         </div>
 
         <ScrollArea scrollbars="horizontal" className="w-full">
-          <table className="min-w-[900px] w-full text-sm">
+          <table className="min-w-[1380px] w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 {loanedBaseColumns.map((col) => (
@@ -630,7 +652,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                   </th>
                 ))}
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.loanedTo")}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.seasonCol")}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.loaned.loanedUntil")}</th>
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("squad.actions")}</th>
               </tr>
             </thead>
@@ -645,43 +667,18 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
                 </tr>
               )}
               {!isLoadingLoanedPlayers && loanedPlayers.map((player) => (
-                <React.Fragment key={player.id}>
-                  <tr className="border-b border-border/50 transition-colors hover:bg-muted/30">
-                    <PlayerTableCells columns={loanedBaseColumns} player={player} />
-                    <td className="min-w-[160px] px-4 py-3 font-medium text-foreground">{player.loanedTo ?? "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{player.loanSeason ?? "—"}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setExpandedLoanStatsId(expandedLoanStatsId === player.id ? null : player.id)}
-                          className={`flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold transition-colors ${expandedLoanStatsId === player.id ? "bg-warning/15 text-warning" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                          title={t("squad.loaned.loanPerformance")}
-                        >
-                          {expandedLoanStatsId === player.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                          {t("squad.loaned.statsBtn")}
-                        </button>
-                        {!isPastSeason && (
-                          <button
-                            onClick={() => handleRecall(player)}
-                            disabled={recallPlayer.isPending}
-                            className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
-                            title={t("squad.loaned.recallTitle")}
-                          >
-                            <RotateCcw size={13} />
-                            {t("squad.loaned.recall")}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                  {expandedLoanStatsId === player.id && (
-                    <tr key={`${player.id}-loan-stats`} className="border-b border-warning/20 bg-warning/5">
-                      <td colSpan={loanedBaseColumns.length + 3} className="px-4 py-4">
-                        <LoanStatsPanel saveId={saveId} player={player} isPastSeason={isPastSeason} />
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
+                <LoanedPlayerRow
+                  key={player.id}
+                  saveId={saveId}
+                  player={player}
+                  columns={loanedBaseColumns}
+                  loanedUntil={loanUntilByPlayer.get(player.id) ?? player.loanSeason ?? "—"}
+                  isPastSeason={isPastSeason}
+                  recallPending={recallPlayer.isPending}
+                  onView={(p) => { setViewingPlayer(p); setViewModalOpen(true); }}
+                  onEditStats={(p) => setLoanEditPlayer(p)}
+                  onRecall={handleRecall}
+                />
               ))}
               {!isLoadingLoanedPlayers && loanedPlayers.length === 0 && (
                 <tr>
@@ -701,6 +698,13 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
         player={editingPlayer}
         onSave={handleSavePlayer}
         saveId={saveId}
+      />
+
+      <LoanStatsModal
+        open={!!loanEditPlayer}
+        onOpenChange={(open) => { if (!open) setLoanEditPlayer(null); }}
+        saveId={saveId}
+        player={loanEditPlayer}
       />
 
       <AlertDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen}>
@@ -752,10 +756,13 @@ interface PlayerTableCellsProps {
   columns: SquadColumn[];
   player: ApiPlayer;
   squadRole?: SquadRole;
+  // When set (loaned players), the stat columns render these figures instead of
+  // the player's career stats, keeping loan performance isolated (rule 36).
+  statsOverride?: { matches?: number; goals?: number; assists?: number; goalContributions?: number; cleanSheets?: number };
 }
 
-function PlayerTableCells({ columns, player, squadRole }: PlayerTableCellsProps) {
-  const stats = player.currentSeasonStats || player.totalStats;
+function PlayerTableCells({ columns, player, squadRole, statsOverride }: PlayerTableCellsProps) {
+  const stats = statsOverride ?? player.currentSeasonStats ?? player.totalStats;
   const salaryLabel = player.salaryFormatted || (player.salary != null ? formatCurrencyInThousands(player.salary) : "—");
   const marketValueLabel = player.marketValueFormatted || (player.marketValue != null ? formatCurrencyInMillions(player.marketValue) : "—");
 
@@ -918,55 +925,118 @@ function SquadHighlight({ label, player, value, icon: Icon, tone, emptyText, emp
   );
 }
 
-interface LoanStatsPanelProps {
+interface LoanedPlayerRowProps {
   saveId: string;
   player: ApiPlayer;
+  columns: SquadColumn[];
+  loanedUntil: string;
   isPastSeason: boolean;
+  recallPending: boolean;
+  onView: (player: ApiPlayer) => void;
+  onEditStats: (player: ApiPlayer) => void;
+  onRecall: (player: ApiPlayer) => void;
 }
 
-function LoanStatsPanel({ saveId, player, isPastSeason }: LoanStatsPanelProps) {
+// A loaned player's inline stats are the isolated LoanStats (current loan
+// season), never their career stats — see business rule 36. We reuse
+// PlayerTableCells and just feed it the loan figures via statsOverride.
+function LoanedPlayerRow({ saveId, player, columns, loanedUntil, isPastSeason, recallPending, onView, onEditStats, onRecall }: LoanedPlayerRowProps) {
   const { t } = useTranslation();
-  const { data: loanStats = [], isLoading } = useLoanStats(saveId, player.id);
-  const updateLoanStats = useUpdateLoanStats();
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ goals: 0, assists: 0, matches: 0 });
-
+  const { data: loanStats = [] } = useLoanStats(saveId, player.id);
   const current = loanStats[loanStats.length - 1] ?? null;
-
-  const handleEdit = () => {
-    setForm({ goals: current?.goals ?? 0, assists: current?.assists ?? 0, matches: current?.matches ?? 0 });
-    setEditing(true);
+  const statsOverride = {
+    matches: current?.matches ?? 0,
+    goals: current?.goals ?? 0,
+    assists: current?.assists ?? 0,
+    goalContributions: current?.goalContributions ?? 0,
   };
+
+  return (
+    <tr className="border-b border-border/50 transition-colors hover:bg-muted/30">
+      <PlayerTableCells columns={columns} player={player} statsOverride={statsOverride} />
+      <td className="min-w-[160px] px-4 py-3 font-medium text-foreground">{player.loanedTo ?? "—"}</td>
+      <td className="px-4 py-3 text-muted-foreground">{loanedUntil}</td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => onView(player)}
+            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title={t("squad.viewDetails")}
+          >
+            <Eye size={14} />
+          </button>
+          {!isPastSeason && (
+            <>
+              <button
+                onClick={() => onEditStats(player)}
+                className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                title={t("squad.loaned.editStatsTitle")}
+              >
+                <Pencil size={13} />
+                <span>{t("squad.edit")}</span>
+              </button>
+              <button
+                onClick={() => onRecall(player)}
+                disabled={recallPending}
+                className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/10 disabled:opacity-50"
+                title={t("squad.loaned.recallTitle")}
+              >
+                <RotateCcw size={13} />
+                {t("squad.loaned.recall")}
+              </button>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+interface LoanStatsModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  saveId: string;
+  player: ApiPlayer | null;
+}
+
+function LoanStatsModal({ open, onOpenChange, saveId, player }: LoanStatsModalProps) {
+  const { t } = useTranslation();
+  const { data: loanStats = [] } = useLoanStats(saveId, player?.id ?? null);
+  const updateLoanStats = useUpdateLoanStats();
+  const current = loanStats[loanStats.length - 1] ?? null;
+  const [form, setForm] = useState({ matches: 0, goals: 0, assists: 0 });
+
+  useEffect(() => {
+    if (open) {
+      setForm({ matches: current?.matches ?? 0, goals: current?.goals ?? 0, assists: current?.assists ?? 0 });
+    }
+  }, [open, current?.matches, current?.goals, current?.assists]);
+
+  if (!player) return null;
 
   const handleSave = async () => {
     try {
       await updateLoanStats.mutateAsync({ saveId, playerId: player.id, data: form });
-      setEditing(false);
-    } catch (err: any) {
+      toast.success(t("squad.loaned.loanStatsUpdated", { name: player.name }), { duration: 3000 });
+      onOpenChange(false);
+    } catch (err) {
       toast.error(extractErrorMessage(err), { duration: 5000 });
     }
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Info size={13} className="shrink-0 text-warning" />
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-warning">
-          {t("squad.loaned.loanPerformance")}
-        </p>
-        <span className="rounded border border-warning/25 bg-warning/10 px-1.5 py-0.5 text-[9px] font-semibold text-warning/80">
-          {t("squad.loaned.loanPerformanceNote")}
-        </span>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="border-border bg-card sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display text-lg">{t("squad.loaned.loanPerformance")}</DialogTitle>
+          <DialogDescription>
+            {player.name}{player.loanedTo ? ` · ${player.loanedTo}` : ""} — {t("squad.loaned.loanPerformanceNote")}
+          </DialogDescription>
+        </DialogHeader>
 
-      {isLoading ? (
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 size={13} className="animate-spin" /> Loading…
-        </span>
-      ) : editing ? (
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="grid grid-cols-3 gap-3 py-2">
           {(["matches", "goals", "assists"] as const).map((field) => (
-            <div key={field} className="min-w-[80px]">
+            <div key={field}>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {t(`squad.loaned.loan_${field}`)}
               </label>
@@ -975,59 +1045,38 @@ function LoanStatsPanel({ saveId, player, isPastSeason }: LoanStatsPanelProps) {
                 min={0}
                 value={form[field]}
                 onChange={(e) => setForm((prev) => ({ ...prev, [field]: Math.max(0, parseInt(e.target.value) || 0) }))}
-                className="h-8 w-full rounded border border-border bg-background/50 px-2 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                className="h-9 w-full rounded-md border border-border bg-background/50 px-2 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
               />
             </div>
           ))}
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="rounded-md bg-muted px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t("squad.loaned.cancel")}
+          </button>
           <button
             onClick={handleSave}
             disabled={updateLoanStats.isPending}
-            className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {updateLoanStats.isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+            {updateLoanStats.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={14} />}
             {t("squad.loaned.save")}
           </button>
-          <button
-            onClick={() => setEditing(false)}
-            className="flex items-center gap-1 rounded-md bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <X size={12} />
-            {t("squad.loaned.cancel")}
-          </button>
         </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-4">
-          <StatChip label={t("squad.loaned.loan_matches")} value={current?.matches ?? 0} />
-          <StatChip label={t("squad.loaned.loan_goals")} value={current?.goals ?? 0} highlight />
-          <StatChip label={t("squad.loaned.loan_assists")} value={current?.assists ?? 0} />
-          <StatChip label="G/A" value={current?.goalContributions ?? 0} />
-          {loanStats.length > 1 && (
-            <span className="text-xs text-muted-foreground">
-              {t("squad.loaned.multiSeason", { count: loanStats.length })}
-            </span>
-          )}
-          {!isPastSeason && (
-            <button
-              onClick={handleEdit}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
-            >
-              <Pencil size={12} />
-              {t("squad.loaned.edit")}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function StatChip({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
-  return (
-    <div className="flex items-baseline gap-1.5">
-      <span className={`font-display text-lg font-bold leading-none ${highlight ? "text-primary" : "text-foreground"}`}>{value}</span>
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
-    </div>
-  );
+function computeLoanEndSeason(startSeason: string, loanSeasons: number): string {
+  const startYear = parseInt(startSeason.split("/")[0], 10);
+  if (isNaN(startYear)) return startSeason;
+  const endYear = startYear + Math.max(1, loanSeasons) - 1;
+  return `${endYear}/${String(endYear + 1).slice(-2)}`;
 }
 
 export default SquadScreen;
