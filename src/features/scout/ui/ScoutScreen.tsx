@@ -52,17 +52,22 @@ import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
 import { useRateLimitBackoff } from "@/features/scout/model/useRateLimitBackoff";
 import { filterOutCurrentClubPlayers, isSameClubName } from "@/features/scout/model/currentClubFilter";
+import { useShortlist, useAddShortlistItem, useRemoveShortlistItem } from "@/features/scout/model/useShortlist";
+import { useSavedSearches, useCreateSavedSearch, useDeleteSavedSearch } from "@/features/scout/model/useSavedSearches";
 import { usePlaybooks } from "@/features/playbooks/model/usePlaybooks";
 import {
   extractErrorMessage,
   fc26PlayersApi,
   type ApiPlaybook,
+  type ApiSavedSearch,
+  type ApiShortlistItem,
   type Fc26FitConfidence,
   type Fc26FitObjective,
   type Fc26Player,
   type Fc26PlayerFilters,
   type Fc26PlayerListParams,
   type PlayerPosition,
+  type ShortlistFc26Player,
 } from "@/shared/api/client";
 import { PLAYER_POSITIONS, POSITION_LABELS, formatPosition } from "@/shared/lib/playerPositions";
 import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/shared/lib/currency";
@@ -357,12 +362,6 @@ const DEFAULT_APPLIED_FILTERS: Fc26PlayerFilters = {
   limit: 20,
   offset: 0,
 };
-
-const SAVED_SCOUT_QUERIES_STORAGE_KEY = "fc-career-hub.saved-scout-queries";
-const MAX_SAVED_SCOUT_QUERIES = 25;
-const SCOUT_SHORTLIST_STORAGE_KEY = "fc-career-hub.scout-shortlist";
-const MAX_SHORTLIST_PLAYERS = 80;
-
 
 const GENERAL_RATING_FIELDS = ["pace", "shooting", "passing", "dribbling", "defending", "physic"] as const;
 const COMPARISON_RADAR_COLORS = [
@@ -916,38 +915,32 @@ function removeCurrentClubFromAppliedFilters(filters: AppliedScoutFilters, curre
   return nextFilters;
 }
 
-function loadSavedScoutQueries(): SavedScoutQuery[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(SAVED_SCOUT_QUERIES_STORAGE_KEY) ?? "[]");
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => item?.id && item?.filters && Array.isArray(item.results))
-      : [];
-  } catch {
-    return [];
-  }
+// The shortlist list endpoint embeds only a subset of Fc26Player. We widen it to
+// Fc26Player so the existing shortlist UI keeps working; detailed ratings (only
+// needed for the comparison radar) are absent on reload and render as "—".
+function shortlistEmbedToPlayer(embed: ShortlistFc26Player): Fc26Player {
+  return { ...embed, playerTags: [], playerTraits: [] } as Fc26Player;
 }
 
-function loadShortlistPlayers(): Fc26Player[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(SCOUT_SHORTLIST_STORAGE_KEY) ?? "[]");
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is Fc26Player => typeof item?.sofifaId === "number" && Array.isArray(item.positions))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function createQueryId() {
-  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
-    return window.crypto.randomUUID();
-  }
-
-  return `query-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+// A saved search persists only name + filters. We reconstruct the richer
+// SavedScoutQuery the UI expects; results/total are filled live for the selected
+// query (the FC26 dataset is read-only, so re-running the filters equals the old
+// cached snapshot — see business rule 23).
+function apiSavedSearchToQuery(item: ApiSavedSearch, club: string, season: string): SavedScoutQuery {
+  const filters = item.filters as AppliedScoutFilters;
+  const chips = getSavedQueryChips(filters);
+  return {
+    id: item.id,
+    title: item.name,
+    description: chips.length ? chips.join(" · ") : "Saved scout filters.",
+    source: "manual",
+    club,
+    season,
+    createdAt: item.createdAt,
+    filters,
+    results: [],
+    total: 0,
+  };
 }
 
 function getFilterPositions(filters: AppliedScoutFilters) {
@@ -1118,9 +1111,17 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const [comparisonPlayers, setComparisonPlayers] = useState<Fc26Player[]>([]);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [showAdvancedAttributes, setShowAdvancedAttributes] = useState(false);
-  const [savedQueries, setSavedQueries] = useState<SavedScoutQuery[]>(() => loadSavedScoutQueries());
-  const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(() => loadSavedScoutQueries()[0]?.id ?? null);
-  const [shortlistPlayers, setShortlistPlayers] = useState<Fc26Player[]>(() => loadShortlistPlayers());
+  const { data: shortlistData } = useShortlist(saveId);
+  const { data: savedSearchData } = useSavedSearches(saveId);
+  const addShortlistItem = useAddShortlistItem();
+  const removeShortlistItem = useRemoveShortlistItem();
+  const createSavedSearch = useCreateSavedSearch();
+  const deleteSavedSearch = useDeleteSavedSearch();
+  // Remembers full Fc26Player objects seen this session (search results / adds)
+  // so shortlisted players keep their detailed data for comparison; reloaded
+  // items fall back to the embedded subset.
+  const knownPlayersRef = useRef<Map<number, Fc26Player>>(new Map());
+  const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const {
@@ -1228,6 +1229,30 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     [players, visibleComparisonPlayers]
   );
   const comparedPlayerIds = useMemo(() => new Set(comparedPlayers.map((player) => player.sofifaId)), [comparedPlayers]);
+  useEffect(() => {
+    for (const player of players) knownPlayersRef.current.set(player.sofifaId, player);
+  }, [players]);
+
+  const shortlistItems = useMemo(() => shortlistData?.items ?? [], [shortlistData]);
+  const shortlistItemIdBySofifa = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const item of shortlistItems) {
+      if (item.fc26Player) map.set(item.fc26Player.sofifaId, item.id);
+    }
+    return map;
+  }, [shortlistItems]);
+  const shortlistPlayers = useMemo<Fc26Player[]>(
+    () =>
+      shortlistItems
+        .filter((item): item is ApiShortlistItem & { fc26Player: ShortlistFc26Player } => !!item.fc26Player)
+        .map((item) => knownPlayersRef.current.get(item.fc26Player.sofifaId) ?? shortlistEmbedToPlayer(item.fc26Player)),
+    [shortlistItems]
+  );
+  const savedQueries = useMemo<SavedScoutQuery[]>(
+    () => (savedSearchData?.items ?? []).map((item) => apiSavedSearchToQuery(item, currentClub, currentSeason)),
+    [savedSearchData, currentClub, currentSeason]
+  );
+
   const shortlistedPlayerIds = useMemo(() => new Set(shortlistPlayers.map((player) => player.sofifaId)), [shortlistPlayers]);
   const visibleShortlistPlayers = useMemo(() => filterOutCurrentClubPlayers(shortlistPlayers, currentClub), [shortlistPlayers, currentClub]);
   const shortlistGroups = useMemo(() => groupShortlistPlayers(visibleShortlistPlayers), [visibleShortlistPlayers]);
@@ -1237,10 +1262,28 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
     () => savedQueries.map((query) => filterSavedQueryForCurrentClub(query, currentClub)),
     [currentClub, savedQueries]
   );
-  const selectedSavedQuery = useMemo(
+  const baseSelectedQuery = useMemo(
     () => visibleSavedQueries.find((query) => query.id === selectedSavedQueryId) ?? visibleSavedQueries[0] ?? null,
     [selectedSavedQueryId, visibleSavedQueries]
   );
+  // Re-run the saved filters to fill the detail snapshot (only while viewing the
+  // archive; the FC26 dataset is read-only so this equals the old cached snapshot).
+  const { data: selectedSavedQueryData } = useFc26Players(
+    section === "archive" ? baseSelectedQuery?.filters ?? null : null,
+    saveId
+  );
+  const selectedSavedQuery = useMemo<SavedScoutQuery | null>(() => {
+    if (!baseSelectedQuery) return null;
+    const rawResults = selectedSavedQueryData?.players ?? [];
+    const results = filterOutCurrentClubPlayers(rawResults, currentClub);
+    const total = getCurrentClubFilteredTotal(selectedSavedQueryData?.total ?? results.length, rawResults, results);
+    return {
+      ...baseSelectedQuery,
+      results,
+      total,
+      description: `${formatInteger(total)} player${total === 1 ? "" : "s"} found in the FC 26 dataset.`,
+    };
+  }, [baseSelectedQuery, selectedSavedQueryData, currentClub]);
   const positionOptions = useMemo(
     () => (filterMetadata?.positions?.length ? filterMetadata.positions : PLAYER_POSITIONS).filter((position) => position !== "SA"),
     [filterMetadata?.positions]
@@ -1269,16 +1312,6 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
       return clubs.length === current.clubs.length ? current : { ...current, clubs };
     });
   }, [currentClub]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(SAVED_SCOUT_QUERIES_STORAGE_KEY, JSON.stringify(savedQueries));
-  }, [savedQueries]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(SCOUT_SHORTLIST_STORAGE_KEY, JSON.stringify(shortlistPlayers));
-  }, [shortlistPlayers]);
 
   useEffect(() => {
     if (selectedSavedQueryId && savedQueries.some((query) => query.id === selectedSavedQueryId)) return;
@@ -1330,23 +1363,24 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
       toast.error("Start a valid search before saving the query.", { duration: 4000 });
       return;
     }
+    if (!saveId) {
+      toast.error("Open a save to store scout queries.", { duration: 4000 });
+      return;
+    }
 
-    const savedQuery: SavedScoutQuery = {
-      id: createQueryId(),
-      title: createSavedQueryTitle(appliedFilters),
-      description: `${formatInteger(total)} player${total === 1 ? "" : "s"} found in the FC 26 dataset.`,
-      source: "manual",
-      club: currentClub,
-      season: currentSeason,
-      createdAt: new Date().toISOString(),
-      filters: { ...appliedFilters, offset: 0 },
-      results: players,
-      total,
-    };
-
-    setSavedQueries((current) => [savedQuery, ...current].slice(0, MAX_SAVED_SCOUT_QUERIES));
-    setSelectedSavedQueryId(savedQuery.id);
-    toast.success("Query saved in Scout folders.", { duration: 3000 });
+    createSavedSearch.mutate(
+      {
+        saveId,
+        data: { name: createSavedQueryTitle(appliedFilters), filters: { ...appliedFilters, offset: 0 } },
+      },
+      {
+        onSuccess: (created) => {
+          setSelectedSavedQueryId(created.id);
+          toast.success("Query saved in Scout folders.", { duration: 3000 });
+        },
+        onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+      }
+    );
   };
 
   const editSavedQuery = (query: SavedScoutQuery) => {
@@ -1360,32 +1394,62 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   };
 
   const removeSavedQuery = (queryId: string) => {
-    setSavedQueries((current) => current.filter((query) => query.id !== queryId));
-    toast.success("Query removed from folders.", { duration: 3000 });
+    if (!saveId) return;
+    if (selectedSavedQueryId === queryId) setSelectedSavedQueryId(null);
+    deleteSavedSearch.mutate(
+      { saveId, id: queryId },
+      {
+        onSuccess: () => toast.success("Query removed from folders.", { duration: 3000 }),
+        onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+      }
+    );
   };
 
   const toggleShortlistPlayer = (player: Fc26Player) => {
-    const isAlreadyShortlisted = shortlistPlayers.some((shortlistedPlayer) => shortlistedPlayer.sofifaId === player.sofifaId);
-
-    if (isAlreadyShortlisted) {
-      setShortlistPlayers((current) => current.filter((shortlistedPlayer) => shortlistedPlayer.sofifaId !== player.sofifaId));
-      setComparisonPlayers((current) => current.filter((comparedPlayer) => comparedPlayer.sofifaId !== player.sofifaId));
-      toast.success("Player removed from Shortlist.", { duration: 2500 });
+    if (!saveId) {
+      toast.error("Open a save to use the Shortlist.", { duration: 4000 });
       return;
     }
 
-    setShortlistPlayers((current) => [player, ...current].slice(0, MAX_SHORTLIST_PLAYERS));
-    toast.success("Player sent to Shortlist.", { duration: 2500 });
+    const itemId = shortlistItemIdBySofifa.get(player.sofifaId);
+    if (itemId) {
+      setComparisonPlayers((current) => current.filter((comparedPlayer) => comparedPlayer.sofifaId !== player.sofifaId));
+      removeShortlistItem.mutate(
+        { saveId, itemId },
+        {
+          onSuccess: () => toast.success("Player removed from Shortlist.", { duration: 2500 }),
+          onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+        }
+      );
+      return;
+    }
+
+    knownPlayersRef.current.set(player.sofifaId, player);
+    addShortlistItem.mutate(
+      { saveId, fc26PlayerId: player.id },
+      {
+        onSuccess: () => toast.success("Player sent to Shortlist.", { duration: 2500 }),
+        onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+      }
+    );
   };
 
   const removeShortlistPlayer = (sofifaId: number) => {
-    setShortlistPlayers((current) => current.filter((player) => player.sofifaId !== sofifaId));
+    if (!saveId) return;
+    const itemId = shortlistItemIdBySofifa.get(sofifaId);
     setComparisonPlayers((current) => {
       const nextPlayers = current.filter((player) => player.sofifaId !== sofifaId);
       if (nextPlayers.length < 2) setIsComparisonOpen(false);
       return nextPlayers;
     });
-    toast.success("Player removed from Shortlist.", { duration: 2500 });
+    if (!itemId) return;
+    removeShortlistItem.mutate(
+      { saveId, itemId },
+      {
+        onSuccess: () => toast.success("Player removed from Shortlist.", { duration: 2500 }),
+        onError: (err) => toast.error(extractErrorMessage(err), { duration: 5000 }),
+      }
+    );
   };
 
   const goToOffset = (nextOffset: number) => {

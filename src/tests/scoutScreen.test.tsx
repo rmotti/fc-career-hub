@@ -45,6 +45,18 @@ vi.mock("@/features/scout/model/useFc26Players", () => ({
   useFc26PlayerFilters: () => ({ data: undefined, isLoading: false }),
 }));
 
+vi.mock("@/features/scout/model/useShortlist", () => ({
+  useShortlist: () => ({ data: { items: [] } }),
+  useAddShortlistItem: () => ({ mutate: vi.fn(), isPending: false }),
+  useRemoveShortlistItem: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock("@/features/scout/model/useSavedSearches", () => ({
+  useSavedSearches: () => ({ data: { items: [] } }),
+  useCreateSavedSearch: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteSavedSearch: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 afterEach(() => {
   vi.clearAllMocks();
 });
