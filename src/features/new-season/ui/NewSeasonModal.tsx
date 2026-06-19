@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/ui/dialog";
-import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, DollarSign, Star, Loader2 } from "lucide-react";
+import { Trophy, Target, TrendingUp, BarChart3, Swords, ChevronRight, ChevronLeft, DollarSign, Star, Loader2, AlertTriangle } from "lucide-react";
 import { usePlayers } from "@/features/squad/model/usePlayers";
 import { useTeamStats } from "@/features/stats/model/useTeamStats";
 import { useTrophies } from "@/features/history/model/useTrophies";
@@ -31,8 +32,24 @@ function computeNextSeason(current: string | null | undefined): string | null {
   return `${nextStart}/${nextEnd}`;
 }
 
+// English ordinal suffix for the league-position badge (1st, 2nd, 3rd, 4th…).
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+}
+
 const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub, onConfirm }: Props) => {
-  const [step, setStep] = useState<"confirm" | "overview" | "budget">("confirm");
+  const { t } = useTranslation();
+  // Two steps now: the celebratory season recap, then the new-season setup.
+  // The old standalone "confirm" gate was a redundant second recap, so it's
+  // folded into the summary (nothing is destructive until the final confirm).
+  const [step, setStep] = useState<"summary" | "setup">("summary");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [budgetError, setBudgetError] = useState("");
@@ -46,16 +63,21 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
 
   const teamStats = getLeagueStats(teamStatsArr);
   const cupStats = teamStatsArr.filter((item) => item.competition?.type !== "League");
+  const wonCups = cupStats.filter((item) => item.cupResult && item.cupResult !== "NaoParticipou");
 
   const topScorers = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.goals ?? 0) - ((a.currentSeasonStats || a.totalStats)?.goals ?? 0)).slice(0, 3);
   const topAssisters = [...players].sort((a, b) => ((b.currentSeasonStats || b.totalStats)?.assists ?? 0) - ((a.currentSeasonStats || a.totalStats)?.assists ?? 0)).slice(0, 3);
   const totalMatches = teamStats ? teamStats.wins + teamStats.draws + teamStats.losses : 0;
 
   const nextSeason = computeNextSeason(save?.currentSeason ?? currentSeason);
-  const seasonTrophies = trophies.filter((t) => `${t.year}/${String(t.year + 1).slice(-2)}` === currentSeason);
+  const seasonTrophies = trophies.filter((tr) => `${tr.year}/${String(tr.year + 1).slice(-2)}` === currentSeason);
   const displayBudget = save && typeof save.budget === "number" ? formatCurrency(save.budget) : save?.budgetFormatted ?? "—";
   const displayBalance = save && typeof save.balance === "number" ? formatCurrency(save.balance) : save?.balanceFormatted ?? "—";
   const parsedBudget = parseBudgetInMillionsInput(budgetInput);
+
+  const hasTopScorers = topScorers.length > 0 && ((topScorers[0].currentSeasonStats || topScorers[0].totalStats)?.goals ?? 0) > 0;
+  const hasTopAssisters = topAssisters.length > 0 && ((topAssisters[0].currentSeasonStats || topAssisters[0].totalStats)?.assists ?? 0) > 0;
+  const hasAnyData = Boolean(teamStats) || wonCups.length > 0 || seasonTrophies.length > 0 || !!save?.balance;
 
   useEffect(() => {
     if (open) {
@@ -63,23 +85,21 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
     }
   }, [open, save?.europeanCompetitionId]);
 
-  const handleClose = (isOpen: boolean) => {
-    if (!isOpen) {
-      setStep("confirm");
-      setBudgetInput("");
-      setBudgetError("");
-      setNextEuropeanCompetitionId("none");
-    }
-    onOpenChange(isOpen);
+  const resetState = () => {
+    setStep("summary");
+    setBudgetInput("");
+    setBudgetError("");
+    setNextEuropeanCompetitionId("none");
   };
 
-  const handleConfirm = () => {
-    setStep("overview");
+  const handleClose = (isOpen: boolean) => {
+    if (!isOpen) resetState();
+    onOpenChange(isOpen);
   };
 
   const handleFinish = async () => {
     if (parsedBudget === null) {
-      setBudgetError("Enter a valid value in millions. E.g.: 150 = 150M.");
+      setBudgetError(t("newSeason.budgetError"));
       return;
     }
 
@@ -87,14 +107,11 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
     try {
       const success = await onConfirm(
         parsedBudget,
-        nextEuropeanCompetitionId === "none" ? null : nextEuropeanCompetitionId
+        nextEuropeanCompetitionId === "none" ? null : nextEuropeanCompetitionId,
       );
 
       if (success) {
-        setStep("confirm");
-        setBudgetInput("");
-        setBudgetError("");
-        setNextEuropeanCompetitionId("none");
+        resetState();
         onOpenChange(false);
       }
     } finally {
@@ -102,298 +119,171 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
     }
   };
 
-  const inputClass = "w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
-  const labelClass = "text-xs text-muted-foreground uppercase mb-1 block";
+  const cardClass = "rounded-lg border border-border bg-muted/40 p-4";
+  const sectionTitleClass = "font-display text-sm font-semibold text-foreground";
+  const microLabelClass = "text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-hidden p-0">
+      <DialogContent className="max-w-lg overflow-hidden border-border bg-card p-0">
         <ScrollArea className="max-h-[85vh]" viewportClassName="p-6" scrollbars="vertical">
-        {step === "confirm" ? (
+        {step === "summary" ? (
           <>
-            <DialogHeader>
-              <DialogTitle className="font-display text-lg">End Season</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to end season <strong>{currentSeason}</strong>?
-                Season statistics will be reset.
-              </DialogDescription>
+            <DialogHeader className="space-y-1.5">
+              <span className={microLabelClass}>{t("newSeason.summaryEyebrow")}</span>
+              <DialogTitle className="font-display text-xl font-bold">
+                {t("newSeason.summaryTitle", { season: currentSeason })}
+              </DialogTitle>
+              <DialogDescription>{currentClub}</DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 my-2">
-              {teamStats && (
-                <div className="bg-muted/50 rounded-lg p-3 border border-border space-y-2">
-                  {teamStats.leaguePosition && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">League position</span>
-                      <span className="font-display font-bold text-primary">{teamStats.leaguePosition}º</span>
-                    </div>
-                  )}
-                  {cupStats
-                    .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
-                    .map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{item.competition?.name ?? "Competition"}</span>
-                        <span className="font-display font-semibold">{CUP_LABELS[item.cupResult!] ?? item.cupResult}</span>
-                      </div>
+            <div className="mt-4 space-y-3">
+              {/* Trophies — the emotional payoff, surfaced first when present. */}
+              {seasonTrophies.length > 0 && (
+                <div className="rounded-lg border border-gold/30 bg-gold/5 p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Trophy size={16} className="text-gold" />
+                    <span className={sectionTitleClass}>{t("newSeason.trophiesWon")}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {seasonTrophies.map((tr) => (
+                      <span
+                        key={tr.id}
+                        className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold"
+                      >
+                        🏆 {formatTrophyLabel(tr)}
+                      </span>
                     ))}
-                  {!!save?.balance && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Final balance</span>
-                      <span className="font-display font-bold">{displayBalance}</span>
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground italic">
-                ℹ️ If you finish 1st in the league or win a cup, trophies will be added automatically.
-              </p>
-            </div>
+              {!hasAnyData && (
+                <p className="rounded-lg border border-border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+                  {t("newSeason.emptyState")}
+                </p>
+              )}
 
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={handleConfirm}
-                className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => handleClose(false)}
-                className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </>
-        ) : step === "budget" ? (
-          <>
-            <DialogHeader>
-              <DialogTitle className="font-display text-lg">New Season</DialogTitle>
-              <DialogDescription>Set the budget for the next season.</DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 my-2">
-              <div className="bg-muted/50 rounded-lg p-3 border border-border">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Season</span>
-                  {nextSeason
-                    ? <span className="font-display font-bold text-primary">{nextSeason}</span>
-                    : <span className="text-destructive-text text-xs">Invalid current season.</span>
-                  }
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>Season budget</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    autoFocus
-                    className={inputClass}
-                    value={budgetInput}
-                    onChange={(e) => {
-                      setBudgetInput(e.target.value);
-                      if (budgetError) setBudgetError("");
-                    }}
-                    onBlur={() => {
-                      if (!budgetInput.trim()) return;
-                      if (parsedBudget === null) {
-                        setBudgetError("Enter a valid value in millions. E.g.: 150 = 150M.");
-                      }
-                    }}
-                    placeholder="85"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">M€</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1.5">Enter the value in millions. E.g.: `150` = `150M`.</p>
-                {budgetError && <p className="text-xs text-destructive-text mt-1.5 font-medium">{budgetError}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>European competition</label>
-                <select
-                  className={inputClass}
-                  value={nextEuropeanCompetitionId}
-                  onChange={(e) => setNextEuropeanCompetitionId(e.target.value)}
-                >
-                  <option value="none">None</option>
-                  {europeanCompetitions.map((competition) => (
-                    <option key={competition.id} value={competition.id}>{competition.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={handleFinish}
-                disabled={!budgetInput.trim() || parsedBudget === null || !nextSeason || isSubmitting}
-                className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <><span>Confirm</span><ChevronRight size={16} /></>}
-              </button>
-              <button
-                onClick={() => handleClose(false)}
-                disabled={isSubmitting}
-                className="bg-muted text-muted-foreground px-5 py-2 rounded-md text-sm hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="font-display text-xl text-center">
-                📋 Season Summary {currentSeason}
-              </DialogTitle>
-              <DialogDescription className="text-center">
-                {currentClub} — Season ended
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              {/* League position & record */}
+              {/* League performance */}
               {teamStats && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className={cardClass}>
+                  <div className="mb-3 flex items-center gap-2">
                     <TrendingUp size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">League performance</span>
+                    <span className={sectionTitleClass}>{t("newSeason.leaguePerformance")}</span>
                     {teamStats.leaguePosition && (
-                      <span className="ml-auto bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold">
-                        {teamStats.leaguePosition}th place
+                      <span className="ml-auto rounded bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                        {t("newSeason.placeBadge", { place: ordinal(teamStats.leaguePosition) })}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-around">
-                    <div className="flex gap-4 text-center">
+                    <div className="flex gap-5 text-center">
                       <div>
-                        <p className="text-lg font-display font-bold text-primary">{teamStats.wins}</p>
-                        <p className="text-xs text-muted-foreground">W</p>
+                        <p className="stat-highlight text-lg">{teamStats.wins}</p>
+                        <p className={microLabelClass}>{t("newSeason.wins")}</p>
                       </div>
                       <div>
-                        <p className="text-lg font-display font-bold text-warning">{teamStats.draws}</p>
-                        <p className="text-xs text-muted-foreground">D</p>
+                        <p className="font-display text-lg font-bold text-warning">{teamStats.draws}</p>
+                        <p className={microLabelClass}>{t("newSeason.draws")}</p>
                       </div>
                       <div>
-                        <p className="text-lg font-display font-bold text-destructive-text">{teamStats.losses}</p>
-                        <p className="text-xs text-muted-foreground">L</p>
+                        <p className="font-display text-lg font-bold text-destructive-text">{teamStats.losses}</p>
+                        <p className={microLabelClass}>{t("newSeason.losses")}</p>
                       </div>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-display font-bold text-foreground">{totalMatches}</p>
-                      <p className="text-xs text-muted-foreground">Games</p>
+                      <p className="font-display text-lg font-bold text-foreground">{totalMatches}</p>
+                      <p className={microLabelClass}>{t("newSeason.games")}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Cup results */}
-              {cupStats.some((item) => item.cupResult && item.cupResult !== "NaoParticipou") && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-3">
+              {/* Cup competitions */}
+              {wonCups.length > 0 && (
+                <div className={cardClass}>
+                  <div className="mb-3 flex items-center gap-2">
                     <Star size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Cup competitions</span>
+                    <span className={sectionTitleClass}>{t("newSeason.cupCompetitions")}</span>
                   </div>
                   <div className="space-y-2">
-                    {cupStats
-                      .filter((item) => item.cupResult && item.cupResult !== "NaoParticipou")
-                      .map((item) => (
-                        <div key={item.id} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{item.competition?.name ?? "Competition"}</span>
-                          <span className={`font-display font-semibold ${item.cupResult === "Campeao" ? "text-yellow-500" : ""}`}>
-                            {CUP_LABELS[item.cupResult!] ?? item.cupResult}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Balance */}
-              {!!save?.balance && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Finances</span>
-                  </div>
-                  <div className="flex justify-around text-center">
-                    <div>
-                      <p className="text-lg font-display font-bold text-foreground">{displayBudget}</p>
-                      <p className="text-xs text-muted-foreground">Budget</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-display font-bold text-primary">{displayBalance}</p>
-                      <p className="text-xs text-muted-foreground">Final balance</p>
-                    </div>
+                    {wonCups.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{item.competition?.name ?? "—"}</span>
+                        <span className={`font-display font-semibold ${item.cupResult === "Campeao" ? "text-gold" : "text-foreground"}`}>
+                          {CUP_LABELS[item.cupResult!] ?? item.cupResult}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
               {/* Goals */}
               {teamStats && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className={cardClass}>
+                  <div className="mb-3 flex items-center gap-2">
                     <Swords size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Goals</span>
+                    <span className={sectionTitleClass}>{t("newSeason.goals")}</span>
                   </div>
                   <div className="flex justify-around text-center">
                     <div>
-                      <p className="text-2xl font-display font-bold text-primary">{teamStats.goalsPro}</p>
-                      <p className="text-xs text-muted-foreground">Scored</p>
+                      <p className="stat-highlight text-2xl">{teamStats.goalsPro}</p>
+                      <p className={microLabelClass}>{t("newSeason.scored")}</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-display font-bold text-destructive-text">{teamStats.goalsAgainst}</p>
-                      <p className="text-xs text-muted-foreground">Conceded</p>
+                      <p className="font-display text-2xl font-bold text-destructive-text">{teamStats.goalsAgainst}</p>
+                      <p className={microLabelClass}>{t("newSeason.conceded")}</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-display font-bold text-foreground">
+                      <p className="font-display text-2xl font-bold text-foreground">
                         {teamStats.goalsPro - teamStats.goalsAgainst > 0 ? "+" : ""}
                         {teamStats.goalsPro - teamStats.goalsAgainst}
                       </p>
-                      <p className="text-xs text-muted-foreground">GD</p>
+                      <p className={microLabelClass}>{t("newSeason.goalDifference")}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Trophies */}
-              {seasonTrophies.length > 0 && (
-                <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Trophy size={16} className="text-yellow-500" />
-                    <span className="font-display font-semibold text-sm">Titles Won</span>
+              {/* Finances */}
+              {!!save?.balance && (
+                <div className={cardClass}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <DollarSign size={16} className="text-primary" />
+                    <span className={sectionTitleClass}>{t("newSeason.finances")}</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {seasonTrophies.map((t) => (
-                      <span
-                        key={t.id}
-                        className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded-full text-xs font-semibold"
-                      >
-                        🏆 {formatTrophyLabel(t)}
-                      </span>
-                    ))}
+                  <div className="flex justify-around text-center">
+                    <div>
+                      <p className="font-display text-lg font-bold text-foreground">{displayBudget}</p>
+                      <p className={microLabelClass}>{t("newSeason.budget")}</p>
+                    </div>
+                    <div>
+                      <p className="stat-highlight text-lg">{displayBalance}</p>
+                      <p className={microLabelClass}>{t("newSeason.finalBalance")}</p>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Top scorers */}
-              {topScorers.length > 0 && ((topScorers[0].currentSeasonStats || topScorers[0].totalStats)?.goals ?? 0) > 0 && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-3">
+              {hasTopScorers && (
+                <div className={cardClass}>
+                  <div className="mb-3 flex items-center gap-2">
                     <Target size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Top Scorers</span>
+                    <span className={sectionTitleClass}>{t("newSeason.topScorers")}</span>
                   </div>
                   <div className="space-y-2">
                     {topScorers.filter((p) => ((p.currentSeasonStats || p.totalStats)?.goals ?? 0) > 0).map((p, i) => (
                       <div key={p.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                            i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                          }`}>{i + 1}</span>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{i + 1}</span>
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{formatPosition(p.position)}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.goals} goals</span>
+                        <span className="font-display font-bold text-primary">
+                          {t("newSeason.goalsCount", { count: (p.currentSeasonStats || p.totalStats)?.goals ?? 0 })}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -401,23 +291,23 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
 
               {/* Top assisters */}
-              {topAssisters.length > 0 && ((topAssisters[0].currentSeasonStats || topAssisters[0].totalStats)?.assists ?? 0) > 0 && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-3">
+              {hasTopAssisters && (
+                <div className={cardClass}>
+                  <div className="mb-3 flex items-center gap-2">
                     <BarChart3 size={16} className="text-primary" />
-                    <span className="font-display font-semibold text-sm">Top Assisters</span>
+                    <span className={sectionTitleClass}>{t("newSeason.topAssisters")}</span>
                   </div>
                   <div className="space-y-2">
                     {topAssisters.filter((p) => ((p.currentSeasonStats || p.totalStats)?.assists ?? 0) > 0).map((p, i) => (
                       <div key={p.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                            i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                          }`}>{i + 1}</span>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{i + 1}</span>
                           <span className="text-sm font-medium">{p.name}</span>
                           <span className="text-xs text-muted-foreground">{formatPosition(p.position)}</span>
                         </div>
-                        <span className="font-display font-bold text-primary">{(p.currentSeasonStats || p.totalStats)?.assists} ast.</span>
+                        <span className="font-display font-bold text-primary">
+                          {t("newSeason.assistsCount", { count: (p.currentSeasonStats || p.totalStats)?.assists ?? 0 })}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -425,14 +315,103 @@ const NewSeasonModal = ({ open, onOpenChange, saveId, currentSeason, currentClub
               )}
             </div>
 
-            {/* Next season button */}
-            <div className="pt-2">
+            {/* Consequence note + primary CTA, kept together so the destructive
+                side of advancing is read right before the action. */}
+            <div className="mt-5 space-y-3">
+              <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                <AlertTriangle size={13} className="mt-0.5 shrink-0 text-warning" />
+                <span>{t("newSeason.resetNote")}</span>
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep("setup")}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <span>{t("newSeason.startNewSeason")}</span>
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={() => handleClose(false)}
+                  className="rounded-md bg-muted px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {t("newSeason.cancel")}
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader className="space-y-1.5">
+              <DialogTitle className="font-display text-lg">
+                {nextSeason ? t("newSeason.setupTitle", { season: nextSeason }) : t("newSeason.title")}
+              </DialogTitle>
+              <DialogDescription>{t("newSeason.setupSubtitle")}</DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-4 space-y-4">
+              <div className={cardClass}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t("newSeason.season")}</span>
+                  {nextSeason
+                    ? <span className="font-display font-bold text-primary">{nextSeason}</span>
+                    : <span className="text-xs text-destructive-text">{t("newSeason.invalidSeason")}</span>}
+                </div>
+              </div>
+
+              <div>
+                <label className={`mb-1 block ${microLabelClass}`}>{t("newSeason.seasonBudget")}</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    autoFocus
+                    className="h-9 w-full rounded-md border border-border bg-background/50 px-3 pr-10 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                    value={budgetInput}
+                    onChange={(e) => {
+                      setBudgetInput(e.target.value);
+                      if (budgetError) setBudgetError("");
+                    }}
+                    onBlur={() => {
+                      if (!budgetInput.trim()) return;
+                      if (parsedBudget === null) setBudgetError(t("newSeason.budgetError"));
+                    }}
+                    placeholder="85"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">M€</span>
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">{t("newSeason.budgetHint")}</p>
+                {budgetError && <p className="mt-1.5 text-xs font-medium text-destructive-text">{budgetError}</p>}
+              </div>
+
+              <div>
+                <label className={`mb-1 block ${microLabelClass}`}>{t("newSeason.europeanCompetition")}</label>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-background/50 px-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                  value={nextEuropeanCompetitionId}
+                  onChange={(e) => setNextEuropeanCompetitionId(e.target.value)}
+                >
+                  <option value="none">{t("newSeason.none")}</option>
+                  {europeanCompetitions.map((competition) => (
+                    <option key={competition.id} value={competition.id}>{competition.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-5 flex gap-3">
               <button
-                onClick={() => setStep("budget")}
-                className="w-full bg-primary text-primary-foreground px-5 py-3 rounded-md font-display font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                onClick={() => setStep("summary")}
+                disabled={isSubmitting}
+                className="flex items-center gap-1.5 rounded-md bg-muted px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
-                <span>Start New Season</span>
-                <ChevronRight size={16} />
+                <ChevronLeft size={16} />
+                {t("newSeason.back")}
+              </button>
+              <button
+                onClick={handleFinish}
+                disabled={!budgetInput.trim() || parsedBudget === null || !nextSeason || isSubmitting}
+                className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <span>{t("newSeason.finish")}</span>}
               </button>
             </div>
           </>
