@@ -114,6 +114,8 @@ API calls are proxied through the app's own origin — a [Vercel rewrite](vercel
 - Player profile badges such as elite, top scorer, playmaker, rising, prospect, veteran, and more.
 - Add, edit, view, and release players through modals.
 - Track OVR, potential, market value, salary, role, shirt number, nationality, alternative positions, and season stats.
+- Loaned-out players appear in a dedicated table with their on-loan performance (apps, goals, assists, contributions) shown inline like the main squad, plus the destination club and a **Loaned until** column derived from the loan duration.
+- Edit a loaned player's on-loan stats in isolation — they never count toward career history or club records — and recall them from loan before the season ends.
 
 ### Field
 
@@ -126,17 +128,18 @@ API calls are proxied through the app's own origin — a [Vercel rewrite](vercel
 ### Transfers
 
 - Current window and full history views.
-- Register purchases, sales, incoming loans, and outgoing loans.
+- Register purchases, sales, incoming loans, and outgoing loans (choose a 1- or 2-season loan duration).
 - Automatically reflect transfer activity in the financial snapshot.
 - Add purchased players to the squad and complete their profile.
 - Filter historical transfers by type, season, and value order.
 
 ### Scout (PRO / PREMIUM)
 
-- AI-powered player search via a chat interface backed by an MCP server.
+- AI-powered player search via a chat interface (Junior) backed by an MCP server.
+- Chat history is persisted server-side per save (`useJuniorChat`): conversations and messages live in the database — no `localStorage` — so the thread roams across devices and sessions. A conversation is created on the first message, the API derives the context between turns, and past conversations can be reopened or deleted from the history panel.
 - Advanced filter search across the full player database.
-- Shortlist to bookmark and compare candidates.
-- Query archive for previous searches.
+- Shortlist to bookmark and compare candidates, persisted server-side per save (`useShortlist`).
+- Query archive for previous searches, persisted server-side per save (`useSavedSearches`); since the FC26 dataset is read-only, a saved search re-runs its filters live instead of caching a result snapshot.
 - Playbooks: configurable weight profiles that shape how `fitScore` is computed per candidate.
 
 ### Season Statistics
