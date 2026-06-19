@@ -32,6 +32,7 @@ import {
   Target,
   TrendingDown,
   TrendingUp,
+  type LucideIcon,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -140,7 +141,7 @@ function TrajectoryTooltip({ active, payload, label }: {
 // dual-axis plot.
 function TrajectoryChart({ title, icon: Icon, iconClass, data, dataKey, color, yDomain, yWidth, allowDecimals, yTickFormatter }: {
   title: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   iconClass: string;
   data: Array<{ season: string; ovr: number | null; marketValue: Money<"M"> | null }>;
   dataKey: "ovr" | "marketValue";
