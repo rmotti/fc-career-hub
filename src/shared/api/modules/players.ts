@@ -33,6 +33,8 @@ export interface ApiPlayer {
   currentSeasonStats?: ApiPlayerSeasonStats;
   totalStats?: { goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; };
   history?: Array<{ season: string; goals: number; assists: number; yellowCards: number; redCards: number; matches?: number; goalContributions?: number; cleanSheets: number; }>;
+  /** Distinct clubs the player appeared for in this save, in chronological order. Only present in the default list variant (no ?active / ?loaned). */
+  clubs?: string[];
   // Enriched on the detail endpoint (GET /saves/:saveId/players/:playerId).
   // `seasons` is the merged, chronologically-ordered (oldest → newest) source of
   // truth for the trajectory chart and per-season table. `loanSpells` is purely

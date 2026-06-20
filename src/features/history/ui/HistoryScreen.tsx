@@ -165,7 +165,7 @@ const HistoryScreen = ({ saveId }: Props) => {
       name: player.name,
       total: player.totalStats?.goals ?? 0,
       matches: player.totalStats?.matches ?? 0,
-      clubs: [...new Set(((player as any).history ?? []).map((entry: any) => entry.club).filter(Boolean))] as string[],
+      clubs: player.clubs ?? [],
     }))
     .filter((player) => player.total > 0)
     .sort((a, b) => b.total - a.total);
@@ -175,7 +175,7 @@ const HistoryScreen = ({ saveId }: Props) => {
       name: player.name,
       total: player.totalStats?.assists ?? 0,
       matches: player.totalStats?.matches ?? 0,
-      clubs: [...new Set(((player as any).history ?? []).map((entry: any) => entry.club).filter(Boolean))] as string[],
+      clubs: player.clubs ?? [],
     }))
     .filter((player) => player.total > 0)
     .sort((a, b) => b.total - a.total);
@@ -186,7 +186,7 @@ const HistoryScreen = ({ saveId }: Props) => {
       total: player.totalStats?.matches ?? 0,
       goals: player.totalStats?.goals ?? 0,
       assists: player.totalStats?.assists ?? 0,
-      clubs: [...new Set(((player as any).history ?? []).map((entry: any) => entry.club).filter(Boolean))] as string[],
+      clubs: player.clubs ?? [],
     }))
     .filter((player) => player.total > 0)
     .sort((a, b) => b.total - a.total);
@@ -198,7 +198,7 @@ const HistoryScreen = ({ saveId }: Props) => {
       goals: player.totalStats?.goals ?? 0,
       assists: player.totalStats?.assists ?? 0,
       matches: player.totalStats?.matches ?? 0,
-      clubs: [...new Set(((player as any).history ?? []).map((entry: any) => entry.club).filter(Boolean))] as string[],
+      clubs: player.clubs ?? [],
     }))
     .filter((player) => player.total > 0)
     .sort((a, b) => b.total - a.total);
@@ -364,10 +364,19 @@ const HistoryScreen = ({ saveId }: Props) => {
 
         <div className="mt-5 grid gap-4 lg:grid-cols-4">
           <HallOfFameCard
+            label={t("history.hallOfFame.mostMatches")}
+            icon={Shield}
+            tone="gold"
+            players={allByMatches.slice(0, 3)}
+            meta={allByMatches[0] ? `${allByMatches[0].goals}G ${allByMatches[0].assists}A` : undefined}
+            valueLabel={t("history.hallOfFame.matches")}
+            onExpand={() => setOpenModal("matches")}
+          />
+          <HallOfFameCard
             label={t("history.hallOfFame.topScorer")}
             icon={Goal}
             tone="primary"
-            player={allScorers[0]}
+            players={allScorers.slice(0, 3)}
             meta={allScorers[0] ? `${allScorers[0].matches || "-"} ${t("history.hallOfFame.matches")}` : undefined}
             valueLabel={t("history.hallOfFame.goals")}
             onExpand={() => setOpenModal("scorers")}
@@ -376,25 +385,16 @@ const HistoryScreen = ({ saveId }: Props) => {
             label={t("history.hallOfFame.topAssister")}
             icon={Sparkles}
             tone="accent"
-            player={allAssisters[0]}
+            players={allAssisters.slice(0, 3)}
             meta={allAssisters[0] ? `${allAssisters[0].matches || "-"} ${t("history.hallOfFame.matches")}` : undefined}
             valueLabel={t("history.hallOfFame.assists")}
             onExpand={() => setOpenModal("assisters")}
           />
           <HallOfFameCard
-            label={t("history.hallOfFame.mostMatches")}
-            icon={Shield}
-            tone="gold"
-            player={allByMatches[0]}
-            meta={allByMatches[0] ? `${allByMatches[0].goals}G ${allByMatches[0].assists}A` : undefined}
-            valueLabel={t("history.hallOfFame.matches")}
-            onExpand={() => setOpenModal("matches")}
-          />
-          <HallOfFameCard
             label={t("history.hallOfFame.mostContributions")}
             icon={Medal}
             tone="primary"
-            player={allByGoalContributions[0]}
+            players={allByGoalContributions.slice(0, 3)}
             meta={allByGoalContributions[0] ? `${allByGoalContributions[0].goals}G ${allByGoalContributions[0].assists}A` : undefined}
             valueLabel={t("history.hallOfFame.contributions")}
             onExpand={() => setOpenModal("contributions")}
@@ -831,6 +831,7 @@ const RankingModalContent = ({
                     name={player.name}
                     clubs={player.clubs}
                     meta={getPlayerMeta(player, openModal, t)}
+                    rightMeta={getPlayerRightMeta(player, openModal, t)}
                     value={`${player.total} ${config.valueLabel}`}
                     tone={config.tone}
                   />
@@ -917,6 +918,13 @@ const getPlayerMeta = (player: PlayerRankingItem, openModal: ModalType, t: (key:
   return player.matches ? `${player.matches} ${t("history.hallOfFame.matches")}` : undefined;
 };
 
+const getPlayerRightMeta = (player: PlayerRankingItem, openModal: ModalType, t: (key: string) => string) => {
+  if (openModal === "contributions") {
+    return player.matches ? `${player.matches} ${t("history.hallOfFame.matches")}` : undefined;
+  }
+  return undefined;
+};
+
 const PlayerPodium = ({
   player,
   tone,
@@ -943,7 +951,7 @@ const PlayerPodium = ({
         <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{valueLabel}</p>
       </div>
     </div>
-    {meta && <p className="mt-4 text-xs text-muted-foreground">{meta}</p>}
+    {player.clubs.length > 0 && meta && <p className="mt-4 text-xs text-muted-foreground">{meta}</p>}
   </div>
 );
 
@@ -972,7 +980,7 @@ const HallOfFameCard = ({
   label,
   icon: Icon,
   tone,
-  player,
+  players,
   meta,
   valueLabel,
   onExpand,
@@ -980,44 +988,62 @@ const HallOfFameCard = ({
   label: string;
   icon: React.ElementType;
   tone: Tone;
-  player?: { name: string; total: number; clubs: string[] };
+  players: Array<{ name: string; total: number; clubs: string[] }>;
   meta?: string;
   valueLabel: string;
   onExpand: () => void;
-}) => (
-  <article className={`rounded-lg border p-4 ${toneBgClass[tone]}`}>
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <Icon size={17} className={toneClass[tone]} />
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      </div>
-      <button
-        type="button"
-        onClick={onExpand}
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        aria-label={`View ranking: ${label}`}
-        title={`View ranking: ${label}`}
-      >
-        <Plus size={14} />
-      </button>
-    </div>
+}) => {
+  const leader = players[0];
+  const runners = players.slice(1, 3);
 
-    {player ? (
-      <>
-        <p className="truncate font-display text-2xl font-bold leading-none text-foreground">{player.name}</p>
-        <p className="mt-2 min-h-4 truncate text-xs text-muted-foreground">{player.clubs.length > 0 ? player.clubs.join(", ") : meta}</p>
-        <div className="mt-5 flex items-end justify-end gap-3">
-          <span className={`font-display text-3xl font-bold leading-none ${toneClass[tone]}`}>
-            {player.total}
-            <span className="ml-1 text-sm font-semibold">{valueLabel}</span>
-          </span>
+  return (
+    <article className={`rounded-lg border p-4 ${toneBgClass[tone]}`}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Icon size={17} className={toneClass[tone]} />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
         </div>
-      </>
-    ) : (
-      <p className="text-sm text-muted-foreground">Not enough records.</p>
-    )}
-  </article>
-);
+        <button
+          type="button"
+          onClick={onExpand}
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background/30 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+          aria-label={`View ranking: ${label}`}
+          title={`View ranking: ${label}`}
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      {leader ? (
+        <>
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="truncate font-display text-2xl font-bold leading-none text-foreground">{leader.name}</p>
+            <span className={`shrink-0 font-display text-3xl font-bold leading-none ${toneClass[tone]}`}>
+              {leader.total}<span className="ml-1 text-sm font-semibold">{valueLabel}</span>
+            </span>
+          </div>
+          <p className="mt-2 min-h-4 truncate text-xs text-muted-foreground">{leader.clubs.length > 0 ? leader.clubs.join(", ") : meta}</p>
+
+          {runners.length > 0 && (
+            <div className="mt-3 space-y-1.5 border-t border-border/50 pt-3">
+              {runners.map((player, i) => (
+                <div key={player.name} className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="w-4 shrink-0 text-[10px] text-muted-foreground">{i + 2}.</span>
+                    <p className="truncate text-xs text-muted-foreground">{player.name}</p>
+                  </div>
+                  <span className={`shrink-0 text-xs font-bold ${toneClass[tone]}`}>{player.total}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground">Not enough records.</p>
+      )}
+    </article>
+  );
+};
 
 const TransferRecordCard = ({
   title,
@@ -1068,6 +1094,7 @@ const PlayerRecordRow = ({
   name,
   clubs,
   meta,
+  rightMeta,
   value,
   tone,
 }: {
@@ -1075,6 +1102,7 @@ const PlayerRecordRow = ({
   name: string;
   clubs: string[];
   meta?: string;
+  rightMeta?: string;
   value: string;
   tone: Tone;
 }) => (
@@ -1087,7 +1115,7 @@ const PlayerRecordRow = ({
       </div>
     </div>
     <div className="flex shrink-0 items-center gap-3">
-      {meta && <span className="hidden text-xs text-muted-foreground sm:inline">{meta}</span>}
+      {(rightMeta ?? meta) && <span className="hidden text-xs text-muted-foreground sm:inline">{rightMeta ?? meta}</span>}
       <span className={`text-sm font-bold ${toneClass[tone]}`}>{value}</span>
     </div>
   </div>
