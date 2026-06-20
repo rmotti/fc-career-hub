@@ -497,7 +497,7 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
 
       <div data-tour="squad-table" className="card-gamer overflow-hidden">
         <div data-tour="squad-controls" className="border-b border-border p-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex flex-wrap gap-2">
               {viewOptions.map((option) => {
                 const Icon = option.icon;
@@ -520,8 +520,8 @@ const SquadScreen = ({ saveId, selectedSeason, currentSeason }: Props) => {
               })}
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative min-w-[220px]">
+            <div className="flex flex-col gap-2">
+              <div className="relative w-full min-w-[220px]">
                 <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={searchTerm}
