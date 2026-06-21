@@ -1,6 +1,6 @@
 import { type Money } from "@/shared/lib/money";
 import { appendNumberParam, request } from "../http";
-import { type Fc26PlayerFilters, type Fc26PlayerPosition, type Fc26PlayersResponse } from "./fc26-players";
+import { type Fc26FitConfidence, type Fc26PlayerFilters, type Fc26PlayerPosition, type Fc26PlayersResponse } from "./fc26-players";
 import { type PlayerPosition } from "./players";
 
 // ─── Scout Playbooks ────────────────────────────────────────────────
@@ -19,8 +19,9 @@ export interface PlaybookWeights {
 
 export interface PlaybookPreferences {
   objective?: PlaybookObjective;
-  idealAgeMin?: number;
-  idealAgeMax?: number;
+  // `idealAgeMin`/`idealAgeMax` were discontinued in the B-003 scoring redesign:
+  // age is now a fixed "younger is better" curve, so there is no ideal range. The
+  // API still accepts them for backwards compatibility but ignores them.
   maxMarketValue?: number;
   maxWage?: number;
 }
@@ -84,6 +85,11 @@ export type ShortlistPriority = "LOW" | "MEDIUM" | "HIGH";
 // `fc26Player` select in the API's shortlist.service). Only present on the list
 // (GET) response — create/update return the bare item without it. Money fields
 // carry the same units as the full Fc26Player.
+//
+// The fit fields are computed by the list endpoint with the save's active club +
+// default-playbook objective (same number shown on the scouting screen). They are
+// fail-open: present but null when there's no active club or the fit service is
+// unavailable.
 export interface ShortlistFc26Player {
   id: number;
   sofifaId: number;
@@ -99,6 +105,9 @@ export interface ShortlistFc26Player {
   marketValue: Money<"M"> | null;
   wage: Money<"k"> | null;
   playerFaceUrl: string | null;
+  fitScore?: number | null;
+  fitConfidence?: Fc26FitConfidence | null;
+  fitProfileSize?: number | null;
 }
 
 export interface ApiShortlistItem {

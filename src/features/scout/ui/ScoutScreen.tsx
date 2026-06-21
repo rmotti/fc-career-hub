@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -49,12 +49,13 @@ import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, Responsi
 import { toast } from "sonner";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { useFc26Player, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
+import { useFc26Player, useFc26PlayerDetails, useFc26PlayerFilters, useFc26Players } from "@/features/scout/model/useFc26Players";
 import { useRateLimitBackoff } from "@/features/scout/model/useRateLimitBackoff";
 import { filterOutCurrentClubPlayers, isSameClubName } from "@/features/scout/model/currentClubFilter";
 import { useShortlist, useAddShortlistItem, useRemoveShortlistItem } from "@/features/scout/model/useShortlist";
 import { useSavedSearches, useCreateSavedSearch, useDeleteSavedSearch } from "@/features/scout/model/useSavedSearches";
 import { usePlaybooks } from "@/features/playbooks/model/usePlaybooks";
+import { useSave } from "@/features/saves/model/useSaves";
 import {
   extractErrorMessage,
   fc26PlayersApi,
@@ -71,7 +72,7 @@ import {
 } from "@/shared/api/client";
 import { PLAYER_POSITIONS, POSITION_LABELS, formatPosition } from "@/shared/lib/playerPositions";
 import { formatCurrencyInMillions, formatCurrencyInThousands } from "@/shared/lib/currency";
-import { m, type Money } from "@/shared/lib/money";
+import { k, m, type Money } from "@/shared/lib/money";
 import ReactMarkdown from "react-markdown";
 import { useJuniorChat, type ChatConversation } from "@/features/scout/model/useJuniorChat";
 
@@ -1052,54 +1053,171 @@ function getAverageOvr(players: Fc26Player[]) {
   return Math.round(players.reduce((total, player) => total + player.ovr, 0) / players.length);
 }
 
-const SHORTLIST_OBJECTIVE_AGE_DEFAULTS: Record<string, { min: number; max: number }> = {
-  balanced: { min: 21, max: 29 },
-  title:    { min: 24, max: 31 },
-  youth:    { min: 16, max: 23 },
-  rebuild:  { min: 18, max: 25 },
+// Shared scout-score context, provided once at the screen root so the deeply
+// nested player-row leaves can (a) reference the save budget (M€) used as the
+// market-value reference when a playbook sets no cap, and (b) open the score
+// breakdown modal — both without prop-drilling through the tree.
+interface ScoutScoreContextValue {
+  budgetMillions: number | null;
+  openBreakdown: (player: Fc26Player) => void;
+}
+const ScoutScoreContext = createContext<ScoutScoreContextValue>({
+  budgetMillions: null,
+  openBreakdown: () => {},
+});
+
+const clampScore = (value: number) => Math.max(0, Math.min(100, value));
+
+// "Younger is better" curve mirroring the B-003 engine; the penalty accelerates
+// with age. Anchors from the spec: 22≈86, 30≈52, 34≈30.
+function ageCurveScore(age: number) {
+  return clampScore(100 - 1.04 * Math.pow(Math.max(0, age - 16), 1.45));
+}
+
+type ScoutComponentKey = "overall" | "potential" | "age" | "historicalFit" | "marketValue" | "wage";
+
+interface ScoutScoreComponent {
+  key: ScoutComponentKey;
+  label: string;
+  help: string;
+  weight: number; // raw configured weight
+  share: number | null; // normalized % of the available weight (null when unavailable)
+  score: number | null; // 0–100 (null when unavailable)
+  weightedScore: number | null; // contribution to the final score (the shares×scores sum to it)
+  valueLabel: string; // human-readable raw input (e.g. "85 OVR", "90 POT", "22 yo")
+  available: boolean;
+  reason?: string; // why a component does not contribute / is low confidence
+}
+
+interface ScoutScoreResult {
+  score: number | null;
+  components: ScoutScoreComponent[];
+}
+
+const SCOUT_COMPONENT_META: Record<ScoutComponentKey, { label: string; help: string }> = {
+  overall: { label: "Overall", help: "Normalized level (OVR 50→0, 95→100)" },
+  potential: { label: "Potential", help: "Normalized ceiling (POT 50→0, 95→100)" },
+  age: { label: "Age", help: "Younger scores higher (fixed curve)" },
+  historicalFit: { label: "Historical fit", help: "Club/position fit history" },
+  marketValue: { label: "Market value", help: "Budget slack — cheaper scores higher" },
+  wage: { label: "Wage", help: "Opt-in — needs a max wage" },
 };
 
-function computeScoutScore(player: Fc26Player, playbook: ApiPlaybook | null | undefined): number | null {
-  if (!playbook) return null;
+// Client-side preview of the API scout score (B-003), broken down per criterion so
+// the UI can explain how a score was reached. Each component is 0–100 and the final
+// score is the weighted average of the *available* ones. Mirrors the engine closely
+// but the backend remains the source of truth for ranking. `budgetMillions` is the
+// save budget (M€) used as the market-value reference when the playbook sets no cap.
+function buildScoutScore(
+  player: Fc26Player,
+  playbook: ApiPlaybook | null | undefined,
+  budgetMillions?: number | null,
+): ScoutScoreResult {
+  if (!playbook) return { score: null, components: [] };
   const weights = playbook.weights ?? {};
   const prefs = playbook.preferences ?? {};
-  const objective = prefs.objective ?? "balanced";
-  const ageDef = SHORTLIST_OBJECTIVE_AGE_DEFAULTS[objective] ?? SHORTLIST_OBJECTIVE_AGE_DEFAULTS.balanced;
-  const ageMin = prefs.idealAgeMin ?? ageDef.min;
-  const ageMax = prefs.idealAgeMax ?? ageDef.max;
 
-  const components: { weight: number; score: number }[] = [];
+  type Raw = Pick<ScoutScoreComponent, "key" | "weight" | "score" | "valueLabel" | "available" | "reason">;
+  const raw: Raw[] = [];
 
   if ((weights.overall ?? 0) > 0) {
-    components.push({ weight: weights.overall!, score: player.ovr });
+    // Normalized level: OVR 50→0, 95→100.
+    raw.push({
+      key: "overall",
+      weight: weights.overall!,
+      score: clampScore(((player.ovr - 50) / 45) * 100),
+      valueLabel: `${player.ovr} OVR`,
+      available: true,
+    });
   }
-  if ((weights.potential ?? 0) > 0 && player.potential != null) {
-    components.push({ weight: weights.potential!, score: player.potential });
+  if ((weights.potential ?? 0) > 0) {
+    // Ceiling/max quality, normalized like overall: POT 50→0, 95→100.
+    if (player.potential != null) {
+      raw.push({
+        key: "potential",
+        weight: weights.potential!,
+        score: clampScore(((player.potential - 50) / 45) * 100),
+        valueLabel: `${player.potential} POT`,
+        available: true,
+      });
+    } else {
+      raw.push({ key: "potential", weight: weights.potential!, score: null, valueLabel: "—", available: false, reason: "Potential unknown for this player." });
+    }
   }
   if ((weights.age ?? 0) > 0) {
-    let ageScore = 100;
-    if (player.age < ageMin) ageScore = Math.max(0, 100 + (player.age - ageMin) * 8);
-    else if (player.age > ageMax) ageScore = Math.max(0, 100 - (player.age - ageMax) * 8);
-    components.push({ weight: weights.age!, score: ageScore });
+    raw.push({ key: "age", weight: weights.age!, score: ageCurveScore(player.age), valueLabel: `${player.age} yo`, available: true });
   }
-  if ((weights.historicalFit ?? 0) > 0 && player.fitScore != null) {
-    const fitScore100 = Math.round(Math.min(Math.max(player.fitScore, 0), 1) * 100);
-    components.push({ weight: weights.historicalFit!, score: fitScore100 });
+  if ((weights.historicalFit ?? 0) > 0) {
+    const fitLoaded = typeof player.fitScore === "number" && Number.isFinite(player.fitScore);
+    if (player.fitConfidence === "none") {
+      // The engine evaluated the profile and found no usable history → counts as 0.
+      raw.push({ key: "historicalFit", weight: weights.historicalFit!, score: 0, valueLabel: "No profile", available: true, reason: "No historical profile yet — counts as 0." });
+    } else if (fitLoaded) {
+      const fitPct = Math.round(clampScore(Math.min(Math.max(player.fitScore!, 0), 1) * 100));
+      const lowConfidence = player.fitConfidence && player.fitConfidence !== "high";
+      raw.push({
+        key: "historicalFit",
+        weight: weights.historicalFit!,
+        score: fitPct,
+        valueLabel: `${fitPct}% fit`,
+        available: true,
+        reason: lowConfidence ? `Low-confidence fit (${FIT_CONFIDENCE_LABELS[player.fitConfidence!]}).` : undefined,
+      });
+    } else {
+      // Fit isn't present on this record — e.g. a shortlisted player loaded from the
+      // shortlist payload, which omits the ML fit fields. Mark it unavailable rather
+      // than pretending the profile is empty, so the score isn't deflated by a fake 0.
+      raw.push({ key: "historicalFit", weight: weights.historicalFit!, score: null, valueLabel: "Not loaded", available: false, reason: "Fit isn't loaded for this player — open it from a scout search to include it." });
+    }
   }
-  if ((weights.marketValue ?? 0) > 0 && prefs.maxMarketValue && player.marketValue != null) {
-    const maxMv = prefs.maxMarketValue * 1_000_000;
-    const score = player.marketValue <= maxMv ? 100 : Math.max(0, 100 - ((player.marketValue - maxMv) / maxMv) * 100);
-    components.push({ weight: weights.marketValue!, score });
+  if ((weights.marketValue ?? 0) > 0) {
+    // Budget slack: 100×(1 − value/B), B = playbook cap or save budget (both M€).
+    const capMillions = prefs.maxMarketValue ?? budgetMillions ?? null;
+    if (player.marketValue != null && capMillions && capMillions > 0) {
+      raw.push({
+        key: "marketValue",
+        weight: weights.marketValue!,
+        score: clampScore(100 * (1 - player.marketValue / capMillions)),
+        valueLabel: `${formatMarketValue(player.marketValue)} of ${formatMarketValue(m(capMillions))}`,
+        available: true,
+      });
+    } else if (player.marketValue == null) {
+      raw.push({ key: "marketValue", weight: weights.marketValue!, score: null, valueLabel: "—", available: false, reason: "No market value on record." });
+    } else {
+      raw.push({ key: "marketValue", weight: weights.marketValue!, score: null, valueLabel: formatMarketValue(player.marketValue), available: false, reason: "Set a max value, or open a save with a budget, to score market value." });
+    }
   }
-  if ((weights.wage ?? 0) > 0 && prefs.maxWage && player.wage != null) {
-    const score = player.wage <= prefs.maxWage ? 100 : Math.max(0, 100 - ((player.wage - prefs.maxWage) / prefs.maxWage) * 100);
-    components.push({ weight: weights.wage!, score });
+  if ((weights.wage ?? 0) > 0) {
+    // Opt-in: only scores when the playbook sets a max wage.
+    if (prefs.maxWage && prefs.maxWage > 0 && player.wage != null) {
+      raw.push({
+        key: "wage",
+        weight: weights.wage!,
+        score: clampScore(100 * (1 - player.wage / prefs.maxWage)),
+        valueLabel: `${formatWage(player.wage)} of ${formatWage(k(prefs.maxWage))}`,
+        available: true,
+      });
+    } else {
+      raw.push({ key: "wage", weight: weights.wage!, score: null, valueLabel: player.wage != null ? formatWage(player.wage) : "—", available: false, reason: "Set a max wage in the playbook to evaluate wage." });
+    }
   }
 
-  if (components.length === 0) return null;
-  const totalWeight = components.reduce((s, c) => s + c.weight, 0);
-  const weightedSum = components.reduce((s, c) => s + c.weight * c.score, 0);
-  return Math.round(weightedSum / totalWeight);
+  const availableWeight = raw.reduce((s, r) => s + (r.available ? r.weight : 0), 0);
+  const components: ScoutScoreComponent[] = raw.map((r) => {
+    const share = r.available && availableWeight > 0 ? (r.weight / availableWeight) * 100 : null;
+    const weightedScore = share != null && r.score != null ? (share / 100) * r.score : null;
+    return { ...r, label: SCOUT_COMPONENT_META[r.key].label, help: SCOUT_COMPONENT_META[r.key].help, share, weightedScore };
+  });
+  const score = availableWeight > 0 ? Math.round(components.reduce((s, c) => s + (c.weightedScore ?? 0), 0)) : null;
+  return { score, components };
+}
+
+function computeScoutScore(
+  player: Fc26Player,
+  playbook: ApiPlaybook | null | undefined,
+  budgetMillions?: number | null,
+): number | null {
+  return buildScoutScore(player, playbook, budgetMillions).score;
 }
 
 const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => {
@@ -1147,6 +1265,18 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const { data: playbooksData } = usePlaybooks(saveId ?? null);
   const activePlaybook =
     playbooksData?.playbooks.find((p) => p.isDefault) ?? playbooksData?.defaultPlaybook ?? null;
+
+  // Save budget (euros) backs the market-value score when a playbook sets no cap.
+  const { data: activeSave } = useSave(saveId ?? null);
+  const saveBudgetMillions =
+    activeSave?.budget != null ? activeSave.budget / 1_000_000 : null;
+
+  // Player whose score breakdown is open in the modal.
+  const [breakdownPlayer, setBreakdownPlayer] = useState<Fc26Player | null>(null);
+  const scoreContextValue = useMemo<ScoutScoreContextValue>(
+    () => ({ budgetMillions: saveBudgetMillions, openBreakdown: setBreakdownPlayer }),
+    [saveBudgetMillions],
+  );
 
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters, saveId);
   // A 429 here is rate limiting, not a hard failure: show a backoff countdown
@@ -1510,6 +1640,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
         : "Search players";
 
   return (
+    <ScoutScoreContext.Provider value={scoreContextValue}>
     <div className="mx-auto w-full max-w-[1500px] space-y-5">
       <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -1528,7 +1659,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           {isAiSection ? (
             <>
-              <SummaryPill label="Modo" value="Coach" icon={Bot} />
+              <SummaryPill label="Mode" value="Coach" icon={Bot} />
               <SummaryPill label="Status" value="Preview" icon={LockKeyhole} />
             </>
           ) : isArchiveSection ? (
@@ -1603,7 +1734,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background/45 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/25 hover:bg-primary/5 hover:text-primary"
                 >
                   <RotateCcw size={13} />
-                  Nova
+                  New
                 </button>
               </div>
             </div>
@@ -1913,6 +2044,11 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                       ? `${visibleStart}-${visibleEnd} of ${formatInteger(total)} players`
                       : "Set filters to start the search"}
                   </p>
+                  {hasSearched && typeof appliedFilters?.maxMarketValue === "number" && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground/70">
+                      Filtered by your value ceiling — pricier players are excluded.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1923,7 +2059,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   className="flex h-9 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <RotateCcw size={15} />
-                  Limpar
+                  Clear
                 </button>
                 <button
                   type="button"
@@ -2269,7 +2405,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                             onSort={toggleSort}
                           />
                         </th>
-                        <th className="px-4 py-3 font-semibold">Perfil</th>
+                        <th className="px-4 py-3 font-semibold">Profile</th>
                         <th className="px-4 py-3 font-semibold">Attributes</th>
                         <th className="px-4 py-3 font-semibold">Club</th>
                         <th className="px-4 py-3 text-right font-semibold">Value</th>
@@ -2326,6 +2462,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
       {isComparisonOpen && (
         <PlayerComparisonModal
           players={comparedPlayers}
+          activePlaybook={activePlaybook}
+          budgetMillions={saveBudgetMillions}
           onClose={() => setIsComparisonOpen(false)}
           onOpenDetails={(sofifaId) => {
             setIsComparisonOpen(false);
@@ -2334,7 +2472,17 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
           onRemove={removeComparedPlayer}
         />
       )}
+
+      {breakdownPlayer && (
+        <ScoreBreakdownModal
+          player={breakdownPlayer}
+          playbook={activePlaybook}
+          budgetMillions={saveBudgetMillions}
+          onClose={() => setBreakdownPlayer(null)}
+        />
+      )}
     </div>
+    </ScoutScoreContext.Provider>
   );
 };
 
@@ -2595,7 +2743,8 @@ function ShortlistPlayerRow({
   onOpenDetails: () => void;
   onRemove: () => void;
 }) {
-  const scoutScore = computeScoutScore(player, activePlaybook);
+  const { budgetMillions, openBreakdown } = useContext(ScoutScoreContext);
+  const scoutScore = computeScoutScore(player, activePlaybook, budgetMillions);
 
   return (
     <article className="grid gap-3 p-4 lg:grid-cols-[minmax(240px,1.4fr)_160px_180px_96px] lg:items-center">
@@ -2619,7 +2768,7 @@ function ShortlistPlayerRow({
       <div className="grid grid-cols-3 gap-2">
         <RatingPill label="OVR" value={player.ovr} />
         <RatingPill label="POT" value={player.potential} />
-        <ScorePill value={scoutScore} />
+        <ScorePill value={scoutScore} onClick={scoutScore !== null ? () => openBreakdown(player) : undefined} />
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -2988,7 +3137,7 @@ function AdvancedAttributeFilters({ open, activeCount, ranges, onToggle, onClear
                 className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
                 <RotateCcw size={13} />
-                Limpar atributos
+                Clear attributes
               </button>
             )}
           </div>
@@ -3113,7 +3262,7 @@ function MultiSelectCombobox({ label, placeholder, emptyLabel, options, selected
             onClick={() => onChange([])}
             className="text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
-            Limpar
+            Clear
           </button>
         )}
       </div>
@@ -3216,7 +3365,7 @@ function PlayerComparisonLauncher({ players, activePlaybook, onClear, onOpenComp
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
               <RotateCcw size={15} />
-              Limpar
+              Clear
             </button>
           )}
           <button
@@ -3267,16 +3416,42 @@ function PlayerComparisonLauncher({ players, activePlaybook, onClear, onOpenComp
 }
 
 function PlayerComparisonModal({
-  players,
+  players: rawPlayers,
+  activePlaybook,
+  budgetMillions,
   onClose,
   onOpenDetails,
   onRemove,
 }: {
   players: Fc26Player[];
+  activePlaybook: ApiPlaybook | null;
+  budgetMillions: number | null;
   onClose: () => void;
   onOpenDetails: (sofifaId: number) => void;
   onRemove: (sofifaId: number) => void;
 }) {
+  const { openBreakdown } = useContext(ScoutScoreContext);
+
+  // The list/shortlist objects lack the granular attributes (radar stats, body,
+  // foot, weak foot, skill moves…), so hydrate each player from the detail endpoint
+  // — the same source the individual analysis uses — keeping the save-context fit.
+  const sofifaIds = useMemo(() => rawPlayers.map((player) => player.sofifaId), [rawPlayers]);
+  const { byId: detailsById, isLoading: isLoadingDetails } = useFc26PlayerDetails(sofifaIds);
+  const players = useMemo(
+    () =>
+      rawPlayers.map((player) => {
+        const detail = detailsById.get(player.sofifaId);
+        if (!detail) return player;
+        return {
+          ...detail,
+          fitScore: player.fitScore ?? detail.fitScore,
+          fitConfidence: player.fitConfidence ?? detail.fitConfidence,
+          fitProfileSize: player.fitProfileSize ?? detail.fitProfileSize,
+        };
+      }),
+    [rawPlayers, detailsById],
+  );
+
   const leaderByAverage = useMemo(() => getBestMetricPlayer(players, getGeneralRatingAverage), [players]);
   const leaderByOvr = useMemo(() => getBestMetricPlayer(players, (player) => player.ovr), [players]);
   const leaderByGrowth = useMemo(() => getBestMetricPlayer(players, (player) => player.potential - player.ovr), [players]);
@@ -3310,6 +3485,11 @@ function PlayerComparisonModal({
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Scout comparison report</p>
             <h3 className="mt-1 truncate font-display text-xl font-bold text-foreground">{players.length} players selected</h3>
+            {isLoadingDetails && (
+              <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Loader2 size={11} className="animate-spin" /> Loading attributes…
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -3333,6 +3513,8 @@ function PlayerComparisonModal({
                   <ComparisonProfileCard
                     key={player.sofifaId}
                     player={player}
+                    score={computeScoutScore(player, activePlaybook, budgetMillions)}
+                    onOpenScore={() => openBreakdown(player)}
                     onOpenDetails={() => onOpenDetails(player.sofifaId)}
                     onRemove={() => onRemove(player.sofifaId)}
                   />
@@ -3403,6 +3585,7 @@ function PlayerComparisonModal({
 
               <ScrollArea scrollbars="horizontal" className="rounded-md border border-border bg-background/20" viewportClassName="pb-3">
                 <div className="space-y-4 p-3" style={{ minWidth: comparisonTableWidth }}>
+                  <ComparisonScoreTable players={players} playbook={activePlaybook} budgetMillions={budgetMillions} />
                   {COMPARISON_GROUPS.map((group) => (
                     <ComparisonGroupTable key={group.title} group={group} players={players} />
                   ))}
@@ -3418,10 +3601,14 @@ function PlayerComparisonModal({
 
 function ComparisonProfileCard({
   player,
+  score,
+  onOpenScore,
   onOpenDetails,
   onRemove,
 }: {
   player: Fc26Player;
+  score: number | null;
+  onOpenScore: () => void;
   onOpenDetails: () => void;
   onRemove: () => void;
 }) {
@@ -3435,9 +3622,12 @@ function ComparisonProfileCard({
               <h4 className="truncate font-display text-xl font-bold text-foreground">{player.name}</h4>
               <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? player.nation ?? "No club"}</p>
             </div>
-            <div className="text-right">
-              <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className={`font-display text-4xl font-bold leading-none ${getOvrClass(player.ovr)}`}>{player.ovr}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
+              </div>
+              <ScorePill value={score} onClick={score !== null ? onOpenScore : undefined} />
             </div>
           </div>
 
@@ -3489,7 +3679,8 @@ function ComparedPlayerCard({
   onOpenDetails: () => void;
   onRemove: () => void;
 }) {
-  const scoutScore = computeScoutScore(player, activePlaybook);
+  const { budgetMillions, openBreakdown } = useContext(ScoutScoreContext);
+  const scoutScore = computeScoutScore(player, activePlaybook, budgetMillions);
 
   return (
     <article className="rounded-md border border-border bg-background/35 p-3">
@@ -3521,7 +3712,7 @@ function ComparedPlayerCard({
       <div className="mb-3 grid grid-cols-3 gap-2">
         <RatingPill label="OVR" value={player.ovr} />
         <RatingPill label="POT" value={player.potential} />
-        <ScorePill value={scoutScore} />
+        <ScorePill value={scoutScore} onClick={scoutScore !== null ? () => openBreakdown(player) : undefined} />
       </div>
 
       <button
@@ -3697,7 +3888,7 @@ function PlayerTableRow({
             <PlayerAvatar player={player} size="md" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{player.name}</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.longName ?? player.nation ?? "Perfil FC26"}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{player.longName ?? player.nation ?? "FC26 Profile"}</p>
               {traits.length > 0 && (
                 <div className="mt-2 flex max-w-[210px] gap-1 overflow-hidden">
                   {traits.slice(0, 2).map((trait) => (
@@ -3721,7 +3912,7 @@ function PlayerTableRow({
               title={isShortlisted ? "Remove from Shortlist" : "Add to Shortlist"}
             >
               {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
-              <span>{isShortlisted ? "In list" : "Lista"}</span>
+              <span>{isShortlisted ? "In list" : "Shortlist"}</span>
             </button>
             <button
               type="button"
@@ -3864,7 +4055,7 @@ function PlayerMobileRow({
           }`}
         >
           {isShortlisted ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
-          <span className="truncate">{isShortlisted ? "Lista" : "Final"}</span>
+          <span className="truncate">{isShortlisted ? "In list" : "Shortlist"}</span>
         </button>
         <button
           type="button"
@@ -3952,22 +4143,296 @@ function RatingPill({ label, value }: { label: string; value: number | null }) {
   );
 }
 
-function ScorePill({ value }: { value: number | null }) {
-  const color =
-    value === null
-      ? "text-muted-foreground"
-      : value >= 75
-        ? "text-primary"
-        : value >= 55
-          ? "text-yellow-400"
-          : "text-muted-foreground";
+function scoreToneClass(value: number | null) {
+  // Recalibrated for the B-003 engine: overall/potential are normalized (50→0, 95→100)
+  // and market value carries 25% of the default weight, so the weighted average sits a
+  // bit lower than the old raw-rating formula. Green is reserved for strong targets.
+  if (value === null) return "text-muted-foreground";
+  if (value >= 65) return "text-primary";
+  if (value >= 45) return "text-yellow-400";
+  return "text-muted-foreground";
+}
+
+// Per-criterion scores carry full float precision for the math; round to 1 decimal
+// only for display.
+function formatScore(value: number | null): string {
+  return value === null ? "—" : value.toFixed(1);
+}
+
+function ScorePill({ value, onClick }: { value: number | null; onClick?: () => void }) {
+  const color = scoreToneClass(value);
+  const content = (
+    <>
+      <p className="text-[9px] font-semibold text-primary/70">SCORE</p>
+      <p className={`font-display text-sm font-bold ${color}`}>{value ?? "—"}</p>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title="View score breakdown"
+        className="group rounded border border-primary/20 bg-primary/8 px-2 py-1 text-center transition-colors hover:border-primary/50 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+      >
+        {content}
+      </button>
+    );
+  }
+
   return (
     <div
       className="rounded border border-primary/20 bg-primary/8 px-2 py-1 text-center"
       title={value !== null ? `Scout Score: ${value}/100` : "Score unavailable"}
     >
-      <p className="text-[9px] font-semibold text-primary/70">SCORE</p>
-      <p className={`font-display text-sm font-bold ${color}`}>{value ?? "—"}</p>
+      {content}
+    </div>
+  );
+}
+
+const SCOUT_COMPONENT_ICONS: Record<ScoutComponentKey, ElementType> = {
+  overall: Star,
+  potential: Sparkles,
+  age: Calendar,
+  historicalFit: Target,
+  marketValue: BadgeEuro,
+  wage: BadgeEuro,
+};
+
+function ScoreComponentRow({ component }: { component: ScoutScoreComponent }) {
+  const Icon = SCOUT_COMPONENT_ICONS[component.key];
+  return (
+    <div
+      className={`rounded-md border p-3 ${
+        component.available ? "border-border bg-background/35" : "border-border/40 bg-background/15 opacity-75"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon size={14} className="shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">{component.label}</p>
+            <p className="truncate text-[10px] text-muted-foreground/70">{component.help}</p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={`font-display text-lg font-bold leading-none ${scoreToneClass(component.score)}`}>
+            {formatScore(component.score)}
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            {component.share != null ? `${Math.round(component.share)}% weight` : `weight ${component.weight}`}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full ${component.available ? "bg-primary" : "bg-transparent"}`}
+          style={{ width: `${component.score ?? 0}%` }}
+        />
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
+        <span className="text-muted-foreground">{component.valueLabel}</span>
+        {component.weightedScore != null && (
+          <span className="text-muted-foreground">+{component.weightedScore.toFixed(1)} to score</span>
+        )}
+      </div>
+
+      {component.reason && (
+        <p className={`mt-1.5 text-[11px] ${component.available ? "text-muted-foreground/70" : "text-warning"}`}>
+          {component.reason}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ScoreBreakdownModal({
+  player,
+  playbook,
+  budgetMillions,
+  onClose,
+}: {
+  player: Fc26Player;
+  playbook: ApiPlaybook | null;
+  budgetMillions: number | null;
+  onClose: () => void;
+}) {
+  const { score, components } = useMemo(
+    () => buildScoutScore(player, playbook, budgetMillions),
+    [player, playbook, budgetMillions],
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm sm:p-5"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Scout score breakdown for ${player.name}`}
+        onMouseDown={(event) => event.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-md border border-border bg-card shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <PlayerAvatar player={player} size="md" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Scout score</p>
+              <h3 className="truncate font-display text-lg font-bold text-foreground">{player.name}</h3>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {playbook ? `Playbook · ${playbook.name}` : "No active playbook"}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="text-right">
+              <p className={`font-display text-3xl font-bold leading-none ${scoreToneClass(score)}`}>{score ?? "—"}</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">/ 100</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close breakdown"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="p-4" scrollbars="vertical">
+          {!playbook ? (
+            <p className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
+              Set up a playbook to score players in the scout.
+            </p>
+          ) : components.length === 0 ? (
+            <p className="rounded-md border border-border bg-background/35 p-4 text-sm text-muted-foreground">
+              This playbook has no weighted criteria.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {components.map((component) => (
+                <ScoreComponentRow key={component.key} component={component} />
+              ))}
+            </div>
+          )}
+          <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground/70">
+            Weighted average of the available criteria, mirroring the scout engine. The server
+            stays the source of truth for the final ranking.
+          </p>
+        </ScrollArea>
+      </section>
+    </div>
+  );
+}
+
+function ComparisonScoreTable({
+  players,
+  playbook,
+  budgetMillions,
+}: {
+  players: Fc26Player[];
+  playbook: ApiPlaybook | null;
+  budgetMillions: number | null;
+}) {
+  const evaluated = useMemo(
+    () => players.map((player) => ({ player, result: buildScoutScore(player, playbook, budgetMillions) })),
+    [players, playbook, budgetMillions],
+  );
+
+  if (!playbook) {
+    return (
+      <div className="overflow-hidden rounded-md border border-border bg-card/55">
+        <div className="flex items-center gap-2 border-b border-border bg-muted/25 px-3 py-2">
+          <SlidersHorizontal size={15} className="text-primary" />
+          <p className="font-display text-sm font-bold text-foreground">Scout Score</p>
+        </div>
+        <p className="px-3 py-3 text-xs text-muted-foreground">
+          Set a default playbook to compare scout scores side by side.
+        </p>
+      </div>
+    );
+  }
+
+  // All players share the active playbook, so the criteria set is identical.
+  const criteria = evaluated.find((e) => e.result.components.length)?.result.components ?? [];
+  const bestFinal = Math.max(...evaluated.map((e) => e.result.score ?? Number.NEGATIVE_INFINITY));
+  const bestByKey = new Map<ScoutComponentKey, number>();
+  criteria.forEach((crit) => {
+    const scores = evaluated
+      .map((e) => e.result.components.find((c) => c.key === crit.key)?.score)
+      .filter((s): s is number => typeof s === "number");
+    if (new Set(scores).size > 1) bestByKey.set(crit.key, Math.max(...scores));
+  });
+
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-card/55">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/25 px-3 py-2">
+        <SlidersHorizontal size={15} className="text-primary" />
+        <p className="font-display text-sm font-bold text-foreground">Scout Score</p>
+        <span className="truncate text-[11px] text-muted-foreground">· {playbook.name}</span>
+      </div>
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b border-border text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+            <th className="w-[220px] px-3 py-2 font-semibold">Criterion</th>
+            {evaluated.map(({ player }) => (
+              <th key={player.sofifaId} className="min-w-[180px] px-3 py-2 font-semibold">
+                <span className="block truncate">{player.name}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-border bg-background/30">
+            <td className="w-[220px] px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              Final score
+            </td>
+            {evaluated.map(({ player, result }) => {
+              const isBest = result.score != null && result.score === bestFinal;
+              return (
+                <td key={player.sofifaId} className={`min-w-[180px] px-3 py-2 ${isBest ? "bg-primary/10" : ""}`}>
+                  <span className={`font-display text-xl font-bold ${scoreToneClass(result.score)}`}>
+                    {result.score ?? "—"}
+                  </span>
+                </td>
+              );
+            })}
+          </tr>
+          {criteria.map((crit) => (
+            <tr key={crit.key} className="border-b border-border last:border-b-0">
+              <td className="w-[220px] px-3 py-2 text-xs font-semibold text-muted-foreground">{crit.label}</td>
+              {evaluated.map(({ player, result }) => {
+                const comp = result.components.find((c) => c.key === crit.key);
+                const isBest = comp?.score != null && bestByKey.get(crit.key) === comp.score;
+                return (
+                  <td
+                    key={player.sofifaId}
+                    title={comp?.reason ?? comp?.valueLabel}
+                    className={`min-w-[180px] px-3 py-2 text-sm ${
+                      comp?.score == null
+                        ? "text-muted-foreground/50"
+                        : isBest
+                          ? "bg-primary/10 font-semibold text-primary"
+                          : "text-foreground"
+                    }`}
+                  >
+                    <span className="block truncate">
+                      {formatScore(comp?.score ?? null)}
+                      <span className="ml-1 text-[10px] text-muted-foreground/70">{comp?.valueLabel}</span>
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

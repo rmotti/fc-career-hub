@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { fc26PlayersApi, type Fc26PlayerFilters, type Fc26PlayerListParams } from "@/shared/api/client";
 import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
@@ -30,6 +30,26 @@ export function useFc26Player(sofifaId: number | null) {
     queryFn: () => fc26PlayersApi.get(sofifaId!),
     enabled: typeof sofifaId === "number",
     staleTime: CACHE_TTL.fc26Players,
+  });
+}
+
+// Hydrates several players' full detail records (all attributes) at once, keyed by
+// sofifaId. The scout list/shortlist payloads omit the granular attributes the
+// comparison view needs, so we pull them from the detail endpoint — the same source
+// the individual analysis uses. Shares the per-player cache with useFc26Player.
+export function useFc26PlayerDetails(sofifaIds: number[]) {
+  return useQueries({
+    queries: sofifaIds.map((sofifaId) => ({
+      queryKey: ["fc26-players", sofifaId],
+      queryFn: () => fc26PlayersApi.get(sofifaId),
+      staleTime: CACHE_TTL.fc26Players,
+    })),
+    combine: (results) => ({
+      byId: new Map(
+        results.flatMap((result, index) => (result.data ? [[sofifaIds[index], result.data] as const] : [])),
+      ),
+      isLoading: results.some((result) => result.isLoading),
+    }),
   });
 }
 

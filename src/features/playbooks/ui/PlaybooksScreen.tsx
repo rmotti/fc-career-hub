@@ -65,34 +65,25 @@ const OBJECTIVE_OPTIONS: Array<{ value: PlaybookObjective; label: string; color:
 ];
 
 const WEIGHT_COMPONENTS: Array<{ key: keyof PlaybookWeights; label: string; description: string; defaultVal: number }> = [
-  { key: "overall", label: "Overall", description: "Player OVR (0–99)", defaultVal: 35 },
-  { key: "potential", label: "Potential", description: "Player potential (0–99)", defaultVal: 20 },
-  { key: "age", label: "Age", description: "Penalizes outside ideal range", defaultVal: 20 },
-  { key: "historicalFit", label: "Historical fit", description: "ML score based on club/position", defaultVal: 25 },
-  { key: "marketValue", label: "Market value", description: "Active only with limit defined", defaultVal: 0 },
-  { key: "wage", label: "Wage", description: "Active only with limit defined", defaultVal: 0 },
+  { key: "overall", label: "Overall", description: "Normalized level (OVR 50→0, 95→100)", defaultVal: 30 },
+  { key: "potential", label: "Potential", description: "Normalized ceiling (POT 50→0, 95→100)", defaultVal: 15 },
+  { key: "age", label: "Age", description: "Younger scores higher (fixed curve)", defaultVal: 15 },
+  { key: "historicalFit", label: "Historical fit", description: "Club/position fit (0 without a profile)", defaultVal: 15 },
+  { key: "marketValue", label: "Market value", description: "Budget slack — cheaper scores higher", defaultVal: 25 },
+  { key: "wage", label: "Wage", description: "Opt-in — set a max wage to enable", defaultVal: 0 },
 ];
 
-const OBJECTIVE_AGE_DEFAULTS: Record<PlaybookObjective, { min: number; max: number }> = {
-  balanced: { min: 21, max: 29 },
-  title: { min: 24, max: 31 },
-  youth: { min: 16, max: 23 },
-  rebuild: { min: 18, max: 25 },
-};
-
 const OBJECTIVE_WEIGHT_PRESETS: Record<PlaybookObjective, Record<keyof PlaybookWeights, number>> = {
-  balanced: { overall: 35, potential: 20, age: 20, historicalFit: 25, marketValue: 0, wage: 0 },
-  title:    { overall: 45, potential: 15, age: 15, historicalFit: 25, marketValue: 0, wage: 0 },
-  youth:    { overall: 15, potential: 35, age: 35, historicalFit: 15, marketValue: 0, wage: 0 },
-  rebuild:  { overall: 25, potential: 30, age: 25, historicalFit: 20, marketValue: 0, wage: 0 },
+  balanced: { overall: 30, potential: 15, age: 15, historicalFit: 15, marketValue: 25, wage: 0 },
+  title:    { overall: 40, potential: 10, age: 10, historicalFit: 15, marketValue: 25, wage: 0 },
+  youth:    { overall: 15, potential: 30, age: 30, historicalFit: 15, marketValue: 10, wage: 0 },
+  rebuild:  { overall: 20, potential: 25, age: 20, historicalFit: 15, marketValue: 20, wage: 0 },
 };
 
 interface FormState {
   name: string;
   objective: PlaybookObjective;
   weights: Record<keyof PlaybookWeights, string>;
-  idealAgeMin: string;
-  idealAgeMax: string;
   maxMarketValue: string;
   maxWage: string;
   isDefault: boolean;
@@ -102,9 +93,7 @@ function buildDefaultForm(): FormState {
   return {
     name: "",
     objective: "balanced",
-    weights: { overall: "35", age: "20", historicalFit: "25", potential: "20", marketValue: "0", wage: "0" },
-    idealAgeMin: "",
-    idealAgeMax: "",
+    weights: { overall: "30", age: "15", historicalFit: "15", potential: "15", marketValue: "25", wage: "0" },
     maxMarketValue: "",
     maxWage: "",
     isDefault: false,
@@ -123,8 +112,6 @@ function playbookToForm(p: ApiPlaybook): FormState {
       marketValue: String(p.weights?.marketValue ?? 0),
       wage: String(p.weights?.wage ?? 0),
     },
-    idealAgeMin: p.preferences?.idealAgeMin != null ? String(p.preferences.idealAgeMin) : "",
-    idealAgeMax: p.preferences?.idealAgeMax != null ? String(p.preferences.idealAgeMax) : "",
     maxMarketValue: p.preferences?.maxMarketValue != null ? String(p.preferences.maxMarketValue) : "",
     maxWage: p.preferences?.maxWage != null ? String(p.preferences.maxWage) : "",
     isDefault: p.isDefault ?? false,
@@ -132,17 +119,16 @@ function playbookToForm(p: ApiPlaybook): FormState {
 }
 
 function formToApiPayload(form: FormState, saveId: string) {
+  // Send every component explicitly — including 0. The API treats an *omitted* weight as
+  // "use the system default" (overall 30, historicalFit 15, …), so dropping the zeros here
+  // made metrics the user deliberately zeroed reappear with their default value.
   const weights: PlaybookWeights = {};
   for (const comp of WEIGHT_COMPONENTS) {
     const val = parseInt(form.weights[comp.key] ?? "0", 10);
-    if (!isNaN(val) && val > 0) weights[comp.key] = val;
+    weights[comp.key] = !isNaN(val) && val > 0 ? val : 0;
   }
 
   const preferences: PlaybookPreferences = { objective: form.objective };
-  const ageMin = parseInt(form.idealAgeMin, 10);
-  const ageMax = parseInt(form.idealAgeMax, 10);
-  if (!isNaN(ageMin)) preferences.idealAgeMin = ageMin;
-  if (!isNaN(ageMax)) preferences.idealAgeMax = ageMax;
   const mv = parseFloat(form.maxMarketValue);
   if (!isNaN(mv) && mv > 0) preferences.maxMarketValue = mv;
   const wage = parseFloat(form.maxWage);
@@ -312,9 +298,7 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
         </div>
       </div>
 
-      {(playbook.preferences?.idealAgeMin != null ||
-        playbook.preferences?.idealAgeMax != null ||
-        playbook.preferences?.maxMarketValue != null ||
+      {(playbook.preferences?.maxMarketValue != null ||
         playbook.preferences?.maxWage != null) && (
         <div className="border-t border-border">
           <button
@@ -326,17 +310,11 @@ function PlaybookCard({ playbook, isSystem, onEdit, onDelete, onSetDefault, sett
           </button>
           {expanded && (
             <div className="grid grid-cols-2 gap-2 px-4 pb-4 text-xs">
-              {playbook.preferences?.idealAgeMin != null && (
-                <Pref label="Min age" value={playbook.preferences.idealAgeMin} />
-              )}
-              {playbook.preferences?.idealAgeMax != null && (
-                <Pref label="Max age" value={playbook.preferences.idealAgeMax} />
-              )}
               {playbook.preferences?.maxMarketValue != null && (
                 <Pref label="Max value" value={`€${playbook.preferences.maxMarketValue}M`} />
               )}
               {playbook.preferences?.maxWage != null && (
-                <Pref label="Max wage" value={playbook.preferences.maxWage} />
+                <Pref label="Max wage" value={`€${playbook.preferences.maxWage}K/wk`} />
               )}
             </div>
           )}
@@ -371,30 +349,38 @@ function WeightInput({
   value,
   onChange,
   totalWeight,
+  disabled = false,
+  disabledReason,
 }: {
   label: string;
   description: string;
   value: string;
   onChange: (v: string) => void;
   totalWeight: number;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const numVal = Math.max(0, parseInt(value, 10) || 0);
-  const isActive = numVal > 0;
+  const isActive = numVal > 0 && !disabled;
   const remaining = 100 - totalWeight; // budget left (can be negative if somehow over)
   const budgetExhausted = remaining <= 0 && numVal === 0;
+  const isDisabled = disabled || budgetExhausted;
 
   return (
     <div
+      title={disabled ? disabledReason : undefined}
       className={`rounded-md border p-3 transition-colors ${
         isActive ? "border-border bg-background/35" : "border-border/40 bg-background/15"
-      } ${budgetExhausted ? "opacity-40" : ""}`}
+      } ${isDisabled ? "opacity-40" : ""}`}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className={`text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground/60"}`}>
             {label}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground/60">{description}</p>
+          <p className="truncate text-[10px] text-muted-foreground/60">
+            {disabled && disabledReason ? disabledReason : description}
+          </p>
         </div>
         <span
           className={`font-display text-xl font-bold leading-none tabular-nums ${
@@ -414,7 +400,7 @@ function WeightInput({
         min={0}
         max={100}
         step={1}
-        disabled={budgetExhausted}
+        disabled={isDisabled}
         className="cursor-grab active:cursor-grabbing"
       />
     </div>
@@ -492,22 +478,18 @@ function PlaybookSheet({
   const total = totalWeight(form.weights);
   const active = activeWeightCount(form.weights);
   const isEditing = editingPlaybook !== null;
-  const budgetWeightsActive =
-    parseInt(form.weights.marketValue ?? "0", 10) > 0 ||
-    parseInt(form.weights.wage ?? "0", 10) > 0;
+  // Wage is opt-in: it only scores when a max wage is set (B-003). Without it the
+  // API returns the wage component as unavailable, so we disable its weight here.
+  const hasMaxWage = parseFloat(form.maxWage) > 0;
 
   const handleObjectiveChange = (objective: PlaybookObjective) => {
-    const ageDefaults = OBJECTIVE_AGE_DEFAULTS[objective];
     const weightPreset = OBJECTIVE_WEIGHT_PRESETS[objective];
-    const patches: Partial<FormState> = {
+    onFormChange({
       objective,
       weights: Object.fromEntries(
         Object.entries(weightPreset).map(([k, v]) => [k, String(v)])
       ) as FormState["weights"],
-    };
-    if (!form.idealAgeMin) patches.idealAgeMin = String(ageDefaults.min);
-    if (!form.idealAgeMax) patches.idealAgeMax = String(ageDefaults.max);
-    onFormChange(patches);
+    });
   };
 
   return (
@@ -552,6 +534,9 @@ function PlaybookSheet({
                 Objective
               </label>
               <ObjectiveSelect value={form.objective} onChange={handleObjectiveChange} />
+              <p className="text-[10px] text-muted-foreground/60">
+                Tunes the historical-fit profile. It no longer changes the age curve.
+              </p>
             </div>
 
             {/* Weights */}
@@ -591,6 +576,8 @@ function PlaybookSheet({
                     value={form.weights[comp.key]}
                     onChange={(v) => onWeightChange(comp.key, v)}
                     totalWeight={total}
+                    disabled={comp.key === "wage" && !hasMaxWage}
+                    disabledReason="Set a max wage to evaluate wage"
                   />
                 ))}
               </div>
@@ -600,49 +587,11 @@ function PlaybookSheet({
               </p>
             </div>
 
-            {/* Age range */}
+            {/* Budget & caps */}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Ideal age range
+                Budget &amp; caps
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Minimum</p>
-                  <Input
-                    type="number"
-                    min={15}
-                    max={45}
-                    placeholder={String(OBJECTIVE_AGE_DEFAULTS[form.objective].min)}
-                    value={form.idealAgeMin}
-                    onChange={(e) => onFormChange({ idealAgeMin: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Maximum</p>
-                  <Input
-                    type="number"
-                    min={15}
-                    max={45}
-                    placeholder={String(OBJECTIVE_AGE_DEFAULTS[form.objective].max)}
-                    value={form.idealAgeMax}
-                    onChange={(e) => onFormChange({ idealAgeMax: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Budget (only relevant if marketValue/wage weights active) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Budget
-                </label>
-                {!budgetWeightsActive && (
-                  <span className="text-[10px] text-muted-foreground/60">
-                    Enable market/wage weights to take effect
-                  </span>
-                )}
-              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="mb-1 text-[10px] text-muted-foreground">Max value (M€)</p>
@@ -652,21 +601,24 @@ function PlaybookSheet({
                     placeholder="E.g.: 30"
                     value={form.maxMarketValue}
                     onChange={(e) => onFormChange({ maxMarketValue: e.target.value })}
-                    disabled={!budgetWeightsActive}
                   />
                 </div>
                 <div>
-                  <p className="mb-1 text-[10px] text-muted-foreground">Max wage</p>
+                  <p className="mb-1 text-[10px] text-muted-foreground">Max wage (K€/wk)</p>
                   <Input
                     type="number"
                     min={0}
-                    placeholder="FC26 format"
+                    placeholder="E.g.: 80"
                     value={form.maxWage}
                     onChange={(e) => onFormChange({ maxWage: e.target.value })}
-                    disabled={!budgetWeightsActive}
                   />
                 </div>
               </div>
+              <p className="text-[10px] text-muted-foreground/60">
+                Caps act as a hard filter — players above them are excluded. Max value also
+                feeds the market-value score (it falls back to the save budget). Max wage
+                enables the wage score.
+              </p>
             </div>
 
             {/* Set as default */}

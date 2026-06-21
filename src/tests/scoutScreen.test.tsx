@@ -34,6 +34,10 @@ vi.mock("@/features/playbooks/model/usePlaybooks", () => ({
   usePlaybooks: () => ({ data: { playbooks: [], defaultPlaybook: null } }),
 }));
 
+vi.mock("@/features/saves/model/useSaves", () => ({
+  useSave: () => ({ data: null }),
+}));
+
 vi.mock("@/features/scout/model/useFc26Players", () => ({
   useFc26Players: () => ({
     data: undefined,
@@ -44,6 +48,7 @@ vi.mock("@/features/scout/model/useFc26Players", () => ({
     refetch: vi.fn(),
   }),
   useFc26Player: () => ({ data: null, isError: false, isLoading: false, error: null }),
+  useFc26PlayerDetails: () => ({ byId: new Map(), isLoading: false }),
   useFc26PlayerFilters: () => ({ data: undefined, isLoading: false }),
 }));
 
