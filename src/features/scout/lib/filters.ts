@@ -233,7 +233,7 @@ export function getSortValue(player: Fc26Player, sortBy: ScoutSortBy) {
   if (sortBy === "fitScore") {
     if (player.fitConfidence === "none") return null;
     if (typeof player.fitScore !== "number" || !Number.isFinite(player.fitScore)) return null;
-    return Math.round(Math.min(Math.max(player.fitScore, 0), 1) * 100);
+    return Math.round(Math.min(Math.max(player.fitScore, 0), 100));
   }
   return sortBy === "potential" ? player.potential : player.ovr;
 }

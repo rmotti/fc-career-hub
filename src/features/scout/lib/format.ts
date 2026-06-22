@@ -67,7 +67,7 @@ export function getVisibleFitScore(player: Pick<Fc26Player, "fitScore" | "fitCon
   if (player.fitConfidence === "none") return null;
   if (typeof player.fitScore !== "number" || !Number.isFinite(player.fitScore)) return null;
 
-  return Math.round(Math.min(Math.max(player.fitScore, 0), 1) * 100);
+  return Math.round(Math.min(Math.max(player.fitScore, 0), 100));
 }
 
 export function hasVisibleFitScore(player: Pick<Fc26Player, "fitScore" | "fitConfidence">) {
@@ -90,7 +90,7 @@ export function getFitScoreTitle(player: Pick<Fc26Player, "fitScore" | "fitConfi
       ? `, perfil com ${player.fitProfileSize} registro${player.fitProfileSize === 1 ? "" : "s"}`
       : "";
 
-  return `Fit score ${score}/100, ${confidence}${profileSize}`;
+  return `Fit ${score}/100 — quão parecido este jogador é com as contratações que o clube costuma fazer nesta posição (50 ≈ contratação típica). ${confidence}${profileSize}`;
 }
 
 export function getOvrClass(ovr: number) {
@@ -128,8 +128,8 @@ export function formatSavedQueryDate(value: string) {
 
 export function scoreToneClass(value: number | null) {
   if (value === null) return "text-muted-foreground";
-  if (value >= 65) return "text-primary";
-  if (value >= 45) return "text-yellow-400";
+  if (value >= 70) return "text-primary";
+  if (value >= 40) return "text-yellow-400";
   return "text-muted-foreground";
 }
 
