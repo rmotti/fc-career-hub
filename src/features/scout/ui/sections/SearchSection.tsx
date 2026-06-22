@@ -1,7 +1,7 @@
 import { useEffect, useMemo, type MutableRefObject } from "react";
 import { ChevronLeft, ChevronRight, Loader2, LockKeyhole, RotateCcw, Save, Search } from "lucide-react";
 import { toast } from "sonner";
-import type { ApiPlaybook, Fc26FitObjective, Fc26Player } from "@/shared/api/client";
+import type { ApiPlaybook, Fc26FitObjective, Fc26Player, PlayerPosition } from "@/shared/api/client";
 import { extractErrorMessage } from "@/shared/api/client";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Players, useFc26PlayerFilters } from "@/features/scout/model/useFc26Players";
@@ -159,7 +159,7 @@ export function SearchSection({
     });
   }, [currentClub, setDraft]);
 
-  const togglePrimaryPosition = (position: string) => {
+  const togglePrimaryPosition = (position: PlayerPosition) => {
     setDraft((current) => ({
       ...current,
       primaryPositions: current.primaryPositions.includes(position)
@@ -168,7 +168,7 @@ export function SearchSection({
     }));
   };
 
-  const toggleSecondaryPosition = (position: string) => {
+  const toggleSecondaryPosition = (position: PlayerPosition) => {
     setDraft((current) => ({
       ...current,
       secondaryPositions: current.secondaryPositions.includes(position)
