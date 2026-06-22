@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type MutableRefObject } from "react";
+import { useContext, useEffect, useMemo, type MutableRefObject } from "react";
 import { ChevronLeft, ChevronRight, Loader2, LockKeyhole, RotateCcw, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 import type { ApiPlaybook, Fc26FitObjective, Fc26Player, PlayerPosition } from "@/shared/api/client";
@@ -25,6 +25,7 @@ import {
   isPlayStylePlus,
 } from "@/features/scout/lib/filters";
 import { hasVisibleFitScore } from "@/features/scout/lib/format";
+import { ScoutScoreContext } from "@/features/scout/lib/scoutScore";
 import type { AppliedScoutFilters, DraftFilters, ScoutSortBy, ScoutSortOrder } from "@/features/scout/ui/types";
 import { PositionFilterGrid, FilterNumberInput, AdvancedAttributeFilters, MultiSelectCombobox } from "@/features/scout/ui/components/search";
 import { SortHeaderButton, FeaturedPlayer, PlayerTableRow, PlayerMobileRow } from "@/features/scout/ui/components/results";
@@ -77,6 +78,7 @@ export function SearchSection({
   onPlayersChange,
   onStatsChange,
 }: SearchSectionProps) {
+  const { openFitBreakdown } = useContext(ScoutScoreContext);
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters, saveId);
   const { isRateLimited: isScoutRateLimited, retryAfterSeconds: scoutRetryAfterSeconds } = useRateLimitBackoff(error);
   const { data: filterMetadata, isLoading: isLoadingFilters } = useFc26PlayerFilters();
@@ -640,6 +642,7 @@ export function SearchSection({
                       onSelect={() => onOpenDetails(player.sofifaId)}
                       onToggleCompare={() => onToggleCompare(player)}
                       onToggleShortlist={() => onToggleShortlist(player)}
+                      onOpenFitBreakdown={() => openFitBreakdown(player)}
                     />
                   ))}
                 </tbody>
@@ -657,6 +660,7 @@ export function SearchSection({
                   onSelect={() => onOpenDetails(player.sofifaId)}
                   onToggleCompare={() => onToggleCompare(player)}
                   onToggleShortlist={() => onToggleShortlist(player)}
+                  onOpenFitBreakdown={() => openFitBreakdown(player)}
                 />
               ))}
             </div>

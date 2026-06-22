@@ -28,7 +28,7 @@ import { createDefaultDraft } from "@/features/scout/config/options";
 import type { AppliedScoutFilters, DraftFilters, SavedScoutQuery, ScoutSection } from "@/features/scout/ui/types";
 import { PlayerDetailDrawer } from "@/features/scout/ui/components/detail";
 import { PlayerComparisonModal } from "@/features/scout/ui/components/comparison";
-import { ScoreBreakdownModal } from "@/features/scout/ui/components/score";
+import { FitBreakdownModal, ScoreBreakdownModal } from "@/features/scout/ui/components/score";
 import { AssistantCoachSection } from "@/features/scout/ui/sections/AssistantCoachSection";
 import { ArchiveSection } from "@/features/scout/ui/sections/ArchiveSection";
 import { ShortlistSection } from "@/features/scout/ui/sections/ShortlistSection";
@@ -64,6 +64,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [showAdvancedAttributes, setShowAdvancedAttributes] = useState(false);
   const [breakdownPlayer, setBreakdownPlayer] = useState<Fc26Player | null>(null);
+  const [fitBreakdownPlayer, setFitBreakdownPlayer] = useState<Fc26Player | null>(null);
   const [currentSearchPlayers, setCurrentSearchPlayers] = useState<Fc26Player[]>([]);
   const [searchStats, setSearchStats] = useState({ total: 0, currentPage: 1, totalPages: 1 });
   const knownPlayersRef = useRef<Map<number, Fc26Player>>(new Map());
@@ -79,7 +80,11 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const saveBudgetMillions = activeSave?.budget != null ? activeSave.budget / 1_000_000 : null;
 
   const scoreContextValue = useMemo<ScoutScoreContextValue>(
-    () => ({ budgetMillions: saveBudgetMillions, openBreakdown: setBreakdownPlayer }),
+    () => ({
+      budgetMillions: saveBudgetMillions,
+      openBreakdown: setBreakdownPlayer,
+      openFitBreakdown: setFitBreakdownPlayer,
+    }),
     [saveBudgetMillions]
   );
 
@@ -403,6 +408,15 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
             playbook={activePlaybook}
             budgetMillions={saveBudgetMillions}
             onClose={() => setBreakdownPlayer(null)}
+          />
+        )}
+
+        {fitBreakdownPlayer && (
+          <FitBreakdownModal
+            player={fitBreakdownPlayer}
+            saveId={saveId ?? null}
+            objective={appliedFilters?.objective ?? "balanced"}
+            onClose={() => setFitBreakdownPlayer(null)}
           />
         )}
       </div>

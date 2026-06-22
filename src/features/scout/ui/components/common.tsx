@@ -96,19 +96,39 @@ export function PlayerAvatar({ player, size }: { player: Fc26Player; size: "sm" 
   );
 }
 
-export function FitScoreBadge({ player, compact = false }: { player: Fc26Player; compact?: boolean }) {
+export function FitScoreBadge({ player, compact = false, onClick }: { player: Fc26Player; compact?: boolean; onClick?: () => void }) {
   const score = getVisibleFitScore(player);
   if (score === null) return null;
 
   const isLowConfidence = player.fitConfidence === "low";
+  const tone = getFitScoreTone(player.fitConfidence);
+  const title = getFitScoreTitle(player);
+  const content = (
+    <>
+      <Target size={compact ? 11 : 12} className="shrink-0" />
+      <span className="truncate">Fit {score}{isLowConfidence ? "?" : ""}</span>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className={`inline-flex h-6 max-w-full items-center gap-1 rounded border px-2 font-display text-xs font-bold transition-opacity hover:opacity-75 ${tone}`}
+      >
+        {content}
+      </button>
+    );
+  }
 
   return (
     <span
-      title={getFitScoreTitle(player)}
-      className={`inline-flex h-6 max-w-full items-center gap-1 rounded border px-2 font-display text-xs font-bold ${getFitScoreTone(player.fitConfidence)}`}
+      title={title}
+      className={`inline-flex h-6 max-w-full items-center gap-1 rounded border px-2 font-display text-xs font-bold ${tone}`}
     >
-      <Target size={compact ? 11 : 12} className="shrink-0" />
-      <span className="truncate">Fit {score}{isLowConfidence ? "?" : ""}</span>
+      {content}
     </span>
   );
 }

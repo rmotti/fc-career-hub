@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { BadgeEuro, Calendar, SlidersHorizontal, Sparkles, Star, Target, X } from "lucide-react";
+import { BadgeEuro, Calendar, Loader2, SlidersHorizontal, Sparkles, Star, Target, X } from "lucide-react";
 import type { ElementType } from "react";
-import type { ApiPlaybook, Fc26Player } from "@/shared/api/client";
+import type { ApiPlaybook, Fc26FitObjective, Fc26Player, FitBreakdownItem } from "@/shared/api/client";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { buildScoutScore, SCOUT_COMPONENT_META, type ScoutComponentKey, type ScoutScoreComponent } from "@/features/scout/lib/scoutScore";
-import { formatScore, scoreToneClass } from "@/features/scout/lib/format";
+import { formatScore, getFitScoreTone, scoreToneClass } from "@/features/scout/lib/format";
+import { useFc26PlayerFitBreakdown } from "@/features/scout/model/useFc26Players";
 import { PlayerAvatar } from "./common";
 
 export const SCOUT_COMPONENT_ICONS: Record<ScoutComponentKey, ElementType> = {
@@ -175,6 +176,145 @@ export function ScorePill({ value, onClick }: { value: number | null; onClick?: 
       title={value !== null ? `Scout Score: ${value}/100` : "Score unavailable"}
     >
       {content}
+    </div>
+  );
+}
+
+function FitBreakdownRow({ item }: { item: FitBreakdownItem }) {
+  return (
+    <div className="rounded-md border border-border bg-background/35 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Target size={14} className="shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">{item.label}</p>
+            <p className="truncate text-[10px] text-muted-foreground/70">{item.clubContext}</p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={`font-display text-lg font-bold leading-none ${scoreToneClass(item.score)}`}>
+            {item.score != null ? Math.round(item.score) : "—"}
+          </p>
+          <p className="text-[10px] text-muted-foreground">{Math.round(item.weight * 100)}% weight</p>
+        </div>
+      </div>
+
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full ${item.score != null ? "bg-primary" : "bg-transparent"}`}
+          style={{ width: `${item.score ?? 0}%` }}
+        />
+      </div>
+
+      <div className="mt-2 text-[11px] text-muted-foreground">{item.candidateValue}</div>
+    </div>
+  );
+}
+
+export function FitBreakdownModal({
+  player,
+  saveId,
+  objective,
+  onClose,
+}: {
+  player: Fc26Player;
+  saveId: string | null;
+  objective: Fc26FitObjective;
+  onClose: () => void;
+}) {
+  const { data, isLoading, isError } = useFc26PlayerFitBreakdown(player.sofifaId, saveId, objective);
+
+  const sortedBreakdown = useMemo(() => {
+    if (!data?.breakdown?.length) return [];
+    return [...data.breakdown].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }, [data?.breakdown]);
+
+  const hasNoProfile = !isLoading && !isError && (!data || data.fitScore === null || sortedBreakdown.length === 0);
+  const displayScore = data?.fitScore != null ? Math.round(data.fitScore) : null;
+  const confidenceTone = getFitScoreTone(data?.fitConfidence);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm sm:p-5"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Fit score breakdown for ${player.name}`}
+        onMouseDown={(event) => event.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-md border border-border bg-card shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <PlayerAvatar player={player} size="md" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Fit score</p>
+              <h3 className="truncate font-display text-lg font-bold text-foreground">{player.name}</h3>
+              {data?.fitProfileSize != null && (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  Based on {data.fitProfileSize} real signing{data.fitProfileSize !== 1 ? "s" : ""}
+                  {data.fitConfidence ? (
+                    <span className={`ml-1 font-semibold ${confidenceTone.split(" ").find((c) => c.startsWith("text-"))}`}>
+                      · {data.fitConfidence} confidence
+                    </span>
+                  ) : null}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="text-right">
+              <p className={`font-display text-3xl font-bold leading-none ${scoreToneClass(displayScore)}`}>
+                {displayScore ?? "—"}
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">/ 100</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close breakdown"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="p-4" scrollbars="vertical">
+          {!saveId ? (
+            <p className="rounded-md border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
+              Open a save to view the fit breakdown.
+            </p>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+              <Loader2 size={20} className="animate-spin" />
+              Loading breakdown…
+            </div>
+          ) : isError ? (
+            <p className="rounded-md border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive-text">
+              Fit breakdown unavailable. Please try again.
+            </p>
+          ) : hasNoProfile ? (
+            <p className="rounded-md border border-border bg-background/35 p-4 text-sm text-muted-foreground">
+              No historical profile for this club/position — not enough real signings to generate a breakdown.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {sortedBreakdown.map((item) => (
+                <FitBreakdownRow key={item.key} item={item} />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && !isError && !hasNoProfile && !!saveId && (
+            <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground/70">
+              Each dimension shows how typical this player is versus the club's real signings. The overall fit combines them holistically, so the rows explain the trend but don't add up exactly to the headline number.
+            </p>
+          )}
+        </ScrollArea>
+      </section>
     </div>
   );
 }

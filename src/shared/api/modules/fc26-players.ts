@@ -215,6 +215,22 @@ function toFc26PlayersQuery(filters: Fc26PlayerListParams = {}) {
   return params.toString();
 }
 
+export interface FitBreakdownItem {
+  key: string;
+  label: string;
+  weight: number;
+  score: number | null;
+  candidateValue: string;
+  clubContext: string;
+}
+
+export interface FitBreakdownResponse {
+  fitScore: number | null;
+  fitConfidence: Fc26FitConfidence | null;
+  fitProfileSize: number | null;
+  breakdown: FitBreakdownItem[];
+}
+
 export const fc26PlayersApi = {
   list: (filters?: Fc26PlayerListParams) => {
     const qs = toFc26PlayersQuery(filters);
@@ -224,4 +240,9 @@ export const fc26PlayersApi = {
     request<Fc26PlayerFilterMetadata>("/fc26-players/filters"),
   get: (sofifaId: number) =>
     request<Fc26Player>(`/fc26-players/${sofifaId}`),
+  fitBreakdown: (sofifaId: number, saveId: string, objective?: Fc26FitObjective) => {
+    const params = new URLSearchParams({ saveId });
+    if (objective) params.set("objective", objective);
+    return request<FitBreakdownResponse>(`/fc26-players/${sofifaId}/fit-breakdown?${params}`);
+  },
 };

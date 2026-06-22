@@ -7,11 +7,13 @@ import { k, m } from "@/shared/lib/money";
 export interface ScoutScoreContextValue {
   budgetMillions: number | null;
   openBreakdown: (player: Fc26Player) => void;
+  openFitBreakdown: (player: Fc26Player) => void;
 }
 
 export const ScoutScoreContext = createContext<ScoutScoreContextValue>({
   budgetMillions: null,
   openBreakdown: () => {},
+  openFitBreakdown: () => {},
 });
 
 export function useScoutScoreContext() {

@@ -1,5 +1,5 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { fc26PlayersApi, type Fc26PlayerFilters, type Fc26PlayerListParams } from "@/shared/api/client";
+import { fc26PlayersApi, type Fc26FitObjective, type Fc26PlayerFilters, type Fc26PlayerListParams } from "@/shared/api/client";
 import { CACHE_TTL } from "@/shared/api/cache-ttl";
 
 function withScoutSaveContext(filters: Fc26PlayerFilters, saveId?: string | null): Fc26PlayerListParams {
@@ -58,5 +58,19 @@ export function useFc26PlayerFilters() {
     queryKey: ["fc26-players", "filters"],
     queryFn: fc26PlayersApi.filters,
     staleTime: CACHE_TTL.fc26Players,
+  });
+}
+
+export function useFc26PlayerFitBreakdown(
+  sofifaId: number | null,
+  saveId: string | null,
+  objective?: Fc26FitObjective | null,
+) {
+  return useQuery({
+    queryKey: ["fc26-players", sofifaId, "fit-breakdown", saveId, objective ?? "balanced"],
+    queryFn: () => fc26PlayersApi.fitBreakdown(sofifaId!, saveId!, objective ?? undefined),
+    enabled: typeof sofifaId === "number" && !!saveId,
+    staleTime: CACHE_TTL.fc26Players,
+    retry: false,
   });
 }

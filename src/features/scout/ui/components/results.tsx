@@ -86,6 +86,7 @@ export function PlayerTableRow({
   onSelect,
   onToggleCompare,
   onToggleShortlist,
+  onOpenFitBreakdown,
 }: {
   player: Fc26Player;
   showFitScore: boolean;
@@ -94,6 +95,7 @@ export function PlayerTableRow({
   onSelect: () => void;
   onToggleCompare: () => void;
   onToggleShortlist: () => void;
+  onOpenFitBreakdown?: () => void;
 }) {
   const traits = player.playerTraits ?? [];
 
@@ -168,7 +170,7 @@ export function PlayerTableRow({
       {showFitScore && (
         <td className="px-4 py-3 text-center">
           <div className="flex justify-center">
-            <FitScoreBadge player={player} />
+            <FitScoreBadge player={player} onClick={onOpenFitBreakdown} />
           </div>
         </td>
       )}
@@ -208,6 +210,7 @@ export function PlayerMobileRow({
   onSelect,
   onToggleCompare,
   onToggleShortlist,
+  onOpenFitBreakdown,
 }: {
   player: Fc26Player;
   showFitScore: boolean;
@@ -216,6 +219,7 @@ export function PlayerMobileRow({
   onSelect: () => void;
   onToggleCompare: () => void;
   onToggleShortlist: () => void;
+  onOpenFitBreakdown?: () => void;
 }) {
   const traits = player.playerTraits ?? [];
 
@@ -235,7 +239,7 @@ export function PlayerMobileRow({
           <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">OVR</p>
           {showFitScore && (
             <div className="mt-2 flex justify-end">
-              <FitScoreBadge player={player} compact />
+              <FitScoreBadge player={player} compact onClick={onOpenFitBreakdown} />
             </div>
           )}
         </div>

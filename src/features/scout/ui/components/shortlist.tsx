@@ -39,7 +39,7 @@ function ShortlistPlayerRow({
   onOpenDetails: () => void;
   onRemove: () => void;
 }) {
-  const { budgetMillions, openBreakdown } = useContext(ScoutScoreContext);
+  const { budgetMillions, openBreakdown, openFitBreakdown } = useContext(ScoutScoreContext);
   const scoutScore = computeScoutScore(player, activePlaybook, budgetMillions);
 
   return (
@@ -53,7 +53,7 @@ function ShortlistPlayerRow({
           </div>
           <p className="mt-1 truncate text-sm text-muted-foreground">{player.club ?? "No club"}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <FitScoreBadge player={player} />
+            <FitScoreBadge player={player} onClick={() => openFitBreakdown(player)} />
             {player.positions.map((position) => (
               <PositionBadge key={position} position={position} />
             ))}
