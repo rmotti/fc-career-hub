@@ -2215,7 +2215,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                   onChange={(nations) => setDraft((current) => ({ ...current, nations }))}
                 />
                 <MultiSelectCombobox
-                  label="Ligas"
+                  label="Leagues"
                   placeholder="Search league..."
                   emptyLabel={isLoadingFilters ? "Loading leagues..." : "No league found"}
                   options={leagueOptions}
