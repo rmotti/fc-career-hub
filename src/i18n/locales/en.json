@@ -29,6 +29,7 @@
       "searchPlayers": "Search Players",
       "savedQueries": "Saved Queries",
       "shortlist": "Shortlist",
+      "clubDna": "Club DNA",
       "playbooks": "Playbooks"
     },
     "workspace": {
@@ -179,13 +180,15 @@
       "ai": "AIssistent Coach",
       "archive": "Saved Queries",
       "shortlist": "Shortlist",
-      "filters": "Search Players"
+      "filters": "Search Players",
+      "dna": "Club DNA"
     },
     "badges": {
       "pro": "PRO",
       "archive": "Folder Archive",
       "shortlist": "Final List",
-      "dataset": "FC26 Dataset"
+      "dataset": "FC26 Dataset",
+      "dna": "Signing Profile"
     },
     "pills": {
       "folders": "Folders",

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, BarChart3, History,
   ArrowLeftRight, RefreshCw, LogOut, CalendarPlus,
   ChevronsLeft, ChevronsRight, Menu, X, Shirt,
-  Trophy, BriefcaseBusiness, Shield, Bot, Search, Folder, ListChecks, Sliders, Activity
+  Trophy, BriefcaseBusiness, Shield, Bot, Search, Folder, ListChecks, Sliders, Activity, Dna
 } from "lucide-react";
 import { LogoMark } from "@/shared/ui/Logo";
 import { ScrollArea } from "@/shared/ui/scroll-area";
@@ -64,6 +64,7 @@ const HubSidebar = ({
     { to: "/scout/filtros", label: t("sidebar.scout.searchPlayers"), icon: Search },
     { to: "/scout/consultas", label: t("sidebar.scout.savedQueries"), icon: Folder },
     { to: "/scout/shortlist", label: t("sidebar.scout.shortlist"), icon: ListChecks },
+    { to: "/scout/dna", label: t("sidebar.scout.clubDna"), icon: Dna },
     { to: "/scout/playbooks", label: t("sidebar.scout.playbooks"), icon: Sliders },
   ];
 

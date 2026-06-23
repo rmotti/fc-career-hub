@@ -4,6 +4,7 @@ import {
   Activity,
   Archive,
   Bot,
+  Dna,
   GitCompareArrows,
   ListChecks,
   LockKeyhole,
@@ -33,6 +34,7 @@ import { AssistantCoachSection } from "@/features/scout/ui/sections/AssistantCoa
 import { ArchiveSection } from "@/features/scout/ui/sections/ArchiveSection";
 import { ShortlistSection } from "@/features/scout/ui/sections/ShortlistSection";
 import { SearchSection } from "@/features/scout/ui/sections/SearchSection";
+import { ClubDnaSection } from "@/features/scout/ui/sections/ClubDnaSection";
 
 export type { ScoutSection } from "@/features/scout/ui/types";
 
@@ -258,7 +260,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
   const isAiSection = section === "ai";
   const isArchiveSection = section === "archive";
   const isShortlistSection = section === "shortlist";
-  const isSearchSection = !isAiSection && !isArchiveSection && !isShortlistSection;
+  const isDnaSection = section === "dna";
+  const isSearchSection = !isAiSection && !isArchiveSection && !isShortlistSection && !isDnaSection;
 
   const pageTitle = isAiSection
     ? "AIssistent Coach"
@@ -266,7 +269,9 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
       ? "Saved queries"
       : isShortlistSection
         ? "Shortlist"
-        : "Search players";
+        : isDnaSection
+          ? "Club DNA"
+          : "Search players";
 
   return (
     <ScoutScoreContext.Provider value={scoreContextValue}>
@@ -279,8 +284,8 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{pageTitle}</h2>
               <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                {isAiSection ? <Bot size={13} /> : isArchiveSection ? <Archive size={13} /> : isShortlistSection ? <ListChecks size={13} /> : <Search size={13} />}
-                {isAiSection ? "PRO" : isArchiveSection ? "Folder archive" : isShortlistSection ? "Shortlist" : "Dataset FC 26"}
+                {isAiSection ? <Bot size={13} /> : isArchiveSection ? <Archive size={13} /> : isShortlistSection ? <ListChecks size={13} /> : isDnaSection ? <Dna size={13} /> : <Search size={13} />}
+                {isAiSection ? "PRO" : isArchiveSection ? "Folder archive" : isShortlistSection ? "Shortlist" : isDnaSection ? "Signing Profile" : "Dataset FC 26"}
               </span>
             </div>
           </div>
@@ -302,6 +307,10 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
                 <SummaryPill label="Avg. OVR" value={shortlistAverageOvr ?? "—"} icon={Activity} />
                 <SummaryPill label="Comparing" value={comparedPlayers.length} icon={GitCompareArrows} />
               </>
+            ) : isDnaSection ? (
+              <>
+                <SummaryPill label="Club" value={currentClub} icon={Dna} />
+              </>
             ) : (
               <>
                 <SummaryPill label="Found" value={formatInteger(searchStats.total)} icon={UsersRound} />
@@ -321,6 +330,10 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
           }
         >
           {isAiSection && <AssistantCoachSection saveId={saveId ?? null} />}
+
+          {isDnaSection && (
+            <ClubDnaSection saveId={saveId} currentClub={currentClub} />
+          )}
 
           {isArchiveSection && (
             <ArchiveSection

@@ -220,6 +220,33 @@ export interface ScoutTransferTargetParams {
   saveId?: string;
 }
 
+// ─── Club Archetype (Club DNA) ──────────────────────────────────────
+
+export interface ClubArchetypeDistributionItem {
+  value: string;
+  count: number;
+  pct: number;
+}
+
+export interface ClubArchetypeProfile {
+  age: { median: number; p25: number; p75: number };
+  nationality: ClubArchetypeDistributionItem[];
+  origin_league: ClubArchetypeDistributionItem[];
+}
+
+export interface ClubArchetypeTransfer {
+  player_name: string | null;
+  player_id: number | null;
+  transfer_season: string | null;
+  from_club_name: string | null;
+  nationality: string | null;
+  origin_league: string | null;
+}
+
+export type ClubArchetypeResult =
+  | { available: true; clubName: string; positionGroup: string; objective: string; profile_size: number; confidence: "high" | "medium" | "low" | "none"; archetype: ClubArchetypeProfile; transfers?: ClubArchetypeTransfer[] }
+  | { available: false; reason: string };
+
 export const scoutingApi = {
   gaps: (saveId: string, formation?: ScoutFormation) =>
     request<{ gaps: ApiScoutGap[] }>(
@@ -235,4 +262,9 @@ export const scoutingApi = {
   },
   evaluate: (saveId: string, sofifaId: number) =>
     request<ApiSigningEvaluation>(`/scouting/saves/${saveId}/evaluate/${sofifaId}`),
+  clubArchetype: (saveId: string, position: string, objective?: string) => {
+    const params = new URLSearchParams({ position, includeTransfers: "true" });
+    if (objective) params.set("objective", objective);
+    return request<ClubArchetypeResult>(`/scouting/saves/${saveId}/archetype?${params}`);
+  },
 };

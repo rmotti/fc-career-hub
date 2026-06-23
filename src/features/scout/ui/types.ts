@@ -1,7 +1,7 @@
 import type { ElementType, ReactNode } from "react";
 import type { Fc26FitObjective, Fc26Player, Fc26PlayerFilters, PlayerPosition } from "@/shared/api/client";
 
-export type ScoutSection = "ai" | "filters" | "archive" | "shortlist";
+export type ScoutSection = "ai" | "filters" | "archive" | "shortlist" | "dna";
 
 export type AttributeRangeDraft = Record<string, { min: string; max: string }>;
 
