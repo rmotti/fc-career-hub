@@ -60,6 +60,10 @@ export function useUpdateSave() {
         qc.invalidateQueries({ queryKey: ["players", vars.saveId] }),
         qc.invalidateQueries({ queryKey: ["trophies", vars.saveId] }),
         qc.invalidateQueries({ queryKey: ["audit", vars.saveId] }),
+        // Advancing the season changes which window is "current", so the
+        // ["transfers", saveId, { season: "current" }] query must refetch —
+        // otherwise the current window keeps showing the previous season's transfers.
+        qc.invalidateQueries({ queryKey: ["transfers", vars.saveId] }),
       ]);
     },
   });
