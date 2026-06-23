@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   chatApi,
@@ -13,7 +14,16 @@ export interface JuniorChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+  // Grounded next-action chips returned alongside an assistant reply. Only set
+  // on assistant messages; empty/undefined renders nothing.
+  suggestions?: string[];
 }
+
+// Junior can now perform write actions (shortlist add/remove, create saved
+// searches) on the user's behalf mid-chat, so client caches for those lists may
+// be stale once a turn completes. Use streaming when available for incremental
+// UX; falls back to the blocking request otherwise.
+const USE_STREAMING = true;
 
 // Re-exported so the UI can type the conversation list it renders.
 export type { ChatConversation };
@@ -54,10 +64,14 @@ function toMessage(m: ChatHistoryMessage): JuniorChatMessage {
 // the session cookie), which enables roaming across devices; nothing is kept in
 // localStorage anymore.
 export function useJuniorChat(saveId: string | null | undefined) {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<JuniorChatMessage[]>([]);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Distinct from `isLoading`: set while the (now slower) conversation-create
+  // call runs, so the UI can show "Junior is getting up to speed…".
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | null>(null);
   const [isUnavailable, setIsUnavailable] = useState(false);
@@ -67,6 +81,16 @@ export function useJuniorChat(saveId: string | null | undefined) {
   // them on every selection change.
   const conversationIdRef = useRef<string | null>(null);
   conversationIdRef.current = conversationId;
+
+  // A completed chat turn (or an opening message generated at creation) may
+  // have mutated the shortlist / saved searches server-side. Bust those React
+  // Query caches so the dedicated Scout sections reflect Junior's writes. Keys
+  // mirror useShortlist / useSavedSearches: ["shortlist", saveId] /
+  // ["saved-searches", saveId].
+  const invalidateAssistantWritableData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["shortlist", saveId] });
+    queryClient.invalidateQueries({ queryKey: ["saved-searches", saveId] });
+  }, [queryClient, saveId]);
 
   const loadConversations = useCallback(async () => {
     setIsHistoryLoading(true);
@@ -118,66 +142,177 @@ export function useJuniorChat(saveId: string | null | undefined) {
     void loadConversations();
   }, [loadConversations]);
 
+  // Maps a thrown error to the right degraded state (rate-limit, not-found,
+  // transient, or a toast). Returns "retry" when a transient error should be
+  // retried by the caller, "stop" otherwise. Shared by both the streaming and
+  // non-streaming turn paths.
+  const handleTurnError = useCallback(
+    (err: unknown, trimmed: string, attempt: number): "retry" | "stop" => {
+      const status = err instanceof ApiError ? err.status : (err as { status?: number })?.status;
+      const retryAfter =
+        err instanceof ApiError ? err.retryAfter : (err as { retryAfter?: number })?.retryAfter;
+
+      if (status === 429) {
+        const seconds = Number.isFinite(retryAfter) && (retryAfter ?? 0) > 0 ? retryAfter! : 60;
+        setRetryAfterSeconds(seconds);
+        toast.warning(`Too many messages. Please wait ${seconds} seconds to continue.`);
+        return "stop";
+      }
+
+      if (status === 404) {
+        handleNotFound();
+        return "stop";
+      }
+
+      const transient =
+        isTransient(err) || (typeof status === "number" && status >= 500);
+      if (transient) {
+        if (attempt < TRANSIENT_RETRIES) return "retry";
+        lastFailedTextRef.current = trimmed;
+        setIsUnavailable(true);
+        return "stop";
+      }
+
+      toast.error(extractErrorMessage(err));
+      return "stop";
+    },
+    [handleNotFound],
+  );
+
+  // Streams a turn over SSE, rendering delta text into a placeholder assistant
+  // bubble and finalizing with the responseId + suggestions on `done`. Returns
+  // false if streaming wasn't attempted/usable so the caller can fall back.
+  const runStreamingRequest = useCallback(
+    async (trimmed: string, convId: string): Promise<boolean> => {
+      const assistantId = crypto.randomUUID();
+      let createdBubble = false;
+      let streamErrored = false;
+
+      // Append (once) and update the live assistant bubble as deltas arrive.
+      const appendDelta = (text: string) => {
+        setMessages((prev) => {
+          if (!createdBubble) {
+            createdBubble = true;
+            return [
+              ...prev,
+              { id: assistantId, role: "assistant", content: text, timestamp: Date.now() } as JuniorChatMessage,
+            ];
+          }
+          return prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + text } : m));
+        });
+      };
+
+      try {
+        await chatApi.streamMessage(
+          { message: trimmed, conversationId: convId },
+          {
+            onDelta: appendDelta,
+            onDone: ({ suggestions }) => {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === assistantId ? { ...m, suggestions } : m)),
+              );
+            },
+            onError: (message) => {
+              streamErrored = true;
+              toast.error(message || "Junior ran into a problem. Please try again.");
+            },
+          },
+        );
+
+        if (streamErrored) {
+          // The stream opened but the server signalled a mid-stream error. If no
+          // text landed, drop the empty bubble and mark the turn degraded.
+          if (!createdBubble) {
+            lastFailedTextRef.current = trimmed;
+            setIsUnavailable(true);
+          }
+          return true;
+        }
+
+        lastFailedTextRef.current = null;
+        // Junior may have mutated shortlist / saved searches this turn.
+        invalidateAssistantWritableData();
+        // Bump the conversation to the top (updatedAt changed).
+        void loadConversations();
+        return true;
+      } catch (err) {
+        // Network/HTTP failure before/while opening the stream. Drop any partial
+        // bubble, then reuse the shared error mapping (no retry loop here — fall
+        // through to the non-streaming path which has its own backoff).
+        if (createdBubble) {
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        }
+        const status = err instanceof ApiError ? err.status : (err as { status?: number })?.status;
+        // Rate-limit / not-found are terminal regardless of transport.
+        if (status === 429 || status === 404) {
+          handleTurnError(err, trimmed, TRANSIENT_RETRIES);
+          return true;
+        }
+        return false; // signal: try the non-streaming fallback
+      }
+    },
+    [invalidateAssistantWritableData, loadConversations, handleTurnError],
+  );
+
   // Posts a turn against `convId`, retrying transient failures with backoff and
   // falling back to a degraded state instead of a bare toast.
-  const runRequest = useCallback(async (trimmed: string, convId: string) => {
-    setIsLoading(true);
-    setIsUnavailable(false);
+  const runNonStreamingRequest = useCallback(
+    async (trimmed: string, convId: string) => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const response = await chatApi.sendMessage({ message: trimmed, conversationId: convId });
 
-    for (let attempt = 0; ; attempt++) {
-      try {
-        const response = await chatApi.sendMessage({ message: trimmed, conversationId: convId });
+          const assistantMessage: JuniorChatMessage = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: response.reply,
+            timestamp: Date.now(),
+            suggestions: Array.isArray(response.suggestions) ? response.suggestions : [],
+          };
 
-        const assistantMessage: JuniorChatMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: response.reply,
-          timestamp: Date.now(),
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-        lastFailedTextRef.current = null;
-        // Bump the conversation to the top of the list (updatedAt changed).
-        void loadConversations();
-        break;
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 429) {
-          const seconds = Number.isFinite(err.retryAfter) && (err.retryAfter ?? 0) > 0
-            ? err.retryAfter!
-            : 60;
-          setRetryAfterSeconds(seconds);
-          toast.warning(`Too many messages. Please wait ${seconds} seconds to continue.`);
+          setMessages((prev) => [...prev, assistantMessage]);
+          lastFailedTextRef.current = null;
+          // Junior may have mutated shortlist / saved searches this turn.
+          invalidateAssistantWritableData();
+          // Bump the conversation to the top of the list (updatedAt changed).
+          void loadConversations();
           break;
-        }
-
-        if (isNotFound(err)) {
-          handleNotFound();
-          break;
-        }
-
-        if (isTransient(err)) {
-          if (attempt < TRANSIENT_RETRIES) {
+        } catch (err) {
+          if (handleTurnError(err, trimmed, attempt) === "retry") {
             await sleep(BACKOFF_MS[attempt] ?? 1800);
             continue;
           }
-          // Retries exhausted: surface a degraded state the UI can render.
-          lastFailedTextRef.current = trimmed;
-          setIsUnavailable(true);
           break;
         }
-
-        toast.error(extractErrorMessage(err as ApiError));
-        break;
       }
-    }
+    },
+    [loadConversations, handleTurnError, invalidateAssistantWritableData],
+  );
 
-    setIsLoading(false);
-  }, [loadConversations, handleNotFound]);
+  const runRequest = useCallback(
+    async (trimmed: string, convId: string) => {
+      setIsLoading(true);
+      setIsUnavailable(false);
+
+      // Prefer streaming; on any "stream unusable" signal, fall back so we never
+      // regress the working non-streaming flow.
+      const streamed = USE_STREAMING && (await runStreamingRequest(trimmed, convId));
+      if (!streamed) {
+        await runNonStreamingRequest(trimmed, convId);
+      }
+
+      setIsLoading(false);
+    },
+    [runStreamingRequest, runNonStreamingRequest],
+  );
 
   // Resolves the active conversation, creating one (tied to the current save)
-  // on the first message. Returns null if creation failed.
+  // on the first message. Returns null if creation failed. Creation is now
+  // slower (the server generates a proactive opening message when a saveId is
+  // present), so we surface a dedicated loading flag.
   const ensureConversation = useCallback(async (firstText: string): Promise<string | null> => {
     if (conversationIdRef.current) return conversationIdRef.current;
+    setIsCreatingConversation(true);
     try {
       const conversation = await chatApi.createConversation({
         title: deriveTitle(firstText),
@@ -185,6 +320,21 @@ export function useJuniorChat(saveId: string | null | undefined) {
       });
       setConversationId(conversation.id);
       setConversations((prev) => [conversation, ...prev]);
+      // ANTI-DUPLICATION: the proactive opening message is the single source
+      // here. It's also persisted (appears first in GET .../messages), but a
+      // brand-new conversation never refetches its message list, so rendering
+      // it from the create response is the only path — no double render.
+      if (conversation.openingMessage?.content) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: conversation.openingMessage!.content,
+            timestamp: Date.now(),
+          },
+        ]);
+      }
       return conversation.id;
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) {
@@ -198,6 +348,8 @@ export function useJuniorChat(saveId: string | null | undefined) {
       lastFailedTextRef.current = firstText;
       setIsUnavailable(true);
       return null;
+    } finally {
+      setIsCreatingConversation(false);
     }
   }, [saveId]);
 
@@ -279,6 +431,7 @@ export function useJuniorChat(saveId: string | null | undefined) {
     history: conversations,
     activeConversationId: conversationId,
     isLoading,
+    isCreatingConversation,
     isHistoryLoading,
     isRateLimited: retryAfterSeconds !== null && retryAfterSeconds > 0,
     retryAfterSeconds,

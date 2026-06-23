@@ -9,6 +9,7 @@ export function AssistantCoachSection({ saveId }: { saveId: string | null }) {
     messages: chatMessages,
     history: chatHistory,
     isLoading: isChatLoading,
+    isCreatingConversation,
     isRateLimited,
     retryAfterSeconds,
     isUnavailable: isChatUnavailable,
@@ -84,9 +85,9 @@ export function AssistantCoachSection({ saveId }: { saveId: string | null }) {
             ) : (
               chatHistory.map((entry: ChatConversation) => (
                 <div key={entry.id} className="rounded-md border border-border bg-background/30 p-3">
-                  <p className="truncate text-sm font-semibold text-foreground">{entry.title ?? "Conversa sem título"}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">{entry.title ?? "Untitled conversation"}</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {new Date(entry.updatedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {new Date(entry.updatedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </p>
                   <div className="mt-2.5 flex items-center gap-2">
                     <button
@@ -126,22 +127,43 @@ export function AssistantCoachSection({ saveId }: { saveId: string | null }) {
                 </ChatBubble>
               )}
               {chatMessages.map((msg) => (
-                <ChatBubble
-                  key={msg.id}
-                  speaker={msg.role === "user" ? "You" : "Junior"}
-                  tone={msg.role === "user" ? "user" : "assistant"}
-                  markdown={msg.role === "assistant"}
-                >
-                  {msg.content}
-                </ChatBubble>
+                <div key={msg.id} className="flex flex-col gap-2">
+                  <ChatBubble
+                    speaker={msg.role === "user" ? "You" : "Junior"}
+                    tone={msg.role === "user" ? "user" : "assistant"}
+                    markdown={msg.role === "assistant"}
+                  >
+                    {msg.content}
+                  </ChatBubble>
+                  {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pl-0.5">
+                      {msg.suggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => void sendMessage(suggestion)}
+                          disabled={isChatLoading || isRateLimited || isChatUnavailable}
+                          className="inline-flex items-center rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-xs font-medium text-primary transition-colors hover:border-primary/40 hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
-              {isChatLoading && (
+              {/* While streaming, deltas land in the assistant bubble itself, so
+                  the standalone "Thinking…" indicator is only shown until the
+                  first delta (i.e. when the last message is still the user's). */}
+              {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== "assistant" && (
                 <div className="flex justify-start">
                   <div className="max-w-[92%] rounded-md border border-border bg-background/45 px-3 py-2">
                     <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Junior</p>
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Loader2 size={13} className="animate-spin" />
-                      <span className="text-sm">Thinking...</span>
+                      <span className="text-sm">
+                        {isCreatingConversation ? "Junior is getting up to speed…" : "Thinking..."}
+                      </span>
                     </div>
                   </div>
                 </div>

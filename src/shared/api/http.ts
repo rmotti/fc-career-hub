@@ -84,6 +84,18 @@ export function clearCsrfToken() {
   inMemoryCsrfToken = null;
 }
 
+// Read-only access to the in-memory CSRF token, for callers (e.g. the SSE
+// streaming consumer) that issue their own `fetch` outside `request`.
+export function getCsrfToken(): string | null {
+  return inMemoryCsrfToken;
+}
+
+// Ensures a CSRF token is available before a manual (non-`request`) write such
+// as the SSE stream POST. Mirrors what `request` does internally for mutations.
+export async function ensureCsrfTokenForStream(): Promise<void> {
+  await ensureCsrfToken();
+}
+
 export class ApiError extends Error {
   status?: number;
   data?: any;
