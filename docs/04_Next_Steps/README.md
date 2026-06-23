@@ -37,8 +37,8 @@ Sequência sugerida por **dependência e risco**, não só por impacto — cada 
 | **A** ◐ | Polish & consistência (baixo risco, FE-only) — _em andamento_ | [C-03](4.1_Corrections.md) · ✅ [M-01](4.3_Improvements.md) · [M-02](4.3_Improvements.md) · [M-04](4.3_Improvements.md) · Task 15 (a11y, carried-over) | Frontend |
 | **B** ✅ | Cluster Empréstimos (defeitos + regras de domínio) — _concluída_ | [R-01](4.4_Business_Rule_Changes.md) → [C-01](4.1_Corrections.md) · [C-02](4.1_Corrections.md) → [F-02](4.2_Features.md) → [R-02](4.4_Business_Rule_Changes.md) | Ambos |
 | **C** ◐ | Persistência & dados (server-side, custo) — _em andamento_ | ✅ [M-09](4.3_Improvements.md) · ✅ [F-03](4.2_Features.md) · [M-08](4.3_Improvements.md) → [F-05](4.2_Features.md) | API + FE |
-| **D** | Scout & assistente (**discovery** primeiro) | [M-07](4.3_Improvements.md) · [M-06](4.3_Improvements.md) | Ambos |
-| **E** | Expansão de produto / reach | [F-01](4.2_Features.md) · [M-05](4.3_Improvements.md) · [M-03](4.3_Improvements.md) · [F-04](4.2_Features.md) (trilha própria) | Ambos |
+| **D** ◐ | Scout & assistente (**discovery** primeiro) | ✅ [M-07](4.3_Improvements.md) · [M-06](4.3_Improvements.md) | Ambos |
+| **E** ◐ | Expansão de produto / reach | [F-01](4.2_Features.md) · ✅ [M-05](4.3_Improvements.md) · [M-03](4.3_Improvements.md) · [F-04](4.2_Features.md) (trilha própria) | Ambos |
 
 Notas de sequenciamento:
 
