@@ -90,7 +90,7 @@ export function getFitScoreTitle(player: Pick<Fc26Player, "fitScore" | "fitConfi
       ? `, perfil com ${player.fitProfileSize} registro${player.fitProfileSize === 1 ? "" : "s"}`
       : "";
 
-  return `Fit ${score}/100 — quão parecido este jogador é com as contratações que o clube costuma fazer nesta posição (50 ≈ contratação típica). ${confidence}${profileSize}`;
+  return `Fit ${score}/100 — quão parecido este jogador é com as contratações que o clube costuma fazer nesta área do campo (defesa/meio/ataque) (50 ≈ contratação típica). ${confidence}${profileSize}`;
 }
 
 export function getOvrClass(ovr: number) {

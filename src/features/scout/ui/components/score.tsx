@@ -5,6 +5,7 @@ import type { ApiPlaybook, Fc26FitObjective, Fc26Player, FitBreakdownItem } from
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { buildScoutScore, SCOUT_COMPONENT_META, type ScoutComponentKey, type ScoutScoreComponent } from "@/features/scout/lib/scoutScore";
 import { formatScore, getFitScoreTone, scoreToneClass } from "@/features/scout/lib/format";
+import { getPositionAreaPhrase } from "@/shared/lib/playerPositions";
 import { useFc26PlayerFitBreakdown } from "@/features/scout/model/useFc26Players";
 import { PlayerAvatar } from "./common";
 
@@ -232,6 +233,8 @@ export function FitBreakdownModal({
   const hasNoProfile = !isLoading && !isError && (!data || data.fitScore === null || sortedBreakdown.length === 0);
   const displayScore = data?.fitScore != null ? Math.round(data.fitScore) : null;
   const confidenceTone = getFitScoreTone(data?.fitConfidence);
+  // Signing history is pooled by field area (e.g. all midfielders), not the exact position.
+  const areaPhrase = getPositionAreaPhrase(player.positions[0]);
 
   return (
     <div
@@ -254,7 +257,7 @@ export function FitBreakdownModal({
               <h3 className="truncate font-display text-lg font-bold text-foreground">{player.name}</h3>
               {data?.fitProfileSize != null && (
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                  Based on {data.fitProfileSize} real signing{data.fitProfileSize !== 1 ? "s" : ""}
+                  Based on {data.fitProfileSize} real signing{data.fitProfileSize !== 1 ? "s" : ""} {areaPhrase}
                   {data.fitConfidence ? (
                     <span className={`ml-1 font-semibold ${confidenceTone.split(" ").find((c) => c.startsWith("text-"))}`}>
                       · {data.fitConfidence} confidence
@@ -298,7 +301,7 @@ export function FitBreakdownModal({
             </p>
           ) : hasNoProfile ? (
             <p className="rounded-md border border-border bg-background/35 p-4 text-sm text-muted-foreground">
-              No historical profile for this club/position — not enough real signings to generate a breakdown.
+              No historical profile for this club {areaPhrase} — not enough real signings to generate a breakdown.
             </p>
           ) : (
             <div className="space-y-2.5">

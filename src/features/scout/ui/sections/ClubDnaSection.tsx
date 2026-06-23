@@ -1,31 +1,18 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Dna, Loader2, MapPin, ScrollText, Users } from "lucide-react";
 import type { PlayerPosition } from "@/shared/api/client";
+import { getPositionAreaPhrase } from "@/shared/lib/playerPositions";
 import { useClubArchetype } from "@/features/scout/model/useClubArchetype";
 import type { ClubArchetypeDistributionItem, ClubArchetypeTransfer } from "@/shared/api/client";
 
-const POSITIONS: { code: PlayerPosition; label: string; group: string }[] = [
-  { code: "GOL", label: "GK", group: "GK" },
-  { code: "ZAG", label: "CB", group: "DEF" },
-  { code: "LD", label: "RB", group: "DEF" },
-  { code: "LE", label: "LB", group: "DEF" },
-  { code: "VOL", label: "DM", group: "MID" },
-  { code: "MC", label: "CM", group: "MID" },
-  { code: "MD", label: "RM", group: "MID" },
-  { code: "ME", label: "LM", group: "MID" },
-  { code: "MEI", label: "AM", group: "MID" },
-  { code: "PD", label: "RW", group: "ATT" },
-  { code: "PE", label: "LW", group: "ATT" },
-  { code: "SA", label: "SS", group: "ATT" },
-  { code: "ATA", label: "CF", group: "ATT" },
+// The fit-score backend groups signing history by field area, so we select by area.
+// The `code` is a representative position sent to the API; the backend maps it to its bucket.
+const AREAS: { code: PlayerPosition; label: string }[] = [
+  { code: "GOL", label: "GK" },
+  { code: "ZAG", label: "DEF" },
+  { code: "MC", label: "MID" },
+  { code: "ATA", label: "ATT" },
 ];
-
-const GROUP_LABELS: Record<string, string> = {
-  GK: "Goalkeeper",
-  DEF: "Defenders",
-  MID: "Midfielders",
-  ATT: "Attackers",
-};
 
 const CONFIDENCE_STYLES: Record<string, string> = {
   high: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
@@ -97,7 +84,15 @@ function AgeProfile({ age }: { age: { median: number; p25: number; p75: number }
   );
 }
 
-function HistoricalSignings({ transfers, profileSize }: { transfers: ClubArchetypeTransfer[] | undefined; profileSize: number }) {
+function HistoricalSignings({
+  transfers,
+  profileSize,
+  areaLabel,
+}: {
+  transfers: ClubArchetypeTransfer[] | undefined;
+  profileSize: number;
+  areaLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   const list = transfers ?? [];
 
@@ -111,7 +106,7 @@ function HistoricalSignings({ transfers, profileSize }: { transfers: ClubArchety
         <div className="flex items-center gap-2">
           <ScrollText size={14} className="shrink-0 text-muted-foreground" />
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Historical signings
+            Historical signings {areaLabel}
           </p>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
             {profileSize}
@@ -161,11 +156,6 @@ export function ClubDnaSection({ saveId, currentClub }: Props) {
 
   const { data, isLoading, isError } = useClubArchetype(saveId, selectedPosition);
 
-  const grouped = POSITIONS.reduce<Record<string, typeof POSITIONS>>((acc, p) => {
-    acc[p.group] = [...(acc[p.group] ?? []), p];
-    return acc;
-  }, {});
-
   return (
     <div className="space-y-4">
       {/* Explainer callout */}
@@ -188,41 +178,34 @@ export function ClubDnaSection({ saveId, currentClub }: Props) {
         {calloutOpen && (
           <p className="border-t border-primary/15 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
             The Fit Score compares each scouted player against the real signing history of{" "}
-            <span className="font-semibold text-foreground">{currentClub}</span> for that position in FC 26.
-            The profile below shows who the club has historically targeted — age, nationality, and origin league.
+            <span className="font-semibold text-foreground">{currentClub}</span>{" "}
+            {getPositionAreaPhrase(selectedPosition)} in FC 26.
+            The profile below pools every signing in that area of the pitch — age, nationality, and origin league —
+            so it reflects the whole zone (e.g. all midfielders), not just the exact position.
             A high score means the candidate closely mirrors that pattern.
           </p>
         )}
       </div>
 
-      {/* Position selector */}
+      {/* Area selector */}
       <div className="overflow-hidden rounded-md border border-border bg-card/55">
         <div className="border-b border-border bg-muted/25 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Position</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Area</p>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-3 p-3">
-          {Object.entries(grouped).map(([group, positions]) => (
-            <div key={group} className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 w-7">
-                {GROUP_LABELS[group]?.slice(0, 3)}
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {positions.map((p) => (
-                  <button
-                    key={p.code}
-                    type="button"
-                    onClick={() => setSelectedPosition(p.code)}
-                    className={`rounded px-2 py-1 text-xs font-semibold transition-colors ${
-                      selectedPosition === p.code
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-primary"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div className="flex flex-wrap gap-2 p-3">
+          {AREAS.map((a) => (
+            <button
+              key={a.code}
+              type="button"
+              onClick={() => setSelectedPosition(a.code)}
+              className={`rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
+                selectedPosition === a.code
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-primary"
+              }`}
+            >
+              {a.label}
+            </button>
           ))}
         </div>
       </div>
@@ -243,9 +226,9 @@ export function ClubDnaSection({ saveId, currentClub }: Props) {
         </div>
       ) : !data ? null : !data.available ? (
         <div className="rounded-md border border-border bg-muted/20 p-5">
-          <p className="text-sm font-medium text-muted-foreground">No historical profile available for this club / position.</p>
+          <p className="text-sm font-medium text-muted-foreground">No historical profile available for this club {getPositionAreaPhrase(selectedPosition)}.</p>
           <p className="mt-1.5 text-[12px] text-muted-foreground/60">
-            The fit score will rely only on general criteria for this position.
+            The fit score will rely only on general criteria for this area.
           </p>
         </div>
       ) : (
@@ -315,7 +298,11 @@ export function ClubDnaSection({ saveId, currentClub }: Props) {
           </div>
 
           {/* Historical signings list */}
-          <HistoricalSignings transfers={data.transfers} profileSize={data.profile_size} />
+          <HistoricalSignings
+            transfers={data.transfers}
+            profileSize={data.profile_size}
+            areaLabel={getPositionAreaPhrase(selectedPosition)}
+          />
         </div>
       )}
     </div>

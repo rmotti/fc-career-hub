@@ -44,7 +44,7 @@ export const SCOUT_COMPONENT_META: Record<ScoutComponentKey, { label: string; he
   overall: { label: "Overall", help: "Normalized level (OVR 50→0, 95→100)" },
   potential: { label: "Potential", help: "Normalized ceiling (POT 50→0, 95→100)" },
   age: { label: "Age", help: "Younger scores higher (fixed curve)" },
-  historicalFit: { label: "Historical fit", help: "Percentil de fit (0–100; 50 ≈ contratação típica do clube nesta posição)" },
+  historicalFit: { label: "Historical fit", help: "Percentil de fit (0–100; 50 ≈ contratação típica do clube nesta área do campo)" },
   marketValue: { label: "Market value", help: "Budget slack — cheaper scores higher" },
   wage: { label: "Wage", help: "Opt-in — needs a max wage" },
 };

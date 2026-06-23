@@ -23,6 +23,43 @@ export function formatPosition(position: string): string {
   return POSITION_LABELS[position as PlayerPosition] ?? position;
 }
 
+// Field areas (buckets). The fit-score backend aggregates signing history by these
+// broad zones (GK / defense / midfield / attack), not by exact position.
+export type PositionArea = "GK" | "DEF" | "MID" | "ATT";
+
+export const POSITION_AREA: Record<PlayerPosition, PositionArea> = {
+  GOL: "GK",
+  LD: "DEF",
+  LE: "DEF",
+  ZAG: "DEF",
+  VOL: "MID",
+  MC: "MID",
+  MEI: "MID",
+  ME: "MID",
+  MD: "MID",
+  PE: "ATT",
+  PD: "ATT",
+  SA: "ATT",
+  ATA: "ATT",
+};
+
+// e.g. "Historical signings in midfield"
+export const POSITION_AREA_PHRASE: Record<PositionArea, string> = {
+  GK: "in goal",
+  DEF: "in defense",
+  MID: "in midfield",
+  ATT: "in attack",
+};
+
+export function getPositionArea(position: string): PositionArea | null {
+  return POSITION_AREA[position as PlayerPosition] ?? null;
+}
+
+export function getPositionAreaPhrase(position: string): string {
+  const area = getPositionArea(position);
+  return area ? POSITION_AREA_PHRASE[area] : "in this area";
+}
+
 export function normalizeAlternativePositions(
   positions: readonly string[] | undefined,
   mainPosition?: string,
