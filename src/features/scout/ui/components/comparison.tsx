@@ -9,14 +9,11 @@ import { COMPARISON_RADAR_COLORS } from "@/features/scout/config/options";
 import { computeScoutScore } from "@/features/scout/lib/scoutScore";
 import { ScoutScoreContext } from "@/features/scout/lib/scoutScore";
 import {
-  formatAverageRating,
   formatMarketValue,
-  formatPotentialGrowth,
   formatWage,
-  getGeneralRatingAverage,
   getOvrClass,
 } from "@/features/scout/lib/format";
-import { getBestMetricPlayer } from "@/features/scout/lib/shortlist";
+import { buildComparisonNarrative } from "@/features/scout/lib/comparisonNarrative";
 import type { ComparisonMetricConfig, PlayerComparisonGroupConfig } from "@/features/scout/ui/types";
 import { PlayerAvatar, MetricLine, PositionBadge, RatingPill } from "./common";
 import { ScorePill, ComparisonScoreTable } from "./score";
@@ -147,9 +144,7 @@ export function PlayerComparisonModal({
     [rawPlayers, detailsById],
   );
 
-  const leaderByAverage = useMemo(() => getBestMetricPlayer(players, getGeneralRatingAverage), [players]);
-  const leaderByOvr = useMemo(() => getBestMetricPlayer(players, (player) => player.ovr), [players]);
-  const leaderByGrowth = useMemo(() => getBestMetricPlayer(players, (player) => player.potential - player.ovr), [players]);
+  const narrative = useMemo(() => buildComparisonNarrative(players), [players]);
   const radarData = useMemo(
     () =>
       [
@@ -256,16 +251,19 @@ export function PlayerComparisonModal({
 
                 <div className="card-gamer p-4">
                   <p className="mb-3 font-display text-sm font-bold text-foreground">Quick read</p>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <ComparisonHighlight
-                      label="Best average"
-                      player={leaderByAverage}
-                      value={formatAverageRating(leaderByAverage ? getGeneralRatingAverage(leaderByAverage) : null)}
-                    />
-                    <ComparisonHighlight label="Highest OVR" player={leaderByOvr} value={leaderByOvr?.ovr ?? "—"} />
-                    <ComparisonHighlight label="Most margin" player={leaderByGrowth} value={leaderByGrowth ? formatPotentialGrowth(leaderByGrowth) : "—"} />
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {narrative.length > 0 ? (
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {narrative.map((sentence, index) => (
+                        <span key={index}>
+                          {index > 0 && " "}
+                          {highlightNames(sentence, players)}
+                        </span>
+                      ))}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Not enough data to summarise this comparison.</p>
+                  )}
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     {players.map((player) => (
                       <MetricLine
                         key={player.sofifaId}
@@ -414,14 +412,29 @@ export function ComparedPlayerCard({
   );
 }
 
-export function ComparisonHighlight({ label, player, value }: { label: string; player: Fc26Player | null; value: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-border bg-background/35 p-3">
-      <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
-      <p className="mt-2 truncate font-display text-lg font-bold text-primary">{value}</p>
-      <p className="mt-1 truncate text-xs text-muted-foreground">{player?.name ?? "—"}</p>
-    </div>
+/** Wraps any player name found in the sentence with a primary-coloured emphasis. */
+function highlightNames(sentence: string, players: Fc26Player[]): React.ReactNode {
+  const names = [...new Set(players.map((player) => player.name))]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+  if (!names.length) return sentence;
+
+  const pattern = new RegExp(`(${names.map(escapeRegExp).join("|")})`, "g");
+  const parts = sentence.split(pattern);
+
+  return parts.map((part, index) =>
+    names.includes(part) ? (
+      <span key={index} className="font-semibold text-foreground">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
   );
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function ComparisonGroupTable({ group, players }: { group: PlayerComparisonGroupConfig; players: Fc26Player[] }) {
