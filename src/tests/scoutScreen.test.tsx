@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ScoutScreen, { type ScoutSection } from "@/features/scout/ui/ScoutScreen";
@@ -52,22 +52,28 @@ vi.mock("@/features/scout/model/useFc26Players", () => ({
   useFc26PlayerFilters: () => ({ data: undefined, isLoading: false }),
 }));
 
+// Stable references: SearchSection memoizes on `nameSearch.players`, so a fresh
+// array each render would invalidate those memos, re-fire the players/stats
+// effects, and loop ScoutScreen into an infinite re-render (OOMs the worker).
+const NAME_SEARCH_EMPTY_PLAYERS: never[] = [];
+const NAME_SEARCH_NOOP = () => {};
+const NAME_SEARCH_RESULT = {
+  term: "",
+  setTerm: NAME_SEARCH_NOOP,
+  isActive: false,
+  players: NAME_SEARCH_EMPTY_PLAYERS,
+  total: 0,
+  isLoading: false,
+  isFetching: false,
+  isError: false,
+  error: null,
+  hasMore: false,
+  loadMore: NAME_SEARCH_NOOP,
+  isLoadingMore: false,
+};
 vi.mock("@/features/scout/model/useFc26NameSearch", () => ({
   NAME_SEARCH_MIN_CHARS: 3,
-  useFc26NameSearch: () => ({
-    term: "",
-    setTerm: vi.fn(),
-    isActive: false,
-    players: [],
-    total: 0,
-    isLoading: false,
-    isFetching: false,
-    isError: false,
-    error: null,
-    hasMore: false,
-    loadMore: vi.fn(),
-    isLoadingMore: false,
-  }),
+  useFc26NameSearch: () => NAME_SEARCH_RESULT,
 }));
 
 vi.mock("@/features/scout/model/useShortlist", () => ({
@@ -83,6 +89,10 @@ vi.mock("@/features/scout/model/useSavedSearches", () => ({
 }));
 
 afterEach(() => {
+  // Unmount the rendered tree between cases. ScoutScreen is a very large
+  // component, so leaving each section's tree mounted across the it.each
+  // iterations retains enough memory to OOM the worker in CI.
+  cleanup();
   vi.clearAllMocks();
 });
 
