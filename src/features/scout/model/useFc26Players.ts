@@ -17,7 +17,7 @@ function withScoutSaveContext(filters: Fc26PlayerFilters, saveId?: string | null
 export function useFc26Players(filters: Fc26PlayerFilters | null, saveId?: string | null) {
   return useQuery({
     queryKey: ["fc26-players", filters, { saveId: saveId ?? null }],
-    queryFn: () => fc26PlayersApi.list(filters ? withScoutSaveContext(filters, saveId) : undefined),
+    queryFn: ({ signal }) => fc26PlayersApi.list(filters ? withScoutSaveContext(filters, saveId) : undefined, signal),
     enabled: !!filters,
     placeholderData: (previousData) => previousData,
     staleTime: CACHE_TTL.fc26Players,

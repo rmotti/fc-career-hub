@@ -1,10 +1,11 @@
 import { useContext, useEffect, useMemo, type MutableRefObject } from "react";
-import { ChevronLeft, ChevronRight, Loader2, LockKeyhole, RotateCcw, Save, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, LockKeyhole, RotateCcw, Save, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import type { ApiPlaybook, Fc26FitObjective, Fc26Player, PlayerPosition } from "@/shared/api/client";
 import { extractErrorMessage } from "@/shared/api/client";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useFc26Players, useFc26PlayerFilters } from "@/features/scout/model/useFc26Players";
+import { useFc26NameSearch, NAME_SEARCH_MIN_CHARS } from "@/features/scout/model/useFc26NameSearch";
 import { useRateLimitBackoff } from "@/features/scout/model/useRateLimitBackoff";
 import { filterOutCurrentClubPlayers, isSameClubName } from "@/features/scout/model/currentClubFilter";
 import { useCreateSavedSearch } from "@/features/scout/model/useSavedSearches";
@@ -80,6 +81,7 @@ export function SearchSection({
 }: SearchSectionProps) {
   const { openFitBreakdown } = useContext(ScoutScoreContext);
   const { data, isError, isFetching, isLoading, error, refetch } = useFc26Players(appliedFilters, saveId);
+  const nameSearch = useFc26NameSearch(appliedFilters, saveId);
   const { isRateLimited: isScoutRateLimited, retryAfterSeconds: scoutRetryAfterSeconds } = useRateLimitBackoff(error);
   const { data: filterMetadata, isLoading: isLoadingFilters } = useFc26PlayerFilters();
   const createSavedSearch = useCreateSavedSearch();
@@ -87,16 +89,38 @@ export function SearchSection({
   const hasSearched = !!appliedFilters;
   const hasSaveContext = Boolean(saveId);
 
-  const rawApiPlayers = useMemo(() => (hasSearched ? data?.players ?? [] : []), [data?.players, hasSearched]);
+  // Name typeahead takes over the results list once its term is long enough.
+  // Below that, the filter-driven results (or the empty/base state) show through.
+  const isNameSearchActive = nameSearch.isActive;
+
+  const rawApiPlayers = useMemo(() => {
+    if (isNameSearchActive) return nameSearch.players;
+    return hasSearched ? data?.players ?? [] : [];
+  }, [data?.players, hasSearched, isNameSearchActive, nameSearch.players]);
   const apiPlayers = useMemo(() => filterOutCurrentClubPlayers(rawApiPlayers, currentClub), [currentClub, rawApiPlayers]);
-  const players = useMemo(() => sortPlayersForDisplay(apiPlayers, appliedFilters), [apiPlayers, appliedFilters]);
-  const total = hasSearched ? getCurrentClubFilteredTotal(data?.total ?? 0, rawApiPlayers, apiPlayers) : 0;
+  // The backend already returns name matches ordered by ovr desc — don't reorder.
+  const players = useMemo(
+    () => (isNameSearchActive ? apiPlayers : sortPlayersForDisplay(apiPlayers, appliedFilters)),
+    [apiPlayers, appliedFilters, isNameSearchActive],
+  );
+  const total = isNameSearchActive
+    ? getCurrentClubFilteredTotal(nameSearch.total, rawApiPlayers, apiPlayers)
+    : hasSearched
+      ? getCurrentClubFilteredTotal(data?.total ?? 0, rawApiPlayers, apiPlayers)
+      : 0;
   const limit = hasSearched ? data?.limit ?? appliedFilters?.limit ?? 20 : 20;
   const offset = hasSearched ? data?.offset ?? appliedFilters?.offset ?? 0 : 0;
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.max(1, Math.ceil(total / limit));
-  const visibleStart = total === 0 || players.length === 0 ? 0 : Math.min(offset + 1, total);
-  const visibleEnd = total === 0 || players.length === 0 ? 0 : Math.min(offset + players.length, total);
+  const visibleStart = total === 0 || players.length === 0 ? 0 : isNameSearchActive ? 1 : Math.min(offset + 1, total);
+  const visibleEnd = total === 0 || players.length === 0 ? 0 : isNameSearchActive ? players.length : Math.min(offset + players.length, total);
+
+  // Unified flags for the results panel so name search and filter search share
+  // the same loading/error/empty rendering.
+  const resultsLoading = isNameSearchActive ? nameSearch.isLoading : isLoading;
+  const resultsError = isNameSearchActive ? nameSearch.isError : isError;
+  const resultsErrorValue = isNameSearchActive ? nameSearch.error : error;
+  const showResults = isNameSearchActive || hasSearched;
 
   const activeFilterCount = useMemo(() => {
     if (!appliedFilters) return 0;
@@ -265,9 +289,9 @@ export function SearchSection({
             <div>
               <h3 className="font-display text-lg font-bold leading-none">Search players</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {hasSearched
+                {showResults
                   ? `${visibleStart}-${visibleEnd} of ${formatInteger(total)} players`
-                  : "Set filters to start the search"}
+                  : "Set filters or search by name to start"}
               </p>
               {hasSearched && typeof appliedFilters?.maxMarketValue === "number" && (
                 <p className="mt-0.5 text-[11px] text-muted-foreground/70">
@@ -471,7 +495,7 @@ export function SearchSection({
         </div>
       </section>
 
-      {hasSearched && featuredPlayers.length > 0 && !isError && (
+      {showResults && featuredPlayers.length > 0 && !resultsError && (
         <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {featuredPlayers.map((player, index) => (
             <FeaturedPlayer key={player.sofifaId} player={player} rank={index + 1} onSelect={() => onOpenDetails(player.sofifaId)} />
@@ -479,7 +503,7 @@ export function SearchSection({
         </section>
       )}
 
-      {hasSearched && !isError && (players.length > 0 || comparedPlayers.length > 0) && (
+      {showResults && !resultsError && (players.length > 0 || comparedPlayers.length > 0) && (
         <PlayerComparisonLauncher
           players={comparedPlayers}
           activePlaybook={activePlaybook}
@@ -494,49 +518,83 @@ export function SearchSection({
         <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="font-display text-lg font-bold leading-none">Players found</h3>
-            {hasSearched && (
+            {showResults && (
               <p className="mt-1 text-sm text-muted-foreground">Compare found profiles and open the detail panel to see the full report.</p>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={offset <= 0 || isFetching}
-              onClick={() => goToOffset(offset - limit)}
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="min-w-[92px] text-center font-display text-sm font-bold text-foreground">
-              {currentPage}/{totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={offset + limit >= total || isFetching}
-              onClick={() => goToOffset(offset + limit)}
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Next page"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          {!isNameSearchActive && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={offset <= 0 || isFetching}
+                onClick={() => goToOffset(offset - limit)}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="min-w-[92px] text-center font-display text-sm font-bold text-foreground">
+                {currentPage}/{totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={offset + limit >= total || isFetching}
+                onClick={() => goToOffset(offset + limit)}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
-        {!hasSearched ? (
+        <div className="border-b border-border p-4">
+          <div className="relative">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={nameSearch.term}
+              onChange={(event) => nameSearch.setTerm(event.target.value)}
+              placeholder="Search by player name..."
+              aria-label="Search players by name"
+              className="h-10 w-full rounded-md border border-border bg-muted pl-9 pr-16 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+            <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
+              {nameSearch.isActive && nameSearch.isFetching && (
+                <Loader2 size={15} className="animate-spin text-muted-foreground" aria-label="Searching" />
+              )}
+              {nameSearch.term && (
+                <button
+                  type="button"
+                  onClick={() => nameSearch.setTerm("")}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label="Clear name search"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+          {nameSearch.term.trim().length > 0 && !nameSearch.isActive && (
+            <p className="mt-2 text-xs text-muted-foreground">Type at least {NAME_SEARCH_MIN_CHARS} letters to search by name.</p>
+          )}
+        </div>
+
+        {!showResults ? (
           <div className="p-6 text-center">
             <p className="font-display text-lg font-semibold text-foreground">No scout started</p>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              The list stays empty until you apply filters for position, OVR, age, potential, pace, height, PlayStyles, PlayStyles+, nationality, league or club.
+              Search by player name above, or apply filters for position, OVR, age, potential, pace, height, PlayStyles, PlayStyles+, nationality, league or club.
             </p>
           </div>
-        ) : isLoading ? (
+        ) : resultsLoading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
             <Loader2 size={20} className="animate-spin" />
             Loading players...
           </div>
-        ) : isError ? (
+        ) : resultsError ? (
           isScoutRateLimited ? (
             <div className="p-6 text-center">
               <div className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-sm text-warning">
@@ -561,7 +619,7 @@ export function SearchSection({
           ) : (
             <div className="p-6 text-center">
               <p className="font-display text-lg font-semibold text-foreground">Could not load scout</p>
-              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{extractErrorMessage(error)}</p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{extractErrorMessage(resultsErrorValue)}</p>
               <button
                 type="button"
                 onClick={() => void refetch()}
@@ -573,12 +631,21 @@ export function SearchSection({
             </div>
           )
         ) : players.length === 0 ? (
-          <div className="p-6 text-center">
-            <p className="font-display text-lg font-semibold text-foreground">No player matches these filters</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Broaden the OVR, age or potential range to expand the search.
-            </p>
-          </div>
+          isNameSearchActive ? (
+            <div className="p-6 text-center">
+              <p className="font-display text-lg font-semibold text-foreground">No player found</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                No player matches "{nameSearch.term.trim()}". Try a different name.
+              </p>
+            </div>
+          ) : (
+            <div className="p-6 text-center">
+              <p className="font-display text-lg font-semibold text-foreground">No player matches these filters</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Broaden the OVR, age or potential range to expand the search.
+              </p>
+            </div>
+          )
         ) : (
           <>
             <ScrollArea scrollbars="horizontal" className="hidden w-full lg:block" viewportClassName="pb-3">
@@ -664,6 +731,20 @@ export function SearchSection({
                 />
               ))}
             </div>
+
+            {isNameSearchActive && nameSearch.hasMore && (
+              <div className="border-t border-border p-4 text-center">
+                <button
+                  type="button"
+                  disabled={nameSearch.isLoadingMore}
+                  onClick={nameSearch.loadMore}
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-muted/40 px-4 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {nameSearch.isLoadingMore && <Loader2 size={15} className="animate-spin" />}
+                  Load more
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>

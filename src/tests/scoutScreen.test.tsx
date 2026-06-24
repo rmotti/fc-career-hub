@@ -52,6 +52,24 @@ vi.mock("@/features/scout/model/useFc26Players", () => ({
   useFc26PlayerFilters: () => ({ data: undefined, isLoading: false }),
 }));
 
+vi.mock("@/features/scout/model/useFc26NameSearch", () => ({
+  NAME_SEARCH_MIN_CHARS: 3,
+  useFc26NameSearch: () => ({
+    term: "",
+    setTerm: vi.fn(),
+    isActive: false,
+    players: [],
+    total: 0,
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    error: null,
+    hasMore: false,
+    loadMore: vi.fn(),
+    isLoadingMore: false,
+  }),
+}));
+
 vi.mock("@/features/scout/model/useShortlist", () => ({
   useShortlist: () => ({ data: { items: [] } }),
   useAddShortlistItem: () => ({ mutate: vi.fn(), isPending: false }),

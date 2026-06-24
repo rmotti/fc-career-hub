@@ -145,6 +145,7 @@ type Fc26NumericFilterBase = typeof FC26_NUMERIC_FILTER_BASES[number];
 type Fc26NumericFilterKey = `min${Capitalize<Fc26NumericFilterBase>}` | `max${Capitalize<Fc26NumericFilterBase>}`;
 
 export type Fc26PlayerFilters = {
+  name?: string;
   positions?: Fc26PlayerPosition[];
   primaryPositions?: Fc26PlayerPosition[];
   secondaryPositions?: Fc26PlayerPosition[];
@@ -178,6 +179,12 @@ function toRangeParamKey(prefix: "min" | "max", base: Fc26NumericFilterBase): Fc
 function toFc26PlayersQuery(filters: Fc26PlayerListParams = {}) {
   const params = new URLSearchParams();
 
+  // Only send `name` once the trimmed term is long enough — the backend ignores
+  // shorter terms, so this saves a useless round-trip.
+  const name = filters.name?.trim();
+  if (name && name.length >= 3) {
+    params.set("name", name);
+  }
   appendCsvParam(params, "positions", filters.positions);
   appendCsvParam(params, "primaryPositions", filters.primaryPositions);
   appendCsvParam(params, "secondaryPositions", filters.secondaryPositions);
@@ -232,9 +239,9 @@ export interface FitBreakdownResponse {
 }
 
 export const fc26PlayersApi = {
-  list: (filters?: Fc26PlayerListParams) => {
+  list: (filters?: Fc26PlayerListParams, signal?: AbortSignal) => {
     const qs = toFc26PlayersQuery(filters);
-    return request<Fc26PlayersResponse>(`/fc26-players${qs ? `?${qs}` : ""}`, { cache: "no-store" });
+    return request<Fc26PlayersResponse>(`/fc26-players${qs ? `?${qs}` : ""}`, { cache: "no-store", signal });
   },
   filters: () =>
     request<Fc26PlayerFilterMetadata>("/fc26-players/filters"),
