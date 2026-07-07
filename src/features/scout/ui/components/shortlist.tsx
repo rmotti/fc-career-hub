@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { BadgeEuro, Check, ChevronDown, Eye, GitCompareArrows, ListChecks, Search, Star, Target, UsersRound, X } from "lucide-react";
 import type { ElementType, ReactNode } from "react";
 import type { ApiPlaybook, Fc26Player } from "@/shared/api/client";
-import { POSITION_LABELS } from "@/shared/lib/playerPositions";
+import { formatPosition, POSITION_LABELS } from "@/shared/lib/playerPositions";
 import { ScoutScoreContext, computeScoutScore } from "@/features/scout/lib/scoutScore";
 import { formatMarketValue, formatPotentialGrowth, getOvrClass } from "@/features/scout/lib/format";
 import { getAverageOvr, getBestMetricPlayer } from "@/features/scout/lib/shortlist";
