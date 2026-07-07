@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation, useOutletContext } from "react-router-do
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/features/auth/model/useAuth";
 import type { UserPlan } from "@/shared/api/client";
+import { isAdminRole } from "@/shared/config/plans";
 
 function FullScreenLoader({ message }: { message: string }) {
   return (
@@ -59,7 +60,8 @@ export function PlanRoute({ allowedPlans, redirectTo = "/pricing" }: { allowedPl
     return <FullScreenLoader message={t("auth.guards.loading")} />;
   }
 
-  if (!user || !allowedPlans.includes(user.plan)) {
+  // Admins always pass any plan gate, regardless of their plan.
+  if (!user || (!isAdminRole(user.role) && !allowedPlans.includes(user.plan))) {
     return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
   }
 

@@ -279,7 +279,7 @@ const ScoutScreen = ({ section, saveId, currentClub, currentSeason }: Props) => 
         <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-              {currentClub} · {currentSeason} · PRO
+              {currentClub} · {currentSeason}{isAiSection ? " · PRO" : ""}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="font-display text-3xl font-bold leading-none tracking-tight text-foreground">{pageTitle}</h2>

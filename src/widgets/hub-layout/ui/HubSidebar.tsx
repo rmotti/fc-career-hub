@@ -10,11 +10,12 @@ import {
 import { LogoMark } from "@/shared/ui/Logo";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
-import { canAccessProFeature } from "@/shared/config/plans";
+import { canAccessChat } from "@/shared/config/plans";
 
 interface HubSidebarProps {
   userName: string;
   userPlan: string;
+  userRole: string;
   saveName: string;
   clubName: string;
   season: string;
@@ -28,6 +29,7 @@ interface HubSidebarProps {
 const HubSidebar = ({
   userName,
   userPlan,
+  userRole,
   saveName,
   clubName,
   season,
@@ -42,7 +44,8 @@ const HubSidebar = ({
   const [isCollapseAnimating, setIsCollapseAnimating] = useState(false);
   const location = useLocation();
   const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
-  const canUseScout = canAccessProFeature(userPlan);
+  // Scout is free for everyone; only the AI coach (chatbot) stays behind PRO.
+  const canUseChat = canAccessChat(userPlan, userRole);
 
   const navItems: { to: string; label: string; icon: ElementType }[] = [
     { to: "/dashboard", label: t("sidebar.nav.overview"), icon: LayoutDashboard },
@@ -60,7 +63,8 @@ const HubSidebar = ({
   ];
 
   const scoutItems: { to: string; label: string; icon: ElementType }[] = [
-    { to: "/scout/ia", label: t("sidebar.scout.aiCoach"), icon: Bot },
+    // The AI coach is the only PRO-gated scout item; hide it for users without chat access.
+    ...(canUseChat ? [{ to: "/scout/ia", label: t("sidebar.scout.aiCoach"), icon: Bot }] : []),
     { to: "/scout/filtros", label: t("sidebar.scout.searchPlayers"), icon: Search },
     { to: "/scout/consultas", label: t("sidebar.scout.savedQueries"), icon: Folder },
     { to: "/scout/shortlist", label: t("sidebar.scout.shortlist"), icon: ListChecks },
@@ -225,31 +229,29 @@ const HubSidebar = ({
             </nav>
           </section>
 
-          {canUseScout && (
-            <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
-              <p className={sectionTitleClass}>{t("sidebar.sections.scout")}</p>
-              <div className="space-y-1 overflow-x-hidden">
-                {scoutItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Fragment key={item.to}>
-                      {renderSidebarTooltip(
-                        item.label,
-                        <NavLink
-                          to={item.to}
-                          className={({ isActive }) => `${navLinkClass({ isActive }, collapsed)} ${isActive ? "active" : ""}`}
-                        >
-                          {renderActiveMarker()}
-                          <Icon size={18} className="shrink-0" />
-                          {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
-                        </NavLink>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+          <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
+            <p className={sectionTitleClass}>{t("sidebar.sections.scout")}</p>
+            <div className="space-y-1 overflow-x-hidden">
+              {scoutItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Fragment key={item.to}>
+                    {renderSidebarTooltip(
+                      item.label,
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) => `${navLinkClass({ isActive }, collapsed)} ${isActive ? "active" : ""}`}
+                      >
+                        {renderActiveMarker()}
+                        <Icon size={18} className="shrink-0" />
+                        {!collapsed && <span className="min-w-0 truncate">{item.label}</span>}
+                      </NavLink>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </div>
+          </section>
 
           <section className="mt-6 space-y-2 overflow-x-hidden border-t border-sidebar-border pt-4">
             <p className={sectionTitleClass}>{t("sidebar.sections.career")}</p>

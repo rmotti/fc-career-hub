@@ -75,15 +75,18 @@ export function Router() {
             <Route path="/transfers" element={<Transfers />} />
             <Route path="/change-club" element={<ChangeClub />} />
             <Route path="/field" element={<Field />} />
+            {/* Scout is free for any signed-in user — only the chatbot (/scout/ia)
+                stays behind the PRO plan gate. Land on a free section so FREE
+                users aren't bounced to /pricing when opening Scout. */}
+            <Route path="/scout" element={<Navigate to="/scout/filtros" replace />} />
             <Route element={<PlanRoute allowedPlans={PRO_FEATURE_PLANS} />}>
-              <Route path="/scout" element={<Navigate to="/scout/ia" replace />} />
               <Route path="/scout/ia" element={<Scout section="ai" />} />
-              <Route path="/scout/filtros" element={<Scout section="filters" />} />
-              <Route path="/scout/shortlist" element={<Scout section="shortlist" />} />
-              <Route path="/scout/consultas" element={<Scout section="archive" />} />
-              <Route path="/scout/dna" element={<Scout section="dna" />} />
-              <Route path="/scout/playbooks" element={<Playbooks />} />
             </Route>
+            <Route path="/scout/filtros" element={<Scout section="filters" />} />
+            <Route path="/scout/shortlist" element={<Scout section="shortlist" />} />
+            <Route path="/scout/consultas" element={<Scout section="archive" />} />
+            <Route path="/scout/dna" element={<Scout section="dna" />} />
+            <Route path="/scout/playbooks" element={<Playbooks />} />
           </Route>
         </Route>
 

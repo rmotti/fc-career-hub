@@ -181,6 +181,7 @@ const HubLayout = () => {
       <HubSidebar
         userName={user.name}
         userPlan={user.plan}
+        userRole={user.role}
         saveName={activeSave.name}
         clubName={currentClub}
         season={activeSave.currentSeason}
