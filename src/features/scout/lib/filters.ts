@@ -12,6 +12,7 @@ import {
   formatSavedQueryDate,
 } from "./format";
 import { m } from "@/shared/lib/money";
+import { formatPosition } from "@/shared/lib/playerPositions";
 
 export function readNumber(value: string) {
   if (!value.trim()) return undefined;
@@ -289,9 +290,9 @@ export function getSavedQueryChips(filters: AppliedScoutFilters) {
   const potentialRange = formatFilterRange("Potential", filters.minPotential, filters.maxPotential);
   const marketValueRange = formatMarketValueFilterRange(filters.minMarketValue, filters.maxMarketValue);
 
-  if (filters.primaryPositions?.length) chips.push(`Principal: ${filters.primaryPositions.join(", ")}`);
-  if (filters.secondaryPositions?.length) chips.push(`Secondary: ${filters.secondaryPositions.join(", ")}`);
-  if (!hasSplitPositionFilters(filters) && positions.length) chips.push(`Positions: ${positions.join(", ")}`);
+  if (filters.primaryPositions?.length) chips.push(`Primary: ${filters.primaryPositions.map(formatPosition).join(", ")}`);
+  if (filters.secondaryPositions?.length) chips.push(`Secondary: ${filters.secondaryPositions.map(formatPosition).join(", ")}`);
+  if (!hasSplitPositionFilters(filters) && positions.length) chips.push(`Positions: ${positions.map(formatPosition).join(", ")}`);
   if (filters.preferredFoot) chips.push(`Foot: ${formatPreferredFoot(filters.preferredFoot)}`);
   if (ageRange) chips.push(ageRange);
   if (ovrRange) chips.push(ovrRange);
@@ -310,7 +311,7 @@ export function createSavedQueryTitle(filters: AppliedScoutFilters) {
   const titleParts: string[] = [];
   const positions = getFilterPositions(filters);
 
-  if (positions.length) titleParts.push(positions.join("/"));
+  if (positions.length) titleParts.push(positions.map(formatPosition).join("/"));
   if (filters.preferredFoot) titleParts.push(filters.preferredFoot === "Left" ? "left-footed" : "right-footed");
   if (typeof filters.maxAge === "number") titleParts.push(`u${filters.maxAge + 1}`);
   if (typeof filters.minPotential === "number") titleParts.push(`pot. ${filters.minPotential}+`);

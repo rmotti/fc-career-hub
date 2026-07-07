@@ -88,7 +88,7 @@ export function ArchiveSection({
             </div>
             <div>
               <h3 className="font-display text-lg font-bold leading-none">Folder archive</h3>
-              <p className="mt-1 text-xs text-muted-foreground">Saved queries do Scout</p>
+              <p className="mt-1 text-xs text-muted-foreground">Scout saved queries</p>
             </div>
           </div>
         </div>

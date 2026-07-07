@@ -145,7 +145,7 @@ function ShortlistPositionGroupCard({
           title={isCollapsed ? "Expand position" : "Collapse position"}
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent/20 bg-accent/10 text-accent">
-            <span className="font-display text-sm font-bold">{group.position}</span>
+            <span className="font-display text-sm font-bold">{formatPosition(group.position)}</span>
           </div>
           <div className="min-w-0">
             <h4 className="truncate font-display text-lg font-bold text-foreground">{POSITION_LABELS[group.position]}</h4>

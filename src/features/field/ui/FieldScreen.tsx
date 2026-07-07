@@ -312,7 +312,7 @@ const PlayerCard = ({
         </span>
       )}
       <span className={`max-w-[42px] truncate text-[7px] font-display font-bold tracking-widest leading-none px-1 py-0.5 rounded ${c.badge} relative z-10`}>
-        {displayPosition}
+        {formatPosition(displayPosition)}
       </span>
       <span className={`font-display font-bold leading-none ${c.text} ${compact ? "text-sm" : "text-lg"} relative z-10`}>
         {player.ovr}
@@ -1018,7 +1018,7 @@ const FieldScreen = ({ saveId }: Props) => {
                           }`}
                           style={{ left: `${zone.x}%`, top: `${zone.y}%` }}
                         >
-                          {zone.label}
+                          {formatPosition(zone.label)}
                         </span>
                     );
                   })}
@@ -1230,7 +1230,7 @@ const FieldScreen = ({ saveId }: Props) => {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-card border border-transparent hover:border-border transition-all text-left"
                   >
                     <span className={`max-w-20 truncate text-[9px] font-display font-bold px-1.5 py-0.5 rounded tracking-widest shrink-0 ${c.badge}`}>
-                      {p.position}
+                      {formatPosition(p.position)}
                     </span>
                     <span className="flex-1 text-sm text-foreground truncate">{p.name}</span>
                     {flag && (

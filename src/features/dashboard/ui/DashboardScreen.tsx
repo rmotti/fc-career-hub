@@ -24,6 +24,7 @@ import type { ApiPlayer, ApiTransfer } from "@/shared/api/client";
 import { CUP_LABELS, getAggregateTeamStats, getLeagueStats } from "@/shared/lib/competitions";
 import { formatCurrency, formatCurrencyInMillions, formatSignedCurrencyInMillions } from "@/shared/lib/currency";
 import { m } from "@/shared/lib/money";
+import { formatPosition } from "@/shared/lib/playerPositions";
 
 interface Props {
   saveId: string;
@@ -362,7 +363,7 @@ const DashboardScreen = ({ saveId }: Props) => {
           items={topOvr.map((player) => ({
             id: player.id,
             title: player.name,
-            meta: `${player.position} · ${player.ovr} OVR`,
+            meta: `${formatPosition(player.position)} · ${player.ovr} OVR`,
             value: `+${player.ovrDelta}`,
             tone: "primary",
           }))}
@@ -375,7 +376,7 @@ const DashboardScreen = ({ saveId }: Props) => {
           items={topValue.map((player) => ({
             id: player.id,
             title: player.name,
-            meta: `${player.position} · ${player.marketValueFormatted ?? "sem valor"}`,
+            meta: `${formatPosition(player.position)} · ${player.marketValueFormatted ?? "no value"}`,
             value: `+${formatCurrencyInMillions(m(player.marketValueDelta ?? 0))}`,
             tone: "accent",
           }))}

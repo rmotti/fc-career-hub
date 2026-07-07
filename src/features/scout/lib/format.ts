@@ -87,10 +87,10 @@ export function getFitScoreTitle(player: Pick<Fc26Player, "fitScore" | "fitConfi
   const confidence = player.fitConfidence ? FIT_CONFIDENCE_LABELS[player.fitConfidence] : "confidence not provided";
   const profileSize =
     typeof player.fitProfileSize === "number" && Number.isFinite(player.fitProfileSize)
-      ? `, perfil com ${player.fitProfileSize} registro${player.fitProfileSize === 1 ? "" : "s"}`
+      ? `, profile of ${player.fitProfileSize} record${player.fitProfileSize === 1 ? "" : "s"}`
       : "";
 
-  return `Fit ${score}/100 — quão parecido este jogador é com as contratações que o clube costuma fazer nesta área do campo (defesa/meio/ataque) (50 ≈ contratação típica). ${confidence}${profileSize}`;
+  return `Fit ${score}/100 — how closely this player matches the signings the club tends to make in this area of the pitch (defense/midfield/attack) (50 ≈ typical signing). ${confidence}${profileSize}`;
 }
 
 export function getOvrClass(ovr: number) {

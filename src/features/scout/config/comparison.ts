@@ -12,6 +12,7 @@ import {
   formatWage,
   getGeneralRatingAverage,
 } from "@/features/scout/lib/format";
+import { formatPosition } from "@/shared/lib/playerPositions";
 
 export const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
   {
@@ -50,8 +51,8 @@ export const COMPARISON_GROUPS: PlayerComparisonGroupConfig[] = [
     title: "Profile",
     icon: UserRound,
     metrics: [
-      { label: "Primary", render: (player: Fc26Player) => player.positions[0] ?? "—" },
-      { label: "Secondary", render: (player: Fc26Player) => player.positions.slice(1).join(", ") || "—" },
+      { label: "Primary", render: (player: Fc26Player) => (player.positions[0] ? formatPosition(player.positions[0]) : "—") },
+      { label: "Secondary", render: (player: Fc26Player) => player.positions.slice(1).map(formatPosition).join(", ") || "—" },
       { label: "Nationality", render: (player) => player.nation ?? "—" },
       { label: "Height", render: (player) => formatHeight(player.height), score: (player) => player.height, better: "higher" },
       { label: "Weight", render: (player) => formatHeight(player.weight) },
